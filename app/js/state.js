@@ -49,7 +49,9 @@ function makeRasterLayer(name, opts = {}) {
   c.width = App.page.w; c.height = App.page.h;
   return { id: ++_layerSeq, kind: "raster", name, canvas: c,
            visible: true, locked: false, opacity: opts.opacity ?? 1,
-           tint: opts.tint || null };  // tint: render-time recolor (blue pencils)
+           tint: opts.tint || null,   // tint: render-time recolor (blue pencils)
+           ops: [],                   // stroke/shape/fill log for the stroke eraser
+           baseImg: null };           // pre-ops pixels (loaded saves)
 }
 function makeObjectLayer(name, role) {
   return { id: ++_layerSeq, kind: "objects", role, name, objects: [],
@@ -128,12 +130,31 @@ function restoreRaster(layer, dataUrl) {
   img.src = dataUrl;
 }
 
-/* Call around any raster mutation */
-function commitRasterChange(layer, beforeUrl) {
+/* Call around any raster mutation. opsDelta keeps the layer's op log in
+   sync with pixel undo/redo:  {add: op}  after pushing op to layer.ops,
+   {remove: {op, index}} after splicing it out. */
+function commitRasterChange(layer, beforeUrl, opsDelta = null) {
   const afterUrl = snapshotRaster(layer);
+  const applyDelta = isUndo => {
+    if (!opsDelta || !layer.ops) return;
+    if (opsDelta.add) {
+      if (isUndo) {
+        const i = layer.ops.lastIndexOf(opsDelta.add);
+        if (i >= 0) layer.ops.splice(i, 1);
+      } else if (!layer.ops.includes(opsDelta.add)) {
+        layer.ops.push(opsDelta.add);
+      }
+    } else if (opsDelta.remove) {
+      if (isUndo) layer.ops.splice(opsDelta.remove.index, 0, opsDelta.remove.op);
+      else {
+        const i = layer.ops.indexOf(opsDelta.remove.op);
+        if (i >= 0) layer.ops.splice(i, 1);
+      }
+    }
+  };
   Undo.push({
-    undo: () => restoreRaster(layer, beforeUrl),
-    redo: () => restoreRaster(layer, afterUrl),
+    undo: () => { restoreRaster(layer, beforeUrl); applyDelta(true); },
+    redo: () => { restoreRaster(layer, afterUrl); applyDelta(false); },
   });
 }
 
@@ -172,7 +193,13 @@ function loadProjectData(data) {
     if (l.kind === "raster") {
       const layer = makeRasterLayer(l.name, { tint: l.tint, opacity: l.opacity });
       layer.visible = l.visible; layer.locked = l.locked;
-      if (l.png) restoreRaster(layer, l.png);
+      if (l.png) {
+        restoreRaster(layer, l.png);
+        // loaded pixels become the rebuild base; the op log starts fresh,
+        // so the stroke eraser applies to strokes drawn from now on
+        layer.baseImg = new Image();
+        layer.baseImg.src = l.png;
+      }
       return layer;
     }
     const layer = makeObjectLayer(l.name, l.role);

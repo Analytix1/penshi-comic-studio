@@ -27,6 +27,12 @@ breaking its architecture. **Paste the "context block" first, then one task prom
 > 5. Guides/overlays never appear in `Engine.exportPNG` output.
 > 6. NO image generation features of any kind — the app enhances artists, never
 >    replaces them. NO external CDNs; everything works offline.
+> 7. Raster layers keep an op log (`layer.ops`: strokes/shapes/fills drawn this
+>    session) used by the stroke eraser, which rebuilds pixels as
+>    `layer.baseImg` + replayed ops. ANY new code path that mutates raster
+>    pixels must either push an op (and pass `{add: op}` to
+>    `commitRasterChange`) or accept that a later rebuild will erase its
+>    pixels. Ops are not serialized; on load the PNG becomes baseImg.
 > Serialization must round-trip: if you add fields to objects/layers, update
 > `serializeProject()` / `loadProjectData()` in state.js and keep old saves loading.
 > Test by running `python server.py` and exercising the feature in the browser.

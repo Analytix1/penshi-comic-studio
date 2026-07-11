@@ -42,6 +42,7 @@ const UI = {};
     pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
     marker: "Translucent tone for greys and spotting blacks. Strokes don't self-overlap mid-stroke, so tone stays even.",
     eraser: "Erases on the active layer. The Slim Pen 2's tail and barrel button switch to this automatically.",
+    strokeeraser: "Tap (or swipe across) a stroke to remove the WHOLE stroke — shapes too. Works on any visible unlocked layer, topmost first. Only knows strokes drawn this session; flat pixels from a loaded save need the normal eraser.",
     fill: "Click to flood-fill a region on the active raster layer. Close your ink gaps first or it leaks.",
     line: "Drag for a straight line. Hold Shift to snap to 15° — aim strokes at your vanishing points.",
     rect: "Drag a rectangle. Shift = square.",
@@ -54,7 +55,8 @@ const UI = {};
   };
   const TOOL_LABELS = {
     select: "Select / Move", pan: "Pan", ink: "Ink pen", pencil: "Pencil",
-    marker: "Marker", eraser: "Eraser", fill: "Fill", line: "Line",
+    marker: "Marker", eraser: "Eraser", strokeeraser: "Stroke eraser",
+    fill: "Fill", line: "Line",
     rect: "Rectangle", ellipse: "Ellipse", panel: "Panel", balloon: "Speech balloon",
     thought: "Thought balloon", caption: "Caption", burst: "SFX burst",
   };
@@ -344,9 +346,31 @@ const UI = {};
       `${App.projectName} — ${p.label} @ ${App.page.dpi}dpi (${App.page.w}×${App.page.h}px)`;
   }
 
+  /* ---------- copy/paste (selected panel or lettering object) ---------- */
+  let clipboard = null;   // { role, obj }
+  function copySelection() {
+    const sel = App.selection;
+    clipboard = { role: sel.layer.role, obj: JSON.parse(JSON.stringify(sel.obj)) };
+    UI.flash(`Copied ${sel.obj.type || "panel"} — Ctrl+V to paste`);
+  }
+  function pasteClipboard() {
+    const layer = layerByRole(clipboard.role);
+    if (!layer || layer.locked) return UI.flash("Target layer is locked 🔒");
+    const before = JSON.stringify(layer.objects);
+    const obj = JSON.parse(JSON.stringify(clipboard.obj));
+    const off = Math.round(App.page.dpi * 0.15);   // cascade each paste
+    obj.x += off; obj.y += off;
+    if (obj.tail) { obj.tail.x += off; obj.tail.y += off; }
+    layer.objects.push(obj);
+    commitObjectChange(layer, before);
+    clipboard.obj = JSON.parse(JSON.stringify(obj));
+    App.selection = { layer, obj };
+    App.dirty = true;
+  }
+
   /* ---------- keyboard ---------- */
   const KEYMAP = { v: "select", h: "pan", b: "ink", p: "pencil", m: "marker",
-                   e: "eraser", g: "fill", k: "panel", t: "balloon" };
+                   e: "eraser", s: "strokeeraser", g: "fill", k: "panel", t: "balloon" };
   window.addEventListener("keydown", e => {
     if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
     if (e.code === "Space" && !e.repeat) { Tools.setSpacePan(true); e.preventDefault(); return; }
@@ -359,6 +383,11 @@ const UI = {};
       else if (k === "e") { $("#btn-export").click(); e.preventDefault(); }
       else if (k === "n" && e.altKey) { $("#btn-new").click(); e.preventDefault(); }
       else if (k === "0") { Engine.fitPage(); e.preventDefault(); }
+      else if (k === "c" && App.selection) { copySelection(); e.preventDefault(); }
+      else if (k === "x" && App.selection) {
+        copySelection(); Tools.deleteSelection(); e.preventDefault();
+      }
+      else if (k === "v" && clipboard) { pasteClipboard(); e.preventDefault(); }
       return;
     }
     const tool = KEYMAP[e.key.toLowerCase()];

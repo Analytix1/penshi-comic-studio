@@ -62,6 +62,7 @@ never enter version control.
 | M | Marker | K | Panel tool |
 | E | Eraser | T | Speech balloon |
 | G | Fill | [ / ] | Brush smaller/bigger |
+| S | Stroke eraser (removes whole strokes) | Ctrl+C/X/V | Copy / cut / paste selected object |
 | Ctrl+Z / Y | Undo / redo | Ctrl+S / O | Save / open |
 | Ctrl+E | Export PNG | Ctrl+0 | Fit page |
 | Wheel | Zoom at cursor | Del | Delete selected object |
