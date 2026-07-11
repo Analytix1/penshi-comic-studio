@@ -23,6 +23,12 @@ const Engine = (() => {
     stageW = r.width; stageH = r.height;
     view.width = Math.round(r.width * dpr);
     view.height = Math.round(r.height * dpr);
+    // Pin the element's CSS size explicitly: an absolutely-positioned canvas
+    // takes its INTRINSIC (bitmap) size, so on HiDPI screens (Windows display
+    // scaling > 100%) it would render dpr× too large and every stroke would
+    // appear offset down-right from the pen.
+    view.style.width = r.width + "px";
+    view.style.height = r.height + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     App.dirty = true;
   }
