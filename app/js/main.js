@@ -1,0 +1,424 @@
+/* ============================================================
+   main.js — UI wiring: toolbar, sidebar, layers panel, keyboard
+   shortcuts, save/open dialogs, pen telemetry, guided tour.
+   Exposes the small `UI` facade other modules call into.
+   ============================================================ */
+"use strict";
+
+const UI = {};
+
+(() => {
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+
+  /* ---------- status + telemetry ---------- */
+  let flashTimer = null;
+  UI.flash = msg => {
+    $("#st-msg").textContent = msg;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { $("#st-msg").textContent = ""; }, 3500);
+  };
+  UI.cursorPos = e => {
+    const r = $("#view").getBoundingClientRect();
+    const p = Engine.toPage(e.clientX - r.left, e.clientY - r.top);
+    $("#st-cursor").textContent = `x ${Math.round(p.x)}  y ${Math.round(p.y)} px`;
+  };
+  UI.penTelemetry = e => {
+    if (e.pointerType !== "pen") return;
+    const tail = e.buttons & 32 ? " · tail eraser" : e.buttons & 2 ? " · barrel" : "";
+    $("#pen-status").textContent =
+      `✍ pen  P ${(e.pressure || 0).toFixed(2)}  tilt ${e.tiltX | 0}°/${e.tiltY | 0}°${tail}`;
+  };
+  UI.refreshUndoButtons = () => {
+    $("#btn-undo").disabled = !Undo.canUndo;
+    $("#btn-redo").disabled = !Undo.canRedo;
+  };
+
+  /* ---------- tools ---------- */
+  const TOOL_HINTS = {
+    select: "Click an object to select. Drag to move, corner square to resize, blue dot to re-aim a balloon tail. Del removes it. Double-click text to edit.",
+    pan: "Drag to move around the page. Any tool: hold Space, use a finger, or the middle mouse button.",
+    ink: "Your finish line. Pressure drives width — light for distant/delicate, heavy for shadow-side and foreground. Vary weight within one stroke.",
+    pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
+    marker: "Translucent tone for greys and spotting blacks. Strokes don't self-overlap mid-stroke, so tone stays even.",
+    eraser: "Erases on the active layer. The Slim Pen 2's tail and barrel button switch to this automatically.",
+    fill: "Click to flood-fill a region on the active raster layer. Close your ink gaps first or it leaks.",
+    line: "Drag for a straight line. Hold Shift to snap to 15° — aim strokes at your vanishing points.",
+    rect: "Drag a rectangle. Shift = square.",
+    ellipse: "Drag an ellipse. Shift = circle.",
+    panel: "Drag a panel border on the Panels layer. Or apply a whole page template from the Guides tab.",
+    balloon: "Drag an oval speech balloon, then type. Drag its tail (select tool) to the speaker's mouth.",
+    thought: "Cloud-scalloped thought bubble with a dot trail.",
+    caption: "Rectangular narration box — time jumps, inner voice, scene labels.",
+    burst: "Jagged SFX/shout balloon. Go big.",
+  };
+  const TOOL_LABELS = {
+    select: "Select / Move", pan: "Pan", ink: "Ink pen", pencil: "Pencil",
+    marker: "Marker", eraser: "Eraser", fill: "Fill", line: "Line",
+    rect: "Rectangle", ellipse: "Ellipse", panel: "Panel", balloon: "Speech balloon",
+    thought: "Thought balloon", caption: "Caption", burst: "SFX burst",
+  };
+  const TOOL_DEFAULTS = {   // per-tool size/opacity presets
+    ink: { size: 6, opacity: 100 }, pencil: { size: 5, opacity: 80 },
+    marker: { size: 34, opacity: 60 }, eraser: { size: 26, opacity: 100 },
+    line: { size: 4 }, rect: { size: 4 }, ellipse: { size: 4 }, fill: {},
+  };
+
+  function setTool(name) {
+    Tools.state.current = name;
+    $$(".tool").forEach(b => b.classList.toggle("active", b.dataset.tool === name));
+    $("#tool-name").textContent = TOOL_LABELS[name] || name;
+    $("#tool-hint").textContent = TOOL_HINTS[name] || "";
+    const d = TOOL_DEFAULTS[name];
+    if (d) {
+      if (d.size) { $("#opt-size").value = d.size; syncSize(); }
+      if (d.opacity) { $("#opt-opacity").value = d.opacity; syncOpacity(); }
+    }
+    $("#view").style.cursor =
+      name === "pan" ? "grab" : name === "select" ? "default" : "crosshair";
+  }
+  $$(".tool").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
+  UI.setTool = setTool;   // Draw School lessons switch tools for the learner
+
+  /* ---------- tool options ---------- */
+  function syncSize() {
+    Tools.state.size = +$("#opt-size").value;
+    $("#lbl-size").textContent = $("#opt-size").value;
+  }
+  function syncOpacity() {
+    Tools.state.opacity = +$("#opt-opacity").value / 100;
+    $("#lbl-opacity").textContent = $("#opt-opacity").value;
+  }
+  $("#opt-size").addEventListener("input", syncSize);
+  $("#opt-opacity").addEventListener("input", syncOpacity);
+  $("#opt-smooth").addEventListener("input", e => {
+    Tools.state.smoothing = +e.target.value / 100;
+    $("#lbl-smooth").textContent = e.target.value;
+  });
+  $("#opt-pressure-size").addEventListener("change", e => Tools.state.pressureSize = e.target.checked);
+  $("#opt-pressure-opacity").addEventListener("change", e => Tools.state.pressureOpacity = e.target.checked);
+  $("#opt-color").addEventListener("input", e => Tools.state.color = e.target.value);
+  $("#opt-gutter").addEventListener("input", e => {
+    Tools.state.gutter = +e.target.value;
+    $("#lbl-gutter").textContent = e.target.value;
+  });
+
+  /* ---------- color palette ---------- */
+  const PALETTE = {
+    "Inks & tones": ["#000000", "#1a1a1a", "#3d3d3d", "#5c5c5c", "#7d7d7d",
+      "#9e9e9e", "#bdbdbd", "#dcdcdc", "#ffffff", "#8fb8e8" /* non-photo blue */],
+    "Vivid": ["#d93a3a", "#e8783a", "#f2c14b", "#f2e34b", "#7dc94b", "#3aa66b",
+      "#3aa6a6", "#3a6bd9", "#5b4bd9", "#8a4bb8", "#c94b9e", "#e88aa6"],
+    "Skin tones": ["#fde4d0", "#f5cba7", "#eab183", "#d29a6a", "#b97f4f",
+      "#9c6238", "#7d4a26", "#5c3419", "#3f2312"],
+    "Muted / story": ["#2c3e60", "#3c5a3c", "#6e2f3c", "#b8923a", "#5c6b7d",
+      "#8c7a5c", "#a6763c", "#d9a6a6", "#c9c2a6", "#f5eeda"],
+  };
+  UI.setColor = hex => {
+    $("#opt-color").value = hex;
+    Tools.state.color = hex;
+    UI.flash("Color " + hex);
+  };
+  const RECENT_KEY = "inkwell-recent-colors";
+  UI.noteColor = hex => {
+    let recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    recent = [hex, ...recent.filter(c => c !== hex)].slice(0, 10);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+    renderRecents();
+  };
+  const swatchEl = c => {
+    const el = document.createElement("div");
+    el.className = "swatch"; el.style.background = c; el.title = c;
+    el.addEventListener("click", () => UI.setColor(c));
+    return el;
+  };
+  function renderRecents() {
+    const host = $("#recent-swatches");
+    const recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    host.parentElement.style.display = recent.length ? "" : "none";
+    host.innerHTML = "";
+    for (const c of recent) host.appendChild(swatchEl(c));
+  }
+  {
+    const box = $("#swatches");
+    box.innerHTML = `<div class="swatch-group"><div class="swatch-label">Recent</div>
+      <div class="swatch-row" id="recent-swatches"></div></div>`;
+    for (const [label, colors] of Object.entries(PALETTE)) {
+      const g = document.createElement("div");
+      g.className = "swatch-group";
+      g.innerHTML = `<div class="swatch-label">${label}</div>`;
+      const row = document.createElement("div");
+      row.className = "swatch-row";
+      for (const c of colors) row.appendChild(swatchEl(c));
+      g.appendChild(row);
+      box.appendChild(g);
+    }
+    // full spectrum grid: 12 hues × 5 shades (pastel → deep shadow)
+    const hslHex = (h, s, l) => {
+      const a = s * Math.min(l, 1 - l);
+      const f = n => {
+        const k = (n + h / 30) % 12;
+        const v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+        return Math.round(v * 255).toString(16).padStart(2, "0");
+      };
+      return "#" + f(0) + f(8) + f(4);
+    };
+    const spec = document.createElement("div");
+    spec.className = "swatch-group";
+    spec.innerHTML = `<div class="swatch-label">Spectrum</div>`;
+    for (const [l, s] of [[0.86, 0.75], [0.70, 0.75], [0.54, 0.72], [0.38, 0.68], [0.24, 0.60]]) {
+      const row = document.createElement("div");
+      row.className = "swatch-row spectrum-row";
+      for (let h = 0; h < 360; h += 30) {
+        const el = swatchEl(hslHex(h, s, l));
+        el.classList.add("swatch-mini");
+        row.appendChild(el);
+      }
+      spec.appendChild(row);
+    }
+    box.appendChild(spec);
+    box.insertAdjacentHTML("beforeend",
+      `<div class="hint" style="margin-top:8px"><b>Alt+click</b> the canvas =
+       eyedropper — picks up the visible color under the cursor.</div>`);
+    renderRecents();
+  }
+
+  /* ---------- sidebar tabs ---------- */
+  $$(".stab").forEach(t => t.addEventListener("click", () => {
+    $$(".stab").forEach(x => x.classList.toggle("active", x === t));
+    $$(".side-panel").forEach(p => p.hidden = p.id !== t.dataset.panel);
+  }));
+
+  /* ---------- layers panel ---------- */
+  UI.refreshLayers = () => {
+    const ul = $("#layer-list");
+    ul.innerHTML = "";
+    // display top layer first (natural for artists)
+    [...App.layers].reverse().forEach(layer => {
+      const i = App.layers.indexOf(layer);
+      const li = document.createElement("li");
+      li.className = i === App.activeLayer ? "active" : "";
+      li.innerHTML = `
+        <span class="l-eye ${layer.visible ? "" : "l-off"}" title="Show/hide">👁</span>
+        <span class="l-lock ${layer.locked ? "" : "l-off"}" title="Lock">🔒</span>
+        <span class="l-name">${layer.name}</span>
+        <span class="l-kind">${layer.kind === "objects" ? layer.role : (layer.tint ? "blue" : "raster")}</span>`;
+      li.querySelector(".l-eye").addEventListener("click", e => {
+        e.stopPropagation(); layer.visible = !layer.visible;
+        App.dirty = true; UI.refreshLayers();
+      });
+      li.querySelector(".l-lock").addEventListener("click", e => {
+        e.stopPropagation(); layer.locked = !layer.locked; UI.refreshLayers();
+      });
+      li.addEventListener("click", () => {
+        App.activeLayer = i;
+        $("#opt-layeropacity").value = Math.round(layer.opacity * 100);
+        $("#lbl-layeropacity").textContent = Math.round(layer.opacity * 100);
+        UI.refreshLayers();
+      });
+      ul.appendChild(li);
+    });
+  };
+  $("#btn-layer-add").addEventListener("click", () => {
+    const layer = makeRasterLayer("Layer " + (App.layers.length + 1));
+    App.layers.splice(App.activeLayer + 1, 0, layer);
+    App.activeLayer++;
+    App.dirty = true; UI.refreshLayers();
+  });
+  $("#btn-layer-del").addEventListener("click", () => {
+    const l = activeLayer();
+    if (l.kind === "objects") return UI.flash("Panels/Lettering layers are structural — hide them instead.");
+    if (App.layers.filter(x => x.kind === "raster").length <= 1)
+      return UI.flash("Keep at least one raster layer.");
+    if (!confirm(`Delete layer "${l.name}"?`)) return;
+    App.layers.splice(App.activeLayer, 1);
+    App.activeLayer = Math.max(0, App.activeLayer - 1);
+    Undo.clear();     // snapshot closures reference the dead layer
+    App.dirty = true; UI.refreshLayers();
+  });
+  const moveLayer = dir => {
+    const i = App.activeLayer, j = i + dir;
+    if (j < 0 || j >= App.layers.length) return;
+    [App.layers[i], App.layers[j]] = [App.layers[j], App.layers[i]];
+    App.activeLayer = j;
+    App.dirty = true; UI.refreshLayers();
+  };
+  $("#btn-layer-up").addEventListener("click", () => moveLayer(1));
+  $("#btn-layer-down").addEventListener("click", () => moveLayer(-1));
+  $("#opt-layeropacity").addEventListener("input", e => {
+    activeLayer().opacity = +e.target.value / 100;
+    $("#lbl-layeropacity").textContent = e.target.value;
+    App.dirty = true;
+  });
+
+  /* ---------- guides checkboxes ---------- */
+  const bindGuide = (id, key) => $(id).addEventListener("change", e => {
+    App.guides[key] = e.target.checked; App.dirty = true;
+  });
+  bindGuide("#g-thirds", "thirds"); bindGuide("#g-golden", "golden");
+  bindGuide("#g-center", "center"); bindGuide("#g-persp", "persp");
+  $("#g-vps").addEventListener("change", e => { App.guides.vps = +e.target.value; App.dirty = true; });
+  $("#chk-printguides").addEventListener("change", e => {
+    App.guides.printGuides = e.target.checked; App.dirty = true;
+  });
+  $("#chk-penonly").addEventListener("change", e => {
+    App.penOnly = e.target.checked;
+    UI.flash(App.penOnly ? "Pen-only: mouse & touch won't draw" : "Mouse drawing re-enabled");
+  });
+
+  /* ---------- top bar ---------- */
+  $("#btn-undo").addEventListener("click", () => Undo.undo());
+  $("#btn-redo").addEventListener("click", () => Undo.redo());
+  $("#btn-export").addEventListener("click", () => {
+    Engine.exportPNG(true);
+    UI.flash("Exported PNG (with bleed). Hide the Pencils layer first if you see blue lines!");
+  });
+
+  $("#btn-save").addEventListener("click", async () => {
+    if (App.projectName === "untitled") {
+      const n = prompt("Project name:", "my-comic");
+      if (!n) return;
+      App.projectName = n.trim();
+    }
+    try {
+      const r = await apiSave();
+      UI.flash(r.ok ? `Saved "${App.projectName}" ✓` : "Save failed: " + r.error);
+    } catch { UI.flash("Save failed — is server.py running?"); }
+    updatePageStatus();
+  });
+
+  /* ---------- modal: open / new ---------- */
+  const backdrop = $("#modal-backdrop"), modal = $("#modal");
+  const closeModal = () => backdrop.hidden = true;
+  backdrop.addEventListener("click", e => { if (e.target === backdrop) closeModal(); });
+
+  $("#btn-open").addEventListener("click", async () => {
+    let list;
+    try { list = (await apiList()).projects; }
+    catch { return UI.flash("Backend unreachable — is server.py running?"); }
+    modal.innerHTML = `<h2>Open project</h2>` + (list.length === 0
+      ? `<p class="muted">No saved projects yet. Draw something and hit Save!</p>`
+      : list.map(p => `<div class="proj-row" data-name="${p.name}">
+          <span>📄</span><b style="flex:1">${p.name}</b>
+          <span class="muted">${p.sizeKb} KB · ${new Date(p.modified * 1000).toLocaleDateString()}</span>
+          <button class="p-del" data-name="${p.name}" title="Delete">🗑</button></div>`).join(""));
+    backdrop.hidden = false;
+    modal.querySelectorAll(".proj-row").forEach(row =>
+      row.addEventListener("click", async e => {
+        if (e.target.classList.contains("p-del")) return;
+        const data = await apiLoad(row.dataset.name);
+        loadProjectData(data);
+        closeModal(); Engine.fitPage(); UI.refreshLayers(); updatePageStatus();
+        UI.flash(`Opened "${data.name}"`);
+      }));
+    modal.querySelectorAll(".p-del").forEach(btn =>
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        if (!confirm(`Delete project "${btn.dataset.name}" permanently?`)) return;
+        await fetch(`/api/projects/${encodeURIComponent(btn.dataset.name)}`, { method: "DELETE" });
+        $("#btn-open").click();   // rebuild list
+      }));
+  });
+
+  function newPageModal(firstRun = false) {
+    modal.innerHTML = `<h2>${firstRun ? "Welcome to Inkwell 🖋" : "New page"}</h2>
+      ${firstRun ? `<p class="muted" style="margin-top:-6px">Pick a page format —
+        real print dimensions with proper bleed and safe areas.</p>` : ""}
+      <div class="preset-grid">${Object.entries(PAGE_PRESETS).map(([k, p]) =>
+        `<div class="preset" data-k="${k}"><b>${p.label}</b>
+         <span class="muted">${p.note}</span></div>`).join("")}</div>`;
+    backdrop.hidden = false;
+    modal.querySelectorAll(".preset").forEach(el =>
+      el.addEventListener("click", () => {
+        newPage(el.dataset.k);
+        App.projectName = "untitled";
+        closeModal(); Engine.fitPage(); UI.refreshLayers(); updatePageStatus();
+        if (firstRun) Tour.start();
+      }));
+  }
+  $("#btn-new").addEventListener("click", () => newPageModal(false));
+
+  function updatePageStatus() {
+    const p = PAGE_PRESETS[App.page.presetKey];
+    $("#st-page").textContent =
+      `${App.projectName} — ${p.label} @ ${App.page.dpi}dpi (${App.page.w}×${App.page.h}px)`;
+  }
+
+  /* ---------- keyboard ---------- */
+  const KEYMAP = { v: "select", h: "pan", b: "ink", p: "pencil", m: "marker",
+                   e: "eraser", g: "fill", k: "panel", t: "balloon" };
+  window.addEventListener("keydown", e => {
+    if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
+    if (e.code === "Space" && !e.repeat) { Tools.setSpacePan(true); e.preventDefault(); return; }
+    if (e.ctrlKey || e.metaKey) {
+      const k = e.key.toLowerCase();
+      if (k === "z") { e.shiftKey ? Undo.redo() : Undo.undo(); e.preventDefault(); }
+      else if (k === "y") { Undo.redo(); e.preventDefault(); }
+      else if (k === "s") { $("#btn-save").click(); e.preventDefault(); }
+      else if (k === "o") { $("#btn-open").click(); e.preventDefault(); }
+      else if (k === "e") { $("#btn-export").click(); e.preventDefault(); }
+      else if (k === "n" && e.altKey) { $("#btn-new").click(); e.preventDefault(); }
+      else if (k === "0") { Engine.fitPage(); e.preventDefault(); }
+      return;
+    }
+    const tool = KEYMAP[e.key.toLowerCase()];
+    if (tool) return setTool(tool);
+    if (e.key === "Delete" || e.key === "Backspace") Tools.deleteSelection();
+    if (e.key === "[") { $("#opt-size").value = Math.max(1, +$("#opt-size").value - 2); syncSize(); }
+    if (e.key === "]") { $("#opt-size").value = Math.min(120, +$("#opt-size").value + 2); syncSize(); }
+  });
+  window.addEventListener("keyup", e => {
+    if (e.code === "Space") Tools.setSpacePan(false);
+  });
+
+  /* ---------- guided tour ---------- */
+  const Tour = (() => {
+    const STEPS = [
+      ["#toolrail", "Your tool rail. Top to bottom: select & pan, then the drawing tools (ink, blue pencil, marker, eraser, fill), geometry tools, and the comic tools — panels and four kinds of balloons. Hover anything for its shortcut."],
+      ["#view", "The page. Red line = trim (where the printer cuts), blue dashes = safe area (keep text inside). Draw with your Slim Pen — pressure changes line width, the tail end erases. Fingers pan & pinch-zoom; your palm won't draw."],
+      ["#side-tabs", "Five tabs: TOOL options (size, pressure, color) · LAYERS (the pro pipeline: Panels→Pencils→Colors→Inks→Lettering) · GUIDES (perspective grids & page templates) · LEARN (comic-craft mini-lessons) · LIBRARY (your drawing books + free classics)."],
+      ["#tab-tool", "Tool options. 'Pressure → size' is what makes ink lines live and breathe. Smoothing steadies shaky lines — crank it for long confident curves."],
+      ["[data-panel=tab-guides]", "In GUIDES: one-click page templates (6-grid, 9-panel, 4-koma, widescreen…), rule-of-thirds overlays, and a draggable 1/2/3-point perspective grid."],
+      ["[data-panel=tab-learn]", "LEARN is the craft manual: panel transitions, balloon rules, the 180° rule, pacing, spotting blacks. Short enough to read mid-drawing."],
+      ["#btn-save", "Save stores the whole layered project on your machine (the projects folder). Export PNG flattens the visible layers — hide Pencils first. That's it: pick a template and make a page! 🖋"],
+    ];
+    let i = -1, target = null;
+    const pop = $("#tour-pop");
+    function show() {
+      if (target) target.classList.remove("tour-target");
+      if (i >= STEPS.length) { pop.hidden = true; return; }
+      const [sel, text] = STEPS[i];
+      target = $(sel);
+      if (!target) { i++; return show(); }
+      target.classList.add("tour-target");
+      $("#tour-text").textContent = text;
+      $("#tour-count").textContent = `${i + 1} / ${STEPS.length}`;
+      $("#tour-next").textContent = i === STEPS.length - 1 ? "Done ✓" : "Next ›";
+      pop.hidden = false;
+      const r = target.getBoundingClientRect();
+      const px = Math.min(window.innerWidth - 310, Math.max(10, r.right + 12));
+      pop.style.left = (r.right + 310 > window.innerWidth ? Math.max(10, r.left - 310) : px) + "px";
+      pop.style.top = Math.min(window.innerHeight - 180, Math.max(10, r.top)) + "px";
+    }
+    $("#tour-next").addEventListener("click", () => { i++; show(); });
+    $("#tour-skip").addEventListener("click", () => { i = STEPS.length; show(); });
+    return { start() { i = 0; show(); localStorage.setItem("inkwell-toured", "1"); } };
+  })();
+  $("#btn-tour").addEventListener("click", () => Tour.start());
+
+  /* ---------- boot ---------- */
+  newPage("us-comic");
+  Tools.bind();
+  Panels.buildTemplateList();
+  Reference.buildLearn();
+  Reference.buildLibrary();
+  Tutorial.buildUI();
+  UI.refreshLayers();
+  UI.refreshUndoButtons();
+  setTool("ink");
+  Engine.start();
+  updatePageStatus();
+
+  if (!localStorage.getItem("inkwell-toured")) newPageModal(true);
+  else updatePageStatus();
+})();

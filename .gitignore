@@ -1,0 +1,17 @@
+# personal saved comics — can be large (layer bitmaps) and are per-machine
+projects/*.json
+projects/*.json.tmp
+
+# per-machine settings (personal paths stay out of the repo)
+config.json
+
+# local reference library default location
+drawing-resources/
+
+# OS noise
+Thumbs.db
+Desktop.ini
+
+# python
+__pycache__/
+*.pyc

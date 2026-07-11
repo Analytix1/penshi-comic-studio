@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Inkwell — Comic Studio</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ===== Top bar ===== -->
+<header id="topbar">
+  <div class="brand">🖋 <b>Inkwell</b><span class="muted"> comic studio</span></div>
+
+  <div class="tb-group">
+    <button id="btn-new"  title="New page (Ctrl+Alt+N)">New</button>
+    <button id="btn-save" title="Save project (Ctrl+S)">Save</button>
+    <button id="btn-open" title="Open project (Ctrl+O)">Open</button>
+    <button id="btn-export" title="Export flattened PNG (Ctrl+E)">Export PNG</button>
+  </div>
+
+  <div class="tb-group">
+    <button id="btn-undo" title="Undo (Ctrl+Z)">↩ Undo</button>
+    <button id="btn-redo" title="Redo (Ctrl+Y)">↪ Redo</button>
+  </div>
+
+  <div class="tb-group">
+    <label class="chk" title="Ignore touch/finger input while drawing — rest your palm freely">
+      <input type="checkbox" id="chk-penonly"> Pen-only ✍
+    </label>
+    <label class="chk" title="Show trim, bleed and safe-area guides">
+      <input type="checkbox" id="chk-printguides" checked> Print guides
+    </label>
+  </div>
+
+  <div class="tb-group">
+    <button id="btn-tour" title="Replay the guided tour">? Tour</button>
+  </div>
+
+  <div class="spacer"></div>
+  <div id="pen-status" class="muted" title="Live stylus telemetry">no pen detected</div>
+</header>
+
+<div id="workspace">
+
+  <!-- ===== Left tool rail ===== -->
+  <nav id="toolrail">
+    <button class="tool" data-tool="select" title="Select / move objects (V)">⬚</button>
+    <button class="tool" data-tool="pan"    title="Pan the page (H, or hold Space)">✋</button>
+    <hr>
+    <button class="tool active" data-tool="ink"    title="Ink pen — pressure controls width (B)">🖋</button>
+    <button class="tool" data-tool="pencil" title="Pencil — non-photo blue roughs (P)">✏️</button>
+    <button class="tool" data-tool="marker" title="Marker — soft translucent tone (M)">🖍</button>
+    <button class="tool" data-tool="eraser" title="Eraser (E) — Slim Pen tail also erases">◻</button>
+    <button class="tool" data-tool="fill"   title="Fill / paint bucket (G)">🪣</button>
+    <hr>
+    <button class="tool" data-tool="line"    title="Straight line (Shift = 15° snap)">╱</button>
+    <button class="tool" data-tool="rect"    title="Rectangle (Shift = square)">▭</button>
+    <button class="tool" data-tool="ellipse" title="Ellipse (Shift = circle)">◯</button>
+    <hr>
+    <button class="tool" data-tool="panel"   title="Draw a comic panel (K)">🗖</button>
+    <button class="tool" data-tool="balloon" title="Speech balloon (T then drag)">💬</button>
+    <button class="tool" data-tool="thought" title="Thought balloon">💭</button>
+    <button class="tool" data-tool="caption" title="Caption box">🏷</button>
+    <button class="tool" data-tool="burst"   title="SFX burst balloon">💥</button>
+  </nav>
+
+  <!-- ===== Canvas stage ===== -->
+  <main id="stage">
+    <canvas id="view"></canvas>
+    <textarea id="text-editor" spellcheck="false"></textarea>
+    <div id="zoom-hud" class="muted"></div>
+    <div id="lesson-panel" hidden></div>
+  </main>
+
+  <!-- ===== Right sidebar ===== -->
+  <aside id="sidebar">
+    <div id="side-tabs">
+      <button class="stab active" data-panel="tab-tool">Tool</button>
+      <button class="stab" data-panel="tab-layers">Layers</button>
+      <button class="stab" data-panel="tab-guides">Guides</button>
+      <button class="stab" data-panel="tab-learn">Learn</button>
+      <button class="stab" data-panel="tab-library">Library</button>
+    </div>
+
+    <!-- Tool options -->
+    <section id="tab-tool" class="side-panel">
+      <h3 id="tool-name">Ink pen</h3>
+      <label>Size <span id="lbl-size">6</span>px
+        <input type="range" id="opt-size" min="1" max="120" value="6"></label>
+      <label>Opacity <span id="lbl-opacity">100</span>%
+        <input type="range" id="opt-opacity" min="5" max="100" value="100"></label>
+      <label>Smoothing <span id="lbl-smooth">40</span>%
+        <input type="range" id="opt-smooth" min="0" max="90" value="40"></label>
+      <label class="chk"><input type="checkbox" id="opt-pressure-size" checked>
+        Pressure → size</label>
+      <label class="chk"><input type="checkbox" id="opt-pressure-opacity">
+        Pressure → opacity</label>
+      <label>Color <input type="color" id="opt-color" value="#1a1a1a"></label>
+      <div id="swatches"></div>
+      <div id="tool-hint" class="hint"></div>
+    </section>
+
+    <!-- Layers -->
+    <section id="tab-layers" class="side-panel" hidden>
+      <div class="row">
+        <button id="btn-layer-add" title="Add raster layer">＋ Layer</button>
+        <button id="btn-layer-del" title="Delete selected layer">🗑</button>
+        <button id="btn-layer-up" title="Move layer up">▲</button>
+        <button id="btn-layer-down" title="Move layer down">▼</button>
+      </div>
+      <label>Layer opacity <span id="lbl-layeropacity">100</span>%
+        <input type="range" id="opt-layeropacity" min="0" max="100" value="100"></label>
+      <ul id="layer-list"></ul>
+      <div class="hint">Standard comic workflow runs bottom-to-top:
+        <b>Panels → Pencils → Inks → Colors → Lettering</b>.
+        Pencil roughs on the blue layer, ink on the layer above, and your
+        blue lines vanish at export with one click of its 👁.</div>
+    </section>
+
+    <!-- Guides -->
+    <section id="tab-guides" class="side-panel" hidden>
+      <h3>Composition guides</h3>
+      <label class="chk"><input type="checkbox" id="g-thirds"> Rule of thirds</label>
+      <label class="chk"><input type="checkbox" id="g-golden"> Golden-ratio grid</label>
+      <label class="chk"><input type="checkbox" id="g-center"> Center cross</label>
+      <h3>Perspective</h3>
+      <label class="chk"><input type="checkbox" id="g-persp"> Perspective grid</label>
+      <label>Vanishing points
+        <select id="g-vps"><option value="1">1-point</option>
+        <option value="2" selected>2-point</option>
+        <option value="3">3-point</option></select></label>
+      <div class="hint">Drag the <b>⊕ vanishing points</b> and the horizon line
+        directly on the canvas. Guides never export — they're a drafting
+        overlay, like a real light table.</div>
+      <h3>Panel templates</h3>
+      <div id="template-list"></div>
+      <label>Gutter <span id="lbl-gutter">14</span>px
+        <input type="range" id="opt-gutter" min="4" max="60" value="14"></label>
+    </section>
+
+    <!-- Learn: comic + art mechanics -->
+    <section id="tab-learn" class="side-panel" hidden>
+      <div id="learn-content"></div>
+    </section>
+
+    <!-- Library: user's files + free books -->
+    <section id="tab-library" class="side-panel" hidden>
+      <div id="library-content"></div>
+    </section>
+  </aside>
+</div>
+
+<!-- ===== Status bar ===== -->
+<footer id="statusbar">
+  <span id="st-page"></span><span id="st-cursor"></span><span id="st-msg"></span>
+</footer>
+
+<!-- ===== Modal (new page / open project) ===== -->
+<div id="modal-backdrop" hidden>
+  <div id="modal"></div>
+</div>
+
+<!-- ===== Guided tour ===== -->
+<div id="tour-pop" hidden>
+  <div id="tour-text"></div>
+  <div class="row">
+    <button id="tour-skip">Skip</button>
+    <span id="tour-count" class="muted"></span>
+    <button id="tour-next">Next ›</button>
+  </div>
+</div>
+
+<script src="js/state.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/lettering.js"></script>
+<script src="js/guides.js"></script>
+<script src="js/reference.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
