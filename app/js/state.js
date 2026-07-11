@@ -25,7 +25,9 @@ const PAGE_PRESETS = {
 const App = {
   projectName: "untitled",
   page: null,          // { presetKey, w, h, dpi, bleed, safe }  (pixels)
-  layers: [],          // bottom -> top
+  layers: [],          // bottom -> top (the LIVE page)
+  pages: [],           // volume: serialized snapshots of every page
+  pageIndex: 0,        // which snapshot the live page corresponds to
   activeLayer: 0,
   selection: null,     // selected object {layer, obj} for select tool
   view: { zoom: 0.5, panX: 0, panY: 0 },
@@ -58,7 +60,8 @@ function makeObjectLayer(name, role) {
            visible: true, locked: false, opacity: 1 };
 }
 
-function newPage(presetKey) {
+/* Build a blank live page (canvas + default layer stack) */
+function buildFreshPage(presetKey) {
   const p = PAGE_PRESETS[presetKey] || PAGE_PRESETS["us-comic"];
   const px = v => Math.round(v * p.dpi);
   App.page = {
@@ -78,8 +81,91 @@ function newPage(presetKey) {
   App.layers = [App.layers[0], App.layers[1], App.layers[3], App.layers[2], App.layers[4]];
   App.activeLayer = 3;             // start on Inks
   App.selection = null;
-  Undo.clear();
   App.dirty = true;
+}
+
+/* Start a brand-new single-page volume */
+function newPage(presetKey) {
+  buildFreshPage(presetKey);
+  App.pages = [serializePage()];
+  App.pageIndex = 0;
+  Undo.clear();
+  UI?.refreshPageTabs?.();
+}
+
+/* ============================================================
+   Volume (multi-page) management. App.layers is always the ONE
+   live page; the others sit serialized in App.pages. Switching
+   pages snapshots the live page back into its slot, then rebuilds
+   the target from its snapshot.
+   ============================================================ */
+function serializePage() {
+  return {
+    page: App.page,
+    guides: JSON.parse(JSON.stringify(App.guides)),
+    layers: App.layers.map(l => l.kind === "raster"
+      ? { kind: "raster", name: l.name, visible: l.visible, locked: l.locked,
+          opacity: l.opacity, tint: l.tint, png: snapshotRaster(l) }
+      : { kind: "objects", role: l.role, name: l.name, visible: l.visible,
+          locked: l.locked, opacity: l.opacity, objects: l.objects }),
+  };
+}
+
+async function loadPage(data) {
+  App.page = data.page;
+  Object.assign(App.guides, data.guides || {});
+  const waits = [];
+  App.layers = data.layers.map(l => {
+    if (l.kind === "raster") {
+      const layer = makeRasterLayer(l.name, { tint: l.tint, opacity: l.opacity });
+      layer.visible = l.visible; layer.locked = l.locked;
+      if (l.png) {
+        waits.push(restoreRaster(layer, l.png));
+        // loaded pixels become the rebuild base; the op log starts fresh,
+        // so the stroke eraser applies to strokes drawn from now on
+        layer.baseImg = new Image();
+        layer.baseImg.src = l.png;
+      }
+      return layer;
+    }
+    const layer = makeObjectLayer(l.name, l.role);
+    Object.assign(layer, { visible: l.visible, locked: l.locked,
+                           opacity: l.opacity, objects: l.objects || [] });
+    return layer;
+  });
+  App.activeLayer = Math.min(3, App.layers.length - 1);
+  App.selection = null;
+  await Promise.all(waits);
+  App.dirty = true;
+}
+
+function syncCurrentPage() { App.pages[App.pageIndex] = serializePage(); }
+
+async function switchPage(i) {
+  if (i === App.pageIndex || i < 0 || i >= App.pages.length) return;
+  syncCurrentPage();
+  App.pageIndex = i;
+  await loadPage(App.pages[i]);
+  Undo.clear();                    // undo history is per-visit, not per-page
+  UI?.refreshLayers?.(); UI?.refreshPageTabs?.();
+}
+
+async function addPage() {
+  syncCurrentPage();
+  buildFreshPage(App.page.presetKey);   // same format as the current page
+  App.pageIndex = App.pages.length;
+  App.pages.push(serializePage());
+  Undo.clear();
+  UI?.refreshLayers?.(); UI?.refreshPageTabs?.();
+}
+
+async function deleteCurrentPage() {
+  if (App.pages.length <= 1) { UI?.flash?.("A volume needs at least one page."); return; }
+  App.pages.splice(App.pageIndex, 1);
+  App.pageIndex = Math.min(App.pageIndex, App.pages.length - 1);
+  await loadPage(App.pages[App.pageIndex]);
+  Undo.clear();
+  UI?.refreshLayers?.(); UI?.refreshPageTabs?.();
 }
 
 function activeLayer() { return App.layers[App.activeLayer]; }
@@ -119,15 +205,19 @@ const Undo = {
 function snapshotRaster(layer) { return layer.canvas.toDataURL("image/png"); }
 
 function restoreRaster(layer, dataUrl) {
-  const img = new Image();
-  img.onload = () => {
-    const ctx = layer.canvas.getContext("2d");
-    ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
-    ctx.drawImage(img, 0, 0);
-    layer._stamp = (layer._stamp || 0) + 1;   // invalidate tint cache
-    App.dirty = true;
-  };
-  img.src = dataUrl;
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ctx = layer.canvas.getContext("2d");
+      ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+      ctx.drawImage(img, 0, 0);
+      layer._stamp = (layer._stamp || 0) + 1;   // invalidate tint cache
+      App.dirty = true;
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = dataUrl;
+  });
 }
 
 /* Call around any raster mutation. opsDelta keeps the layer's op log in
@@ -158,6 +248,17 @@ function commitRasterChange(layer, beforeUrl, opsDelta = null) {
   });
 }
 
+/* For bulk op-log mutations (lasso move/delete): snapshot pixels AND the
+   whole ops array, because many ops changed at once. */
+function commitRasterOpsSnapshot(layer, beforeUrl, beforeOpsJson) {
+  const afterUrl = snapshotRaster(layer);
+  const afterOpsJson = JSON.stringify(layer.ops);
+  Undo.push({
+    undo: () => { restoreRaster(layer, beforeUrl); layer.ops = JSON.parse(beforeOpsJson); },
+    redo: () => { restoreRaster(layer, afterUrl); layer.ops = JSON.parse(afterOpsJson); },
+  });
+}
+
 /* Call around any object-layer mutation */
 function commitObjectChange(layer, beforeJson) {
   const afterJson = JSON.stringify(layer.objects);
@@ -169,48 +270,33 @@ function commitObjectChange(layer, beforeJson) {
 
 /* ============================================================
    Serialization  <->  backend  (/api/projects)
+   v2 = multi-page volume {pages: [...], current}.
+   v1 (old single-page saves) is migrated on load.
    ============================================================ */
 function serializeProject() {
+  syncCurrentPage();
   return JSON.stringify({
-    version: 1,
+    version: 2,
     name: App.projectName,
-    page: App.page,
-    guides: App.guides,
-    layers: App.layers.map(l => l.kind === "raster"
-      ? { kind: "raster", name: l.name, visible: l.visible, locked: l.locked,
-          opacity: l.opacity, tint: l.tint, png: snapshotRaster(l) }
-      : { kind: "objects", role: l.role, name: l.name, visible: l.visible,
-          locked: l.locked, opacity: l.opacity, objects: l.objects }),
+    pages: App.pages,
+    current: App.pageIndex,
   });
 }
 
-function loadProjectData(data) {
+async function loadProjectData(data) {
   App.projectName = data.name || "untitled";
-  App.page = data.page;
-  Object.assign(App.guides, data.guides || {});
+  if (data.version === 2) {
+    App.pages = data.pages;
+    App.pageIndex = Math.min(data.current || 0, App.pages.length - 1);
+  } else {
+    // v1: one page at the top level -> wrap it as a one-page volume
+    App.pages = [{ page: data.page, guides: data.guides, layers: data.layers }];
+    App.pageIndex = 0;
+  }
   _layerSeq = 0;
-  App.layers = data.layers.map(l => {
-    if (l.kind === "raster") {
-      const layer = makeRasterLayer(l.name, { tint: l.tint, opacity: l.opacity });
-      layer.visible = l.visible; layer.locked = l.locked;
-      if (l.png) {
-        restoreRaster(layer, l.png);
-        // loaded pixels become the rebuild base; the op log starts fresh,
-        // so the stroke eraser applies to strokes drawn from now on
-        layer.baseImg = new Image();
-        layer.baseImg.src = l.png;
-      }
-      return layer;
-    }
-    const layer = makeObjectLayer(l.name, l.role);
-    Object.assign(layer, { visible: l.visible, locked: l.locked,
-                           opacity: l.opacity, objects: l.objects || [] });
-    return layer;
-  });
-  App.activeLayer = Math.min(3, App.layers.length - 1);
-  App.selection = null;
+  await loadPage(App.pages[App.pageIndex]);
   Undo.clear();
-  App.dirty = true;
+  UI?.refreshPageTabs?.();
 }
 
 async function apiSave() {

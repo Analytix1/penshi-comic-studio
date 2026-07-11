@@ -16,7 +16,8 @@
     <button id="btn-new"  title="New page (Ctrl+Alt+N)">New</button>
     <button id="btn-save" title="Save project (Ctrl+S)">Save</button>
     <button id="btn-open" title="Open project (Ctrl+O)">Open</button>
-    <button id="btn-export" title="Export flattened PNG (Ctrl+E)">Export PNG</button>
+    <button id="btn-export" title="Export this page as flattened PNG (Ctrl+E)">Export PNG</button>
+    <button id="btn-export-all" title="Export every page of the volume as numbered PNGs">Export all</button>
   </div>
 
   <div class="tb-group">
@@ -46,6 +47,7 @@
   <!-- ===== Left tool rail ===== -->
   <nav id="toolrail">
     <button class="tool" data-tool="select" title="Select / move objects (V)">⬚</button>
+    <button class="tool" data-tool="lasso" title="Lasso — circle strokes to group, move, delete or save as an asset (L)">◌</button>
     <button class="tool" data-tool="pan"    title="Pan the page (H, or hold Space)">✋</button>
     <hr>
     <button class="tool active" data-tool="ink"    title="Ink pen — pressure controls width (B)">🖋</button>
@@ -72,6 +74,13 @@
     <textarea id="text-editor" spellcheck="false"></textarea>
     <div id="zoom-hud" class="muted"></div>
     <div id="lesson-panel" hidden></div>
+    <div id="page-tabs"></div>
+    <div id="lasso-actions" hidden>
+      <span id="lasso-count" class="muted"></span>
+      <button id="lasso-save" title="Save the circled strokes to your asset library">📦 Save asset</button>
+      <button id="lasso-del" title="Delete the circled strokes">🗑</button>
+      <button id="lasso-clear" title="Clear selection (Esc)">✕</button>
+    </div>
   </main>
 
   <!-- ===== Right sidebar ===== -->

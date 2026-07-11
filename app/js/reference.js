@@ -160,7 +160,12 @@ const Reference = (() => {
     for (const [title, body] of LESSONS) {
       const d = document.createElement("details");
       d.className = "learn";
-      d.innerHTML = `<summary>${title}</summary><div class="body">${body}</div>`;
+      d.innerHTML = `<summary>${title}<span class="pop" title="Open in a floating window — keep several lessons open while you draw">⧉</span></summary>
+        <div class="body">${body}</div>`;
+      d.querySelector(".pop").addEventListener("click", e => {
+        e.preventDefault(); e.stopPropagation();
+        UI.popout(title, `<div class="body">${body}</div>`);
+      });
       host.appendChild(d);
     }
   }
@@ -188,7 +193,26 @@ const Reference = (() => {
       mine = `<div class="hint">Couldn't reach the backend resource API.</div>`;
     }
 
+    /* personal asset library — drawn stamps saved with the lasso tool */
+    let assetsHtml = "";
+    try {
+      const a = await (await fetch("/api/assets")).json();
+      assetsHtml = a.assets.length
+        ? `<div id="asset-grid">${a.assets.map(x => `
+            <div class="asset" data-id="${x.id}" data-w="${x.w}" data-h="${x.h}"
+                 title="Click to stamp '${x.name}' onto the page">
+              <img src="${x.png}" alt="${x.name}">
+              <span class="a-name">${x.name}</span>
+              <button class="a-del" data-id="${x.id}" title="Delete asset">✕</button>
+            </div>`).join("")}</div>`
+        : `<div class="hint">No assets yet. Draw something (a pair of eyes, a
+           title, a prop), circle it with the <b>Lasso ◌</b> tool, and hit
+           <b>📦 Save asset</b>. It'll live here, ready to stamp onto any page
+           of any project.</div>`;
+    } catch { assetsHtml = `<div class="hint">Asset API unreachable.</div>`; }
+
     host.innerHTML = `
+      <h3>My assets</h3>${assetsHtml}
       <h3>Your shelf</h3>${mine}
       <h3>Free classics (legit public domain)</h3>
       ${FREE_BOOKS.map(([t, d, url]) => `
@@ -199,6 +223,19 @@ const Reference = (() => {
         Snap (Win+←/→) and draw from it — study, don't trace-and-paste.
         These books are drawn from Project Gutenberg and the Internet
         Archive's public-domain collections.</div>`;
+
+    host.querySelectorAll(".asset").forEach(el =>
+      el.addEventListener("click", e => {
+        if (e.target.classList.contains("a-del")) return;
+        Tools.startPlacing(el.querySelector("img").src, +el.dataset.w, +el.dataset.h);
+      }));
+    host.querySelectorAll(".a-del").forEach(btn =>
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        if (!confirm("Delete this asset from your library?")) return;
+        await fetch(`/api/assets/${btn.dataset.id}`, { method: "DELETE" });
+        buildLibrary();
+      }));
   }
 
   return { buildLearn, buildLibrary };

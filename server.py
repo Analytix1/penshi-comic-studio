@@ -14,6 +14,7 @@ import mimetypes
 import os
 import re
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -21,6 +22,7 @@ from urllib.parse import unquote, urlparse
 ROOT = Path(__file__).resolve().parent
 APP_DIR = ROOT / "app"
 PROJECTS_DIR = ROOT / "projects"
+ASSETS_DIR = ROOT / "assets"      # personal reusable art stamps (eyes, titles, ...)
 
 # The user's personal reference library (PDFs/images shown in the Library tab).
 # Resolution order:
@@ -109,18 +111,24 @@ class InkwellHandler(BaseHTTPRequestHandler):
             return self.list_resources()
         if path.startswith("/resources/"):
             return self.serve_resource(path.removeprefix("/resources/"))
+        if path == "/api/assets":
+            return self.list_assets()
         return self.serve_static(path)
 
     def do_POST(self):
         path = unquote(urlparse(self.path).path)
         if path.startswith("/api/projects/"):
             return self.save_project(path.removeprefix("/api/projects/"))
+        if path == "/api/assets":
+            return self.save_asset()
         self.send_json({"error": "not found"}, 404)
 
     def do_DELETE(self):
         path = unquote(urlparse(self.path).path)
         if path.startswith("/api/projects/"):
             return self.delete_project(path.removeprefix("/api/projects/"))
+        if path.startswith("/api/assets/"):
+            return self.delete_asset(path.removeprefix("/api/assets/"))
         self.send_json({"error": "not found"}, 404)
 
     # ---------- static frontend ----------
@@ -192,6 +200,45 @@ class InkwellHandler(BaseHTTPRequestHandler):
             return self.send_json({"ok": True})
         self.send_json({"error": "no such project"}, 404)
 
+    # ---------- personal asset library (reusable art stamps) ----------
+
+    def list_assets(self):
+        items = []
+        for f in sorted(ASSETS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime,
+                        reverse=True):
+            try:
+                items.append(json.loads(f.read_text(encoding="utf-8")) | {"id": f.stem})
+            except (json.JSONDecodeError, OSError):
+                continue
+        self.send_json({"assets": items})
+
+    def save_asset(self):
+        length = int(self.headers.get("Content-Length", 0))
+        if length <= 0 or length > 20 * 1024 * 1024:
+            return self.send_json({"error": "bad payload size"}, 400)
+        try:
+            data = json.loads(self.rfile.read(length))
+            name = str(data["name"])[:60] or "asset"
+            asset = {"name": name, "png": str(data["png"]),
+                     "w": int(data["w"]), "h": int(data["h"])}
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError):
+            return self.send_json({"error": "bad asset payload"}, 400)
+        if not asset["png"].startswith("data:image/png;base64,"):
+            return self.send_json({"error": "png must be a png data URL"}, 400)
+        asset_id = f"{int(time.time() * 1000)}"
+        target = safe_child(ASSETS_DIR, asset_id + ".json")
+        target.write_text(json.dumps(asset), encoding="utf-8")
+        self.send_json({"ok": True, "id": asset_id})
+
+    def delete_asset(self, asset_id: str):
+        if not re.match(r"^\d{6,20}$", asset_id):
+            return self.send_json({"error": "bad asset id"}, 400)
+        target = safe_child(ASSETS_DIR, asset_id + ".json")
+        if target and target.is_file():
+            target.unlink()
+            return self.send_json({"ok": True})
+        self.send_json({"error": "no such asset"}, 404)
+
     # ---------- personal resource library ----------
 
     def list_resources(self):
@@ -218,6 +265,7 @@ class InkwellHandler(BaseHTTPRequestHandler):
 
 def main():
     PROJECTS_DIR.mkdir(exist_ok=True)
+    ASSETS_DIR.mkdir(exist_ok=True)
     server = ThreadingHTTPServer(("127.0.0.1", PORT), InkwellHandler)
     print(f"Inkwell Comic Studio -> http://localhost:{PORT}")
     print(f"  projects : {PROJECTS_DIR}")

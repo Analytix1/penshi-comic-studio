@@ -5,6 +5,9 @@ projects/*.json.tmp
 # per-machine settings (personal paths stay out of the repo)
 config.json
 
+# personal asset library (your own drawn stamps)
+assets/
+
 # local reference library default location
 drawing-resources/
 

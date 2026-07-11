@@ -176,15 +176,52 @@ const Tools = (() => {
   }
 
   /* live preview: engine calls this inside the page transform.
-     Covers both brush strokes and shape-tool rubber-banding. */
+     Brush strokes, shape rubber-banding, lasso visuals, asset stamp. */
   function renderScratch(ctx) {
     const brushLive = stroke.active && !stroke.erase;
     const shapeLive = !!shapeStart &&
       ["line", "rect", "ellipse"].includes(state.current);
-    if (!brushLive && !shapeLive) return;
-    ctx.save(); ctx.globalAlpha = brushLive ? stroke.alpha : 1;
-    ctx.drawImage(scratch, 0, 0);
-    ctx.restore();
+    if (brushLive || shapeLive) {
+      ctx.save(); ctx.globalAlpha = brushLive ? stroke.alpha : 1;
+      ctx.drawImage(scratch, 0, 0);
+      ctx.restore();
+    }
+    const lw = 1.5 / App.view.zoom;
+    if (lassoDraw && lassoDraw.length > 1) {          // polygon in progress
+      ctx.save();
+      ctx.strokeStyle = "#e8b04b"; ctx.lineWidth = lw;
+      ctx.setLineDash([6 / App.view.zoom, 5 / App.view.zoom]);
+      ctx.beginPath();
+      ctx.moveTo(lassoDraw[0].x, lassoDraw[0].y);
+      for (const q of lassoDraw) ctx.lineTo(q.x, q.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (lasso) {                                       // committed selection box
+      const b = lasso.bbox;
+      const dx = lassoMove ? lassoMove.dx : 0, dy = lassoMove ? lassoMove.dy : 0;
+      ctx.save();
+      ctx.strokeStyle = "#e8b04b"; ctx.lineWidth = lw;
+      ctx.setLineDash([8 / App.view.zoom, 6 / App.view.zoom]);
+      ctx.strokeRect(b.x + dx, b.y + dy, b.w, b.h);
+      if (lassoMove) {
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = "#e8b04b";
+        ctx.fillRect(b.x + dx, b.y + dy, b.w, b.h);
+      }
+      ctx.restore();
+    }
+    if (placing && placing.img.complete) {             // floating asset stamp
+      const w = placing.w * placing.scale, h = placing.h * placing.scale;
+      ctx.save();
+      ctx.globalAlpha = 0.65;
+      ctx.drawImage(placing.img, placing.pos.x - w / 2, placing.pos.y - h / 2, w, h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#6db3f2"; ctx.lineWidth = lw;
+      ctx.setLineDash([6 / App.view.zoom, 5 / App.view.zoom]);
+      ctx.strokeRect(placing.pos.x - w / 2, placing.pos.y - h / 2, w, h);
+      ctx.restore();
+    }
   }
 
   /* ============================================================
@@ -351,6 +388,9 @@ const Tools = (() => {
       drawShapeOp(lctx, op);
     } else if (op.kind === "fill") {
       fillPixels(lctx.canvas, op.x, op.y, op.color);
+    } else if (op.kind === "image") {
+      const img = cachedImg(op.src);
+      if (img.complete) lctx.drawImage(img, op.x, op.y, op.w, op.h);
     }
   }
 
@@ -371,7 +411,9 @@ const Tools = (() => {
       for (let i = layer.ops.length - 1; i >= 0; i--) {
         const op = layer.ops[i];
         const hit = (op.kind === "stroke" && !op.erase && hitStrokeOp(op, p, tol)) ||
-                    (op.kind === "shape" && hitShapeOp(op, p, tol));
+                    (op.kind === "shape" && hitShapeOp(op, p, tol)) ||
+                    (op.kind === "image" && p.x >= op.x && p.x <= op.x + op.w &&
+                     p.y >= op.y && p.y <= op.y + op.h);
         if (!hit) continue;
         const before = snapshotRaster(layer);
         layer.ops.splice(i, 1);
@@ -383,6 +425,188 @@ const Tools = (() => {
     }
     if (!quiet) UI.flash("No stroke here — only strokes drawn this session can be stroke-erased.");
     return false;
+  }
+
+  /* ============================================================
+     Lasso select — circle a group of strokes/shapes to grab them
+     as ONE selection: drag inside the box to move, Delete to
+     remove, or "Save asset" to capture into the asset library.
+     Works on the ACTIVE raster layer's op log.
+     ============================================================ */
+  let lasso = null;       // { layer, indices, bbox, path } — committed selection
+  let lassoDraw = null;   // in-progress polygon
+  let lassoMove = null;   // { start, dx, dy } — dragging the selection
+
+  function pointInPoly(p, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const a = poly[i], b = poly[j];
+      if ((a.y > p.y) !== (b.y > p.y) &&
+          p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+    }
+    return inside;
+  }
+
+  function opTestPoints(op) {
+    if (op.kind === "stroke") return op.points;
+    if (op.kind === "image")
+      return [{ x: op.x, y: op.y }, { x: op.x + op.w, y: op.y },
+              { x: op.x, y: op.y + op.h }, { x: op.x + op.w, y: op.y + op.h }];
+    if (op.shape === "line")
+      return [{ x: op.x1, y: op.y1 }, { x: op.x2, y: op.y2 },
+              { x: (op.x1 + op.x2) / 2, y: (op.y1 + op.y2) / 2 }];
+    if (op.shape === "rect")
+      return [{ x: op.x, y: op.y }, { x: op.x + op.w, y: op.y },
+              { x: op.x, y: op.y + op.h }, { x: op.x + op.w, y: op.y + op.h }];
+    return [{ x: op.cx - op.rx, y: op.cy }, { x: op.cx + op.rx, y: op.cy },
+            { x: op.cx, y: op.cy - op.ry }, { x: op.cx, y: op.cy + op.ry }];
+  }
+
+  function finishLasso(path) {
+    const layer = activeLayer();
+    if (layer.kind !== "raster") { UI.flash("Lasso works on raster layers — pick Inks/Pencils/Colors."); return; }
+    const indices = [];
+    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    layer.ops.forEach((op, i) => {
+      if (op.kind === "fill") return;                 // fills aren't portable
+      const pts = opTestPoints(op);
+      const inside = pts.filter(q => pointInPoly(q, path)).length;
+      if (inside / pts.length < 0.6) return;          // mostly inside = selected
+      indices.push(i);
+      for (const q of pts) {
+        const r = op.kind === "stroke" ? op.cfg.size / 2 : (op.size || 0) / 2;
+        minX = Math.min(minX, q.x - r); minY = Math.min(minY, q.y - r);
+        maxX = Math.max(maxX, q.x + r); maxY = Math.max(maxY, q.y + r);
+      }
+    });
+    if (!indices.length) {
+      lasso = null;
+      UI.hideLassoActions();
+      UI.flash("Nothing lassoed — circle strokes drawn this session on the active layer.");
+      return;
+    }
+    lasso = { layer, indices,
+              bbox: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } };
+    UI.showLassoActions(lasso.bbox, indices.length);
+    App.dirty = true;
+  }
+
+  function translateOp(op, dx, dy) {
+    if (op.kind === "stroke") for (const q of op.points) { q.x += dx; q.y += dy; }
+    else if (op.kind === "image") { op.x += dx; op.y += dy; }
+    else if (op.shape === "line") { op.x1 += dx; op.y1 += dy; op.x2 += dx; op.y2 += dy; }
+    else if (op.shape === "rect") { op.x += dx; op.y += dy; }
+    else { op.cx += dx; op.cy += dy; }
+  }
+
+  function applyLassoMove(dx, dy) {
+    const layer = lasso.layer;
+    const before = snapshotRaster(layer);
+    const beforeOps = JSON.stringify(layer.ops);
+    for (const i of lasso.indices) translateOp(layer.ops[i], dx, dy);
+    rebuildLayer(layer);
+    commitRasterOpsSnapshot(layer, before, beforeOps);
+    lasso.bbox.x += dx; lasso.bbox.y += dy;
+    UI.showLassoActions(lasso.bbox, lasso.indices.length);
+    App.dirty = true;
+  }
+
+  function lassoDelete() {
+    if (!lasso) return;
+    const layer = lasso.layer;
+    const before = snapshotRaster(layer);
+    const beforeOps = JSON.stringify(layer.ops);
+    layer.ops = layer.ops.filter((_, i) => !lasso.indices.includes(i));
+    rebuildLayer(layer);
+    commitRasterOpsSnapshot(layer, before, beforeOps);
+    lassoClear();
+  }
+
+  function lassoClear() {
+    lasso = null; lassoDraw = null; lassoMove = null;
+    UI.hideLassoActions();
+    App.dirty = true;
+  }
+
+  /* render the selection to a tight cropped canvas (the asset bitmap) */
+  function renderLassoToCanvas() {
+    const pad = 6;
+    const b = lasso.bbox;
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, Math.ceil(b.w + pad * 2));
+    out.height = Math.max(1, Math.ceil(b.h + pad * 2));
+    const octx = out.getContext("2d");
+    octx.translate(-Math.floor(b.x - pad), -Math.floor(b.y - pad));
+    for (const i of lasso.indices) replayOp(octx, lasso.layer.ops[i]);
+    return out;
+  }
+
+  async function lassoSaveAsset() {
+    if (!lasso) return;
+    const name = prompt("Asset name (e.g. 'hero eyes', 'title logo'):", "my asset");
+    if (!name) return;
+    const c = renderLassoToCanvas();
+    try {
+      const res = await fetch("/api/assets", {
+        method: "POST",
+        body: JSON.stringify({ name: name.trim(), png: c.toDataURL("image/png"),
+                               w: c.width, h: c.height }),
+      });
+      const out = await res.json();
+      UI.flash(out.ok ? `Saved asset "${name.trim()}" 📦 — find it in Library` : "Save failed");
+      UI.refreshLibrary?.();
+    } catch { UI.flash("Asset save failed — is server.py running?"); }
+  }
+
+  /* ============================================================
+     Asset placement — a stamp that follows the pointer until you
+     click to commit it onto the active raster layer as an image op.
+     [ and ] resize it, Esc cancels.
+     ============================================================ */
+  let placing = null;     // { img, w, h, scale, pos }
+  const imgCache = new Map();   // src -> Image (image-op replay)
+  function cachedImg(src, layer) {
+    let img = imgCache.get(src);
+    if (!img) {
+      img = new Image();
+      img.onload = () => { if (layer) rebuildLayer(layer); App.dirty = true; };
+      img.src = src;
+      imgCache.set(src, img);
+    }
+    return img;
+  }
+
+  function startPlacing(src, w, h) {
+    const img = cachedImg(src);
+    placing = { src, img, w, h, scale: 1,
+                pos: Engine.toPage(0, 0) };
+    UI.flash("Click to stamp the asset · [ ] resize · Esc cancel");
+    App.dirty = true;
+  }
+  function cancelPlacing() { placing = null; App.dirty = true; }
+  function scalePlacing(f) {
+    if (!placing) return false;
+    placing.scale = Math.min(6, Math.max(0.1, placing.scale * f));
+    App.dirty = true;
+    return true;
+  }
+  async function commitPlacement(p) {
+    const layer = activeLayer();
+    if (layer.kind !== "raster" || layer.locked) { UI.flash("Pick an unlocked raster layer first."); return; }
+    const img = placing.img;
+    const w = placing.w * placing.scale, h = placing.h * placing.scale;
+    const op = { kind: "image", src: placing.src,
+                 x: p.x - w / 2, y: p.y - h / 2, w, h };
+    placing = null;
+    // drawImage silently no-ops on an image that hasn't finished decoding —
+    // wait for it, or a large asset stamps nothing on a fast click
+    try { await img.decode(); } catch { /* decode() unsupported -> best effort */ }
+    const before = snapshotRaster(layer);
+    layer.canvas.getContext("2d").drawImage(img, op.x, op.y, w, h);
+    layer._stamp = (layer._stamp || 0) + 1;
+    layer.ops.push(op);
+    commitRasterChange(layer, before, { add: op });
+    App.dirty = true;
   }
 
   /* ============================================================
@@ -462,6 +686,8 @@ const Tools = (() => {
       return;
     }
 
+    if (placing) { commitPlacement(p); return; }   // stamp the floating asset
+
     // Alt+click = eyedropper: sample the visible color under the cursor
     if (e.altKey && !["select", "pan"].includes(state.current)) {
       const hex = Engine.sampleColor(p.x, p.y);
@@ -495,6 +721,15 @@ const Tools = (() => {
         shapeStart = p; Lettering.previewStart(tool, p); break;
       case "select":
         selectDown(p); break;
+      case "lasso":
+        if (lasso && p.x >= lasso.bbox.x && p.x <= lasso.bbox.x + lasso.bbox.w &&
+            p.y >= lasso.bbox.y && p.y <= lasso.bbox.y + lasso.bbox.h) {
+          lassoMove = { start: p, dx: 0, dy: 0 };
+        } else {
+          lassoClear();
+          lassoDraw = [p];
+        }
+        break;
     }
   }
 
@@ -510,8 +745,23 @@ const Tools = (() => {
     }
     if (Guides.drag(pointFrom(e))) return;
     if (stroke.active) { moveStroke(e); return; }
+    if (placing) { placing.pos = pointFrom(e); App.dirty = true; return; }
     if (state.current === "strokeeraser" && (e.buttons & 1)) {
       strokeEraseAt(pointFrom(e), true);   // swipe across strokes to clear them
+      return;
+    }
+    if (lassoDraw) {
+      const q = pointFrom(e);
+      const last = lassoDraw[lassoDraw.length - 1];
+      if (Math.hypot(q.x - last.x, q.y - last.y) > 3 / App.view.zoom) lassoDraw.push(q);
+      App.dirty = true;
+      return;
+    }
+    if (lassoMove) {
+      const q = pointFrom(e);
+      lassoMove.dx = q.x - lassoMove.start.x;
+      lassoMove.dy = q.y - lassoMove.start.y;
+      App.dirty = true;
       return;
     }
 
@@ -531,6 +781,18 @@ const Tools = (() => {
     if (panGrab) { panGrab = null; return; }
     if (Guides.release()) return;
     if (stroke.active) { endStroke(); return; }
+    if (lassoDraw) {
+      const path = lassoDraw; lassoDraw = null;
+      if (path.length >= 3) finishLasso(path);
+      App.dirty = true;
+      return;
+    }
+    if (lassoMove) {
+      const { dx, dy } = lassoMove; lassoMove = null;
+      if (Math.hypot(dx, dy) > 1) applyLassoMove(dx, dy);
+      App.dirty = true;
+      return;
+    }
 
     if (shapeStart) {
       const p = pointFrom(e);
@@ -603,5 +865,9 @@ const Tools = (() => {
   }
 
   return { state, bind, renderScratch, deleteSelection,
+           startPlacing, cancelPlacing, scalePlacing,
+           lassoSaveAsset, lassoDelete, lassoClear,
+           hasLasso: () => !!lasso,
+           isPlacing: () => !!placing,
            setSpacePan(v) { spacePan = v; } };
 })();

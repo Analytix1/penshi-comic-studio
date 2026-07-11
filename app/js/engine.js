@@ -80,6 +80,14 @@ const Engine = (() => {
 
   /* ---------- main composite ---------- */
   function render() {
+    // Recover from layout changes the resize event doesn't catch: booting in
+    // a background tab (stage measures 0×0), sidebar/devtools reflows, etc.
+    const host = view.parentElement;
+    if (host.clientWidth !== Math.round(stageW) || host.clientHeight !== Math.round(stageH)) {
+      const wasZero = stageW < 2 || stageH < 2;
+      resize();
+      if (wasZero && stageW > 2) fitPage();   // first real layout: frame the page
+    }
     if (App.dirty && App.page) {
       App.dirty = false;
       ctx.fillStyle = "#17181c";
@@ -151,7 +159,7 @@ const Engine = (() => {
   }
 
   /* ---------- export ---------- */
-  function exportPNG(includeBleed = true) {
+  function exportPNG(includeBleed = true, suffix = "") {
     const out = document.createElement("canvas");
     const crop = includeBleed ? { x: 0, y: 0, w: App.page.w, h: App.page.h }
       : { x: App.page.bleed, y: App.page.bleed,
@@ -176,7 +184,7 @@ const Engine = (() => {
     out.toBlob(blob => {
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = App.projectName.replace(/\s+/g, "_") + ".png";
+      a.download = App.projectName.replace(/\s+/g, "_") + suffix + ".png";
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     }, "image/png");

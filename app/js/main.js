@@ -37,6 +37,7 @@ const UI = {};
   /* ---------- tools ---------- */
   const TOOL_HINTS = {
     select: "Click an object to select. Drag to move, corner square to resize, blue dot to re-aim a balloon tail. Del removes it. Double-click text to edit.",
+    lasso: "Circle strokes to select them as a group (this session's strokes, active layer). Drag inside the box to move them, Del deletes, 📦 saves them to your asset library. Esc clears.",
     pan: "Drag to move around the page. Any tool: hold Space, use a finger, or the middle mouse button.",
     ink: "Your finish line. Pressure drives width — light for distant/delicate, heavy for shadow-side and foreground. Vary weight within one stroke.",
     pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
@@ -54,7 +55,7 @@ const UI = {};
     burst: "Jagged SFX/shout balloon. Go big.",
   };
   const TOOL_LABELS = {
-    select: "Select / Move", pan: "Pan", ink: "Ink pen", pencil: "Pencil",
+    select: "Select / Move", lasso: "Lasso select", pan: "Pan", ink: "Ink pen", pencil: "Pencil",
     marker: "Marker", eraser: "Eraser", strokeeraser: "Stroke eraser",
     fill: "Fill", line: "Line",
     rect: "Rectangle", ellipse: "Ellipse", panel: "Panel", balloon: "Speech balloon",
@@ -309,7 +310,7 @@ const UI = {};
       row.addEventListener("click", async e => {
         if (e.target.classList.contains("p-del")) return;
         const data = await apiLoad(row.dataset.name);
-        loadProjectData(data);
+        await loadProjectData(data);
         closeModal(); Engine.fitPage(); UI.refreshLayers(); updatePageStatus();
         UI.flash(`Opened "${data.name}"`);
       }));
@@ -342,9 +343,101 @@ const UI = {};
 
   function updatePageStatus() {
     const p = PAGE_PRESETS[App.page.presetKey];
+    const vol = App.pages.length > 1 ? ` · page ${App.pageIndex + 1}/${App.pages.length}` : "";
     $("#st-page").textContent =
-      `${App.projectName} — ${p.label} @ ${App.page.dpi}dpi (${App.page.w}×${App.page.h}px)`;
+      `${App.projectName}${vol} — ${p.label} @ ${App.page.dpi}dpi (${App.page.w}×${App.page.h}px)`;
   }
+
+  /* ---------- lasso action chip ---------- */
+  const lassoChip = $("#lasso-actions");
+  UI.showLassoActions = (bbox, count) => {
+    const s = Engine.toScreen(bbox.x, bbox.y);
+    lassoChip.hidden = false;
+    lassoChip.style.left = Math.max(8, s.x) + "px";
+    lassoChip.style.top = Math.max(8, s.y - 40) + "px";
+    $("#lasso-count").textContent = count + (count === 1 ? " stroke" : " strokes");
+  };
+  UI.hideLassoActions = () => { lassoChip.hidden = true; };
+  $("#lasso-save").addEventListener("click", () => Tools.lassoSaveAsset());
+  $("#lasso-del").addEventListener("click", () => Tools.lassoDelete());
+  $("#lasso-clear").addEventListener("click", () => Tools.lassoClear());
+
+  /* ---------- volume page tabs ---------- */
+  UI.refreshPageTabs = () => {
+    const host = $("#page-tabs");
+    host.innerHTML = "";
+    App.pages.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.className = "ptab" + (i === App.pageIndex ? " on" : "");
+      b.textContent = i + 1;
+      b.title = `Page ${i + 1}`;
+      b.addEventListener("click", async () => { await switchPage(i); updatePageStatus(); });
+      host.appendChild(b);
+    });
+    const add = document.createElement("button");
+    add.className = "ptab ptab-add";
+    add.textContent = "＋";
+    add.title = "Add a page to this volume";
+    add.addEventListener("click", async () => { await addPage(); updatePageStatus(); });
+    host.appendChild(add);
+    if (App.pages.length > 1) {
+      const del = document.createElement("button");
+      del.className = "ptab ptab-del";
+      del.textContent = "✕";
+      del.title = "Delete the current page";
+      del.addEventListener("click", async () => {
+        if (!confirm(`Delete page ${App.pageIndex + 1}? This can't be undone.`)) return;
+        await deleteCurrentPage(); updatePageStatus();
+      });
+      host.appendChild(del);
+    }
+  };
+
+  $("#btn-export-all").addEventListener("click", async () => {
+    syncCurrentPage();
+    const cur = App.pageIndex;
+    UI.flash(`Exporting ${App.pages.length} page(s)… allow multiple downloads if asked`);
+    for (let i = 0; i < App.pages.length; i++) {
+      await loadPage(App.pages[i]);
+      Engine.exportPNG(true, `_p${String(i + 1).padStart(2, "0")}`);
+      await new Promise(r => setTimeout(r, 350));   // let each download start
+    }
+    await loadPage(App.pages[cur]);
+    UI.refreshLayers(); App.dirty = true;
+  });
+
+  /* ---------- pop-out floating windows (read lessons while drawing) ---------- */
+  let floatZ = 60, floatN = 0;
+  UI.popout = (title, html) => {
+    const win = document.createElement("div");
+    win.className = "float-win";
+    const off = (floatN++ % 6) * 26;
+    win.style.left = 70 + off + "px";
+    win.style.top = 16 + off + "px";
+    win.style.zIndex = ++floatZ;
+    win.innerHTML = `
+      <div class="fw-head"><b>${title}</b><button class="fw-x">✕</button></div>
+      <div class="fw-body">${html}</div>`;
+    win.querySelector(".fw-x").addEventListener("click", () => win.remove());
+    win.addEventListener("pointerdown", () => { win.style.zIndex = ++floatZ; });
+    const head = win.querySelector(".fw-head");
+    head.addEventListener("pointerdown", e => {
+      if (e.target.classList.contains("fw-x")) return;
+      const startX = e.clientX - win.offsetLeft, startY = e.clientY - win.offsetTop;
+      const move = ev => {
+        win.style.left = Math.max(0, ev.clientX - startX) + "px";
+        win.style.top = Math.max(0, ev.clientY - startY) + "px";
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      e.preventDefault();
+    });
+    $("#stage").appendChild(win);
+  };
 
   /* ---------- copy/paste (selected panel or lettering object) ---------- */
   let clipboard = null;   // { role, obj }
@@ -369,7 +462,7 @@ const UI = {};
   }
 
   /* ---------- keyboard ---------- */
-  const KEYMAP = { v: "select", h: "pan", b: "ink", p: "pencil", m: "marker",
+  const KEYMAP = { v: "select", l: "lasso", h: "pan", b: "ink", p: "pencil", m: "marker",
                    e: "eraser", s: "strokeeraser", g: "fill", k: "panel", t: "balloon" };
   window.addEventListener("keydown", e => {
     if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
@@ -390,11 +483,21 @@ const UI = {};
       else if (k === "v" && clipboard) { pasteClipboard(); e.preventDefault(); }
       return;
     }
+    if (e.key === "Escape") { Tools.cancelPlacing(); Tools.lassoClear(); return; }
     const tool = KEYMAP[e.key.toLowerCase()];
     if (tool) return setTool(tool);
-    if (e.key === "Delete" || e.key === "Backspace") Tools.deleteSelection();
-    if (e.key === "[") { $("#opt-size").value = Math.max(1, +$("#opt-size").value - 2); syncSize(); }
-    if (e.key === "]") { $("#opt-size").value = Math.min(120, +$("#opt-size").value + 2); syncSize(); }
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (Tools.hasLasso()) Tools.lassoDelete();
+      else Tools.deleteSelection();
+    }
+    if (e.key === "[") {
+      if (Tools.scalePlacing(1 / 1.15)) return;
+      $("#opt-size").value = Math.max(1, +$("#opt-size").value - 2); syncSize();
+    }
+    if (e.key === "]") {
+      if (Tools.scalePlacing(1.15)) return;
+      $("#opt-size").value = Math.min(120, +$("#opt-size").value + 2); syncSize();
+    }
   });
   window.addEventListener("keyup", e => {
     if (e.code === "Space") Tools.setSpacePan(false);
@@ -441,6 +544,7 @@ const UI = {};
   Panels.buildTemplateList();
   Reference.buildLearn();
   Reference.buildLibrary();
+  UI.refreshLibrary = Reference.buildLibrary;
   Tutorial.buildUI();
   UI.refreshLayers();
   UI.refreshUndoButtons();

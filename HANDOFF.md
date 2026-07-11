@@ -73,12 +73,12 @@ must not affect export)."
 
 ## Tasks sized for OPUS (multi-module, but architecture already decided)
 
-**O1 — Multi-page documents**
-"Convert Inkwell to multi-page: `App.pages[]` each holding its own layers array;
-a filmstrip of page thumbnails down the left of the stage; add/reorder/delete pages;
-serialization bumps to version 2 with a migration path for version-1 saves (wrap the
-single page). Export gains 'current page' vs 'all pages (zip via manual concat or
-one PNG per download)'. Keep undo per-page."
+**O1 — Volume polish** (multi-page core is DONE: `App.pages` snapshots + live page,
+page tabs, v2 saves with v1 migration, export-all)
+"Remaining polish: page thumbnails instead of numbers in the tabs, drag-to-reorder
+pages, and a 'duplicate page' button. Pages are serialized snapshots — thumbnails
+can be decoded from each page's layer PNGs at small size, cached, refreshed on
+switchPage()."
 
 **O2 — Panel-clipped drawing**
 "Add optional 'clip to panel' mode: when enabled and a panel is selected, brush
@@ -95,7 +95,24 @@ scratch architecture; per-stamp transforms only."
 **O4 — Selection transforms on raster layers**
 "Add a rectangular marquee for raster layers: cut/copy/paste/move/scale a pixel
 region (floating buffer canvas until committed), with undo integration. This is the
-biggest missing Illustrator-ism."
+biggest missing Illustrator-ism." (Note: for op-logged strokes, the LASSO tool in
+tools.js already covers select/move/delete — this task is for flat pixels.)
+
+**O6 — Stretch & rotate for lasso selections**
+"tools.js has a lasso tool that selects op-log entries (`lasso.indices` into
+`layer.ops`) with move + delete. Add STRETCH and ROTATE: draw 8 scale handles +
+one rotation handle on `lasso.bbox` (render in Tools.renderScratch, hit-test in
+the lasso branch of onDown). Transform math per op kind, around the bbox center
+or dragged anchor: stroke → transform every point in op.points (and multiply
+op.cfg.size by the mean scale factor); shape line → transform endpoints; rect
+under rotation must be CONVERTED to a 4-point 'poly' shape kind you add
+(axis-aligned rects can't rotate) — add poly to drawShapeOp, hitShapeOp and
+opTestPoints; ellipse → transform cx/cy, scale rx/ry, and add a rotation field
+(drawShapeOp already uses ctx.ellipse which takes a rotation arg); image →
+transform x/y/w/h, and add a rotation field drawn via save/translate/rotate.
+Live preview: draw the transformed bbox ghost only; apply on pointerup via the
+existing applyLassoMove pattern (snapshot → mutate ops → rebuildLayer →
+commitRasterOpsSnapshot). Shift = uniform scale / 15° rotation snap."
 
 **O5 — Reference image import**
 "Allow dropping an image file onto the canvas to create a locked 'Reference' raster

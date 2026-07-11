@@ -67,6 +67,20 @@ never enter version control.
 | Ctrl+E | Export PNG | Ctrl+0 | Fit page |
 | Wheel | Zoom at cursor | Del | Delete selected object |
 
+## Volumes, assets & lasso
+
+- **Volumes**: every project is multi-page. The page tabs at the top-left of the
+  canvas add (＋), switch, and delete (✕) pages; **Export all** downloads each page
+  as a numbered PNG. Old single-page saves open fine and become one-page volumes.
+- **Lasso (L)**: circle strokes to select them as a group — drag to move, Del to
+  delete, **📦 Save asset** to capture them.
+- **Asset library** (Library tab → My assets): your saved stamps — eyes, logos,
+  props — available in every project. Click one, then click the page to place it;
+  `[` `]` resize before placing, Esc cancels. Assets live in the gitignored
+  `assets/` folder.
+- **⧉ on any Learn lesson** pops it out into a draggable floating window, so you
+  can keep several lessons open while you draw.
+
 ## Draw School (for total beginners)
 
 Learn tab → **🎓 Draw School**: a 9-lesson hands-on course — line control, shapes,
