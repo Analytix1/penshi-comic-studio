@@ -21,6 +21,8 @@ const Tools = (() => {
     pressureSize: true, pressureOpacity: false,
     color: "#1a1a1a",
     gutter: 14,
+    // what the Slim Pen's flip-end eraser does: "eraser" | "strokeeraser"
+    tailMode: localStorage.getItem("inkwell-tail-mode") || "eraser",
   };
 
   /* Per-brush personalities */
@@ -436,6 +438,7 @@ const Tools = (() => {
   let lasso = null;       // { layer, indices, bbox, path } — committed selection
   let lassoDraw = null;   // in-progress polygon
   let lassoMove = null;   // { start, dx, dy } — dragging the selection
+  let tailErase = false;  // pen tail held in stroke-eraser mode
 
   function pointInPoly(p, poly) {
     let inside = false;
@@ -695,13 +698,22 @@ const Tools = (() => {
       return;
     }
 
-    // Slim Pen 2: tail eraser reports button 32, barrel button reports 2 —
-    // both flip to the eraser for the duration of the stroke. When that
-    // happens mid-tool, use a chunky physical-eraser size instead of the
-    // current brush's width.
+    // Slim Pen 2 hardware mapping:
+    //   barrel (side) button, bit 2  -> lasso gesture
+    //   tail eraser, bit 32          -> pixel eraser OR stroke eraser,
+    //                                   per the "Tail" toggle in the top bar
     let tool = state.current;
     let sizeOverride = null;
-    if (e.pointerType === "pen" && (e.buttons & 32 || e.buttons & 2)) {
+    if (e.pointerType === "pen" && e.buttons & 2) {
+      lassoDown(p);
+      return;
+    }
+    if (e.pointerType === "pen" && e.buttons & 32) {
+      if (state.tailMode === "strokeeraser") {
+        tailErase = true;
+        strokeEraseAt(p, false);
+        return;
+      }
       if (tool !== "eraser") sizeOverride = Math.max(26, state.size * 2);
       tool = "eraser";
     }
@@ -722,14 +734,20 @@ const Tools = (() => {
       case "select":
         selectDown(p); break;
       case "lasso":
-        if (lasso && p.x >= lasso.bbox.x && p.x <= lasso.bbox.x + lasso.bbox.w &&
-            p.y >= lasso.bbox.y && p.y <= lasso.bbox.y + lasso.bbox.h) {
-          lassoMove = { start: p, dx: 0, dy: 0 };
-        } else {
-          lassoClear();
-          lassoDraw = [p];
-        }
+        lassoDown(p);
         break;
+    }
+  }
+
+  /* start a lasso gesture: inside an existing selection = move it,
+     anywhere else = begin a new polygon */
+  function lassoDown(p) {
+    if (lasso && p.x >= lasso.bbox.x && p.x <= lasso.bbox.x + lasso.bbox.w &&
+        p.y >= lasso.bbox.y && p.y <= lasso.bbox.y + lasso.bbox.h) {
+      lassoMove = { start: p, dx: 0, dy: 0 };
+    } else {
+      lassoClear();
+      lassoDraw = [p];
     }
   }
 
@@ -746,7 +764,7 @@ const Tools = (() => {
     if (Guides.drag(pointFrom(e))) return;
     if (stroke.active) { moveStroke(e); return; }
     if (placing) { placing.pos = pointFrom(e); App.dirty = true; return; }
-    if (state.current === "strokeeraser" && (e.buttons & 1)) {
+    if (tailErase || (state.current === "strokeeraser" && (e.buttons & 1))) {
       strokeEraseAt(pointFrom(e), true);   // swipe across strokes to clear them
       return;
     }
@@ -780,6 +798,7 @@ const Tools = (() => {
     if (e.pointerType === "touch") { touches.delete(e.pointerId); return; }
     if (panGrab) { panGrab = null; return; }
     if (Guides.release()) return;
+    if (tailErase) { tailErase = false; return; }
     if (stroke.active) { endStroke(); return; }
     if (lassoDraw) {
       const path = lassoDraw; lassoDraw = null;

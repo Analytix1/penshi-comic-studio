@@ -21,8 +21,9 @@ The server binds to 127.0.0.1 only — nothing is exposed to your network.
 Works natively, no drivers or settings:
 - **Pressure** → line width (the Ink tool's whole personality)
 - **Tilt** → shown live in the top-right telemetry readout
-- **Tail eraser** → flips to the eraser automatically (`buttons & 32`)
-- **Barrel button** → also erases while held
+- **Tail eraser** → erases automatically (`buttons & 32`); the top-bar **Tail**
+  toggle picks pixel eraser ◻ or whole-stroke eraser ⌫
+- **Barrel (side) button** → lasso: hold it and circle strokes from any tool
 - **Fingers** → pan and pinch-zoom only; they never draw, so rest your palm freely
 - **Pen-only mode** (top bar) → additionally stops the mouse from drawing
 

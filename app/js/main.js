@@ -25,7 +25,9 @@ const UI = {};
   };
   UI.penTelemetry = e => {
     if (e.pointerType !== "pen") return;
-    const tail = e.buttons & 32 ? " · tail eraser" : e.buttons & 2 ? " · barrel" : "";
+    const tail = e.buttons & 32
+      ? (Tools.state.tailMode === "strokeeraser" ? " · tail ⌫ stroke-erase" : " · tail ◻ erase")
+      : e.buttons & 2 ? " · barrel → lasso" : "";
     $("#pen-status").textContent =
       `✍ pen  P ${(e.pressure || 0).toFixed(2)}  tilt ${e.tiltX | 0}°/${e.tiltY | 0}°${tail}`;
   };
@@ -37,13 +39,13 @@ const UI = {};
   /* ---------- tools ---------- */
   const TOOL_HINTS = {
     select: "Click an object to select. Drag to move, corner square to resize, blue dot to re-aim a balloon tail. Del removes it. Double-click text to edit.",
-    lasso: "Circle strokes to select them as a group (this session's strokes, active layer). Drag inside the box to move them, Del deletes, 📦 saves them to your asset library. Esc clears.",
+    lasso: "Circle strokes to select them as a group (this session's strokes, active layer). Drag inside the box to move them, Del deletes, 📦 saves them to your asset library. Esc clears. The Slim Pen's SIDE BUTTON lassos from any tool — hold it and circle.",
     pan: "Drag to move around the page. Any tool: hold Space, use a finger, or the middle mouse button.",
     ink: "Your finish line. Pressure drives width — light for distant/delicate, heavy for shadow-side and foreground. Vary weight within one stroke.",
     pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
     marker: "Translucent tone for greys and spotting blacks. Strokes don't self-overlap mid-stroke, so tone stays even.",
-    eraser: "Erases on the active layer. The Slim Pen 2's tail and barrel button switch to this automatically.",
-    strokeeraser: "Tap (or swipe across) a stroke to remove the WHOLE stroke — shapes too. Works on any visible unlocked layer, topmost first. Only knows strokes drawn this session; flat pixels from a loaded save need the normal eraser.",
+    eraser: "Erases pixels on the active layer. The Slim Pen 2's tail does this too when the top-bar Tail toggle is set to ◻.",
+    strokeeraser: "Tap (or swipe across) a stroke to remove the WHOLE stroke — shapes too. Works on any visible unlocked layer, topmost first. Set the top-bar Tail toggle to ⌫ to put this on the Slim Pen's flip-end. Only knows strokes drawn this session; flat pixels from a loaded save need the normal eraser.",
     fill: "Click to flood-fill a region on the active raster layer. Close your ink gaps first or it leaks.",
     line: "Drag for a straight line. Hold Shift to snap to 15° — aim strokes at your vanishing points.",
     rect: "Drag a rectangle. Shift = square.",
@@ -267,6 +269,13 @@ const UI = {};
   $("#chk-penonly").addEventListener("change", e => {
     App.penOnly = e.target.checked;
     UI.flash(App.penOnly ? "Pen-only: mouse & touch won't draw" : "Mouse drawing re-enabled");
+  });
+  $("#pen-tail").value = Tools.state.tailMode;
+  $("#pen-tail").addEventListener("change", e => {
+    Tools.state.tailMode = e.target.value;
+    localStorage.setItem("inkwell-tail-mode", e.target.value);
+    UI.flash(e.target.value === "strokeeraser"
+      ? "Pen tail now erases WHOLE strokes" : "Pen tail now erases pixels");
   });
 
   /* ---------- top bar ---------- */
