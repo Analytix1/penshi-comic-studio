@@ -223,7 +223,7 @@ const Tutorial = (() => {
       label(ctx, 0.17, 0.51, "2. Pencils layer → gesture your figures (blue = fearless)");
       label(ctx, 0.17, 0.57, "3. Inks layer → confident lines over the blue");
       label(ctx, 0.17, 0.63, "4. Balloon tool → dialogue, tails at mouths");
-      label(ctx, 0.17, 0.69, "5. Hide Pencils 👁 → Export PNG. You made a comic.");
+      label(ctx, 0.17, 0.69, "5. Toggle Pencils visibility off → Export PNG. You made a comic.");
     },
   };
 

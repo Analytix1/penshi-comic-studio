@@ -214,6 +214,45 @@ async function loadPage(data) {
 
 function syncCurrentPage() { App.pages[App.pageIndex] = serializePage(); }
 
+/* "Final version": bake the current page's stroke history into flat pixels.
+   The art doesn't change — strokes just stop being individually editable,
+   and saves of this page shrink back to pixels-only. */
+function finalizeCurrentPage() {
+  for (const layer of App.layers) {
+    if (layer.kind !== "raster") continue;
+    layer.basePng = snapshotRaster(layer);
+    layer.baseImg = new Image();
+    layer.baseImg.src = layer.basePng;
+    layer.ops = [];
+  }
+  Undo.clear();   // old undo entries reference the discarded op log
+  App.dirty = true;
+}
+
+/* Lossy history diet: halve the point density of every logged stroke and
+   round coordinates. Strokes stay whole-stroke editable; replay differs by
+   well under a pixel. Returns {before, after} in KB. */
+function compactCurrentPageHistory() {
+  const size = () => Math.round(App.layers.reduce((n, l) =>
+    n + (l.ops ? JSON.stringify(l.ops).length : 0), 0) / 1024);
+  const before = size();
+  for (const layer of App.layers) {
+    if (layer.kind !== "raster") continue;
+    for (const op of layer.ops) {
+      if (op.kind !== "stroke") continue;
+      if (op.points.length > 16) {
+        op.points = op.points.filter((_, i) =>
+          i === 0 || i === op.points.length - 1 || i % 2 === 0);
+      }
+      for (const q of op.points) {
+        q.x = Math.round(q.x); q.y = Math.round(q.y);
+        q.k = Math.round(q.k * 20) / 20;
+      }
+    }
+  }
+  return { before, after: size() };
+}
+
 async function switchPage(i) {
   if (i === App.pageIndex || i < 0 || i >= App.pages.length) return;
   syncCurrentPage();

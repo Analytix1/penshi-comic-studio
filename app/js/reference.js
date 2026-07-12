@@ -93,9 +93,9 @@ const Reference = (() => {
         <li><b>Inks</b> — the confident final line. Pressure = line weight: thin for far/light, thick for near/shadow. Vary weight or the page looks like a coloring book.</li>
         <li><b>Lettering</b> — always on top. Nothing overlaps a balloon.</li>
       </ul>
-      <p>Hide the Pencils layer's 👁 before export — that's the whole trick.</p>`],
+      <p>Toggle the Pencils layer's ◉ visibility off before export — that's the whole trick.</p>`],
 
-    ["🧍 Figures: gesture before anatomy", `
+    ["🎭 Figures: gesture before anatomy", `
       <p>Every figure starts as a <b>gesture</b> — one flowing line of
       action, 30 seconds, capturing what the pose <i>does</i>, not what it
       looks like. Your FORCE book (Library tab) is entirely about this:

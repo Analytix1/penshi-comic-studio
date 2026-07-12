@@ -101,7 +101,7 @@ const Engine = (() => {
       // paper + drop shadow
       ctx.save();
       ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 24 / v.zoom;
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = App.page.paper || "#ffffff";
       ctx.fillRect(0, 0, App.page.w, App.page.h);
       ctx.restore();
 
@@ -166,7 +166,7 @@ const Engine = (() => {
           w: App.page.w - 2 * App.page.bleed, h: App.page.h - 2 * App.page.bleed };
     out.width = crop.w; out.height = crop.h;
     const octx = out.getContext("2d");
-    octx.fillStyle = "#ffffff";
+    octx.fillStyle = App.page.paper || "#ffffff";
     octx.fillRect(0, 0, crop.w, crop.h);
     octx.translate(-crop.x, -crop.y);
     for (const layer of App.layers) {
@@ -199,7 +199,7 @@ const Engine = (() => {
     c.width = 1; c.height = 1;
     const sctx = c.getContext("2d");
     sctx.translate(-x, -y);
-    sctx.fillStyle = "#ffffff";
+    sctx.fillStyle = App.page.paper || "#ffffff";
     sctx.fillRect(x, y, 1, 1);
     for (const layer of App.layers) {
       if (!layer.visible) continue;

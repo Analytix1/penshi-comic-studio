@@ -29,7 +29,7 @@ const UI = {};
       ? (Tools.state.tailMode === "strokeeraser" ? " · tail ⌫ stroke-erase" : " · tail ◻ erase")
       : e.buttons & 2 ? " · barrel → lasso" : "";
     $("#pen-status").textContent =
-      `✍ pen  P ${(e.pressure || 0).toFixed(2)}  tilt ${e.tiltX | 0}°/${e.tiltY | 0}°${tail}`;
+      `pen  P ${(e.pressure || 0).toFixed(2)}  tilt ${e.tiltX | 0}°/${e.tiltY | 0}°${tail}`;
   };
   UI.refreshUndoButtons = () => {
     $("#btn-undo").disabled = !Undo.canUndo;
@@ -204,7 +204,7 @@ const UI = {};
       const li = document.createElement("li");
       li.className = i === App.activeLayer ? "active" : "";
       li.innerHTML = `
-        <span class="l-eye ${layer.visible ? "" : "l-off"}" title="Show/hide">👁</span>
+        <span class="l-eye ${layer.visible ? "" : "l-off"}" title="Show/hide">◉</span>
         <span class="l-lock ${layer.locked ? "" : "l-off"}" title="Lock">🔒</span>
         <span class="l-name">${layer.name}</span>
         <span class="l-kind">${layer.kind === "objects" ? layer.role : (layer.tint ? "blue" : "raster")}</span>`;
@@ -323,6 +323,19 @@ const UI = {};
       <div class="hint">History is what lets the stroke eraser ⌫ and lasso ◌ treat
         old art as individual strokes. Saving it makes files noticeably larger
         (every pen path with pressure data is stored).</div>
+      <div class="row" style="margin-top:8px">
+        <button id="set-compact">Compact history</button>
+        <button id="set-finalize">Finalize page</button>
+      </div>
+      <div class="hint"><b>Compact</b> halves this page's history detail (strokes stay
+        editable). <b>Finalize</b> declares this page a final version: pixels are kept
+        exactly, but its strokes become permanent — smaller saves, no more
+        whole-stroke editing on them.</div>
+      <h3 class="set-h">This page</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:4px">Paper color</div>
+      <div class="swatch-row" id="paper-swatches"></div>
+      <div class="hint">Saved with the page and used by exports. Panels stay white
+        on top of it.</div>
       <h3 class="set-h">Interface</h3>
       <label class="chk"><input type="checkbox" id="set-rail" ${c("showToolRail")}> Show left tool rail</label>
       <label class="chk"><input type="checkbox" id="set-side" ${c("showSidebar")}> Show right sidebar</label>
@@ -362,6 +375,37 @@ const UI = {};
       Settings.reset(); openSettings();
     });
     modal.querySelector("#set-close").addEventListener("click", closeModal);
+
+    modal.querySelector("#set-compact").addEventListener("click", () => {
+      const r = compactCurrentPageHistory();
+      UI.flash(`History compacted: ${r.before} KB → ${r.after} KB on this page`);
+    });
+    modal.querySelector("#set-finalize").addEventListener("click", () => {
+      if (!confirm("Finalize this page? The art keeps its exact pixels, but its " +
+        "strokes become permanent — no more whole-stroke erasing or lassoing them. " +
+        "This also clears undo history.")) return;
+      finalizeCurrentPage();
+      UI.flash("Page finalized — history flattened into the art ✓");
+    });
+
+    // paper color: a few basics from Inks & Tones + Muted/Story
+    const PAPERS = ["#ffffff", "#f5eeda", "#dcdcdc", "#c9c2a6", "#9e9e9e",
+      "#8c7a5c", "#5c6b7d", "#3c5a3c", "#2c3e60", "#6e2f3c", "#1a1a1a"];
+    const host = modal.querySelector("#paper-swatches");
+    for (const col of PAPERS) {
+      const el = document.createElement("div");
+      el.className = "swatch";
+      el.style.background = col;
+      el.title = col;
+      if ((App.page.paper || "#ffffff") === col) el.style.outline = "2px solid var(--accent)";
+      el.addEventListener("click", () => {
+        App.page.paper = col;
+        App.dirty = true;
+        [...host.children].forEach(x => x.style.outline = "");
+        el.style.outline = "2px solid var(--accent)";
+      });
+      host.appendChild(el);
+    }
   }
   $("#btn-settings").addEventListener("click", openSettings);
 

@@ -107,6 +107,6 @@ and remember which lessons you've finished.
 
 Bottom-to-top layer stack = the industry pipeline:
 **Panels → Pencils (non-photo blue) → Colors → Inks → Lettering.**
-Rough on Pencils, ink over it on Inks, hide Pencils' 👁, Export PNG. The Learn tab
+Rough on Pencils, ink over it on Inks, toggle Pencils off, Export PNG. The Learn tab
 explains why each step exists; the Guides tab gives you page templates and a
 draggable 1/2/3-point perspective grid.
