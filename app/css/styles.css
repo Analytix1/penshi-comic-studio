@@ -277,6 +277,18 @@ details.learn summary .pop:hover { opacity: 1; color: var(--accent2); }
 #lesson-panel .lp-x { padding: 2px 8px; }
 #lesson-panel .lp-body { margin: 9px 0 10px; line-height: 1.5; color: #d8d9e0; }
 
+/* ===== settings ===== */
+#modal h3.set-h { margin: 16px 0 6px; font-size: 12px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent); }
+#modal .hint { margin-top: 4px; }
+#modal .chk { margin: 6px 0; }
+.set-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+.custom-page { margin-top: 10px; padding: 10px 12px; background: var(--bg3);
+  border-radius: 8px; font-size: 13px; }
+.custom-page input[type=number] { width: 62px; padding: 4px 6px;
+  background: var(--bg2); color: var(--ink);
+  border: 1px solid var(--edge); border-radius: 6px; font: inherit; }
+
 /* ===== tour ===== */
 #tour-pop {
   position: fixed; z-index: 120; width: 290px;

@@ -68,6 +68,19 @@ never enter version control.
 | Ctrl+E | Export PNG | Ctrl+0 | Fit page |
 | Wheel | Zoom at cursor | Del | Delete selected object |
 
+## Settings (⚙ in the top bar)
+
+- **Stroke history** — the memory that lets the stroke eraser and lasso treat art
+  as individual strokes. Kept across page switches by default; optionally include
+  it in save files so old art stays stroke-editable forever (larger files).
+- **Interface** — hide the tool rail, the sidebar, or individual tools you don't
+  use (their shortcuts keep working). **Tab** toggles distraction-free mode.
+- **Autosave** — every N minutes once the project is named.
+- **Export** — with bleed, or cropped to the trim line.
+
+Page formats: 8 presets (US comic, manga B5, webtoon, square, Golden Age, digest,
+US Letter, A4) plus fully custom width × height at 150 or 300 dpi.
+
 ## Volumes, assets & lasso
 
 - **Volumes**: every project is multi-page. The page tabs at the top-left of the

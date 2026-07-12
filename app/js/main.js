@@ -45,7 +45,7 @@ const UI = {};
     pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
     marker: "Translucent tone for greys and spotting blacks. Strokes don't self-overlap mid-stroke, so tone stays even.",
     eraser: "Erases pixels on the active layer. The Slim Pen 2's tail does this too when the top-bar Tail toggle is set to ◻.",
-    strokeeraser: "Tap (or swipe across) a stroke to remove the WHOLE stroke — shapes too. Works on any visible unlocked layer, topmost first. Set the top-bar Tail toggle to ⌫ to put this on the Slim Pen's flip-end. Only knows strokes drawn this session; flat pixels from a loaded save need the normal eraser.",
+    strokeeraser: "Tap (or swipe across) a stroke to remove the WHOLE stroke — shapes too. Works on any visible unlocked layer, topmost first. Set the top-bar Tail toggle to ⌫ to put this on the Slim Pen's flip-end. Works on logged strokes — turn on 'stroke history in saved files' in ⚙ Settings to keep old art stroke-editable too.",
     fill: "Click to flood-fill a region on the active raster layer. Close your ink gaps first or it leaks.",
     line: "Drag for a straight line. Hold Shift to snap to 15° — aim strokes at your vanishing points.",
     rect: "Drag a rectangle. Shift = square.",
@@ -282,8 +282,9 @@ const UI = {};
   $("#btn-undo").addEventListener("click", () => Undo.undo());
   $("#btn-redo").addEventListener("click", () => Undo.redo());
   $("#btn-export").addEventListener("click", () => {
-    Engine.exportPNG(true);
-    UI.flash("Exported PNG (with bleed). Hide the Pencils layer first if you see blue lines!");
+    Engine.exportPNG(Settings.get("exportBleed"));
+    UI.flash(`Exported PNG (${Settings.get("exportBleed") ? "with bleed" : "trimmed"}). ` +
+      "Hide the Pencils layer first if you see blue lines!");
   });
 
   $("#btn-save").addEventListener("click", async () => {
@@ -298,6 +299,87 @@ const UI = {};
     } catch { UI.flash("Save failed — is server.py running?"); }
     updatePageStatus();
   });
+
+  /* ---------- settings ---------- */
+  let panelsHiddenByTab = false;
+  UI.applySettings = () => {
+    $("#toolrail").style.display =
+      (Settings.get("showToolRail") && !panelsHiddenByTab) ? "" : "none";
+    $("#sidebar").style.display =
+      (Settings.get("showSidebar") && !panelsHiddenByTab) ? "" : "none";
+    const hidden = Settings.get("hiddenTools");
+    $$(".tool").forEach(b =>
+      b.style.display = hidden.includes(b.dataset.tool) ? "none" : "");
+  };
+
+  function openSettings() {
+    const c = k => Settings.get(k) ? "checked" : "";
+    modal.innerHTML = `<h2>⚙ Settings</h2>
+      <h3 class="set-h">Stroke history</h3>
+      <label class="chk"><input type="checkbox" id="set-pagehist" ${c("pageStrokeHistory")}>
+        Keep stroke history when switching pages in a volume</label>
+      <label class="chk"><input type="checkbox" id="set-savehist" ${c("saveStrokeHistory")}>
+        Include stroke history in saved files</label>
+      <div class="hint">History is what lets the stroke eraser ⌫ and lasso ◌ treat
+        old art as individual strokes. Saving it makes files noticeably larger
+        (every pen path with pressure data is stored).</div>
+      <h3 class="set-h">Interface</h3>
+      <label class="chk"><input type="checkbox" id="set-rail" ${c("showToolRail")}> Show left tool rail</label>
+      <label class="chk"><input type="checkbox" id="set-side" ${c("showSidebar")}> Show right sidebar</label>
+      <div class="hint"><b>Tab</b> hides/shows both at once — distraction-free drawing.</div>
+      <div class="muted" style="font-size:12px;margin:8px 0 4px">Tools on the rail:</div>
+      <div class="set-tools">${Object.entries(TOOL_LABELS).map(([k, lbl]) => `
+        <label class="chk"><input type="checkbox" class="set-tool" data-tool="${k}"
+          ${Settings.get("hiddenTools").includes(k) ? "" : "checked"}> ${lbl}</label>`).join("")}</div>
+      <div class="hint">Hidden tools keep their keyboard shortcuts.</div>
+      <h3 class="set-h">Autosave</h3>
+      <label class="chk"><input type="checkbox" id="set-autosave" ${c("autosave")}>
+        Autosave every <input type="number" id="set-autosavemin" min="1" max="30"
+        value="${Settings.get("autosaveMin")}" style="width:56px"> minutes</label>
+      <div class="hint">Kicks in once the project has a name (save manually once first).</div>
+      <h3 class="set-h">Export</h3>
+      <label class="chk"><input type="checkbox" id="set-bleed" ${c("exportBleed")}>
+        Include bleed in exported PNGs</label>
+      <div class="hint">Off: exports crop to the red trim line — exactly the printed page.</div>
+      <div class="row" style="margin-top:14px">
+        <button id="set-reset">Reset all settings</button>
+        <span class="spacer"></span><button id="set-close">Done</button></div>`;
+    backdrop.hidden = false;
+    const bind = (sel, key) => modal.querySelector(sel).addEventListener("change",
+      e => Settings.set(key, e.target.checked));
+    bind("#set-pagehist", "pageStrokeHistory");
+    bind("#set-savehist", "saveStrokeHistory");
+    bind("#set-rail", "showToolRail");
+    bind("#set-side", "showSidebar");
+    bind("#set-autosave", "autosave");
+    bind("#set-bleed", "exportBleed");
+    modal.querySelector("#set-autosavemin").addEventListener("change", e =>
+      Settings.set("autosaveMin", Math.max(1, Math.min(30, +e.target.value || 3))));
+    modal.querySelectorAll(".set-tool").forEach(cb => cb.addEventListener("change", () =>
+      Settings.set("hiddenTools", [...modal.querySelectorAll(".set-tool")]
+        .filter(x => !x.checked).map(x => x.dataset.tool))));
+    modal.querySelector("#set-reset").addEventListener("click", () => {
+      Settings.reset(); openSettings();
+    });
+    modal.querySelector("#set-close").addEventListener("click", closeModal);
+  }
+  $("#btn-settings").addEventListener("click", openSettings);
+
+  /* autosave loop */
+  let lastAutosave = Date.now(), lastAutosaveUndo = -2;
+  setInterval(async () => {
+    if (!Settings.get("autosave") || App.projectName === "untitled") return;
+    if (Date.now() - lastAutosave < Settings.get("autosaveMin") * 60000) return;
+    if (Undo.index === lastAutosaveUndo) return;   // nothing changed
+    try {
+      const r = await apiSave();
+      if (r.ok) {
+        lastAutosave = Date.now();
+        lastAutosaveUndo = Undo.index;
+        UI.flash(`Autosaved "${App.projectName}" ✓`);
+      }
+    } catch { /* server down — retry next tick */ }
+  }, 30000);
 
   /* ---------- modal: open / new ---------- */
   const backdrop = $("#modal-backdrop"), modal = $("#modal");
@@ -336,22 +418,39 @@ const UI = {};
     modal.innerHTML = `<h2>${firstRun ? "Welcome to Inkwell 🖋" : "New page"}</h2>
       ${firstRun ? `<p class="muted" style="margin-top:-6px">Pick a page format —
         real print dimensions with proper bleed and safe areas.</p>` : ""}
-      <div class="preset-grid">${Object.entries(PAGE_PRESETS).map(([k, p]) =>
+      <div class="preset-grid">${Object.entries(PAGE_PRESETS)
+        .filter(([k]) => k !== "custom").map(([k, p]) =>
         `<div class="preset" data-k="${k}"><b>${p.label}</b>
-         <span class="muted">${p.note}</span></div>`).join("")}</div>`;
+         <span class="muted">${p.note}</span></div>`).join("")}</div>
+      <div class="custom-page"><b>Custom size</b>
+        <div class="row">
+          <input id="cp-w" type="number" value="8" min="1" max="30" step="0.25"> ×
+          <input id="cp-h" type="number" value="10" min="1" max="60" step="0.25"> inches @
+          <select id="cp-dpi"><option>150</option><option>300</option></select> dpi
+          <button id="cp-go">Create</button>
+        </div></div>`;
     backdrop.hidden = false;
+    const startWith = presetKey => {
+      newPage(presetKey);
+      App.projectName = "untitled";
+      closeModal(); Engine.fitPage(); UI.refreshLayers(); updatePageStatus();
+      if (firstRun) Tour.start();
+    };
     modal.querySelectorAll(".preset").forEach(el =>
-      el.addEventListener("click", () => {
-        newPage(el.dataset.k);
-        App.projectName = "untitled";
-        closeModal(); Engine.fitPage(); UI.refreshLayers(); updatePageStatus();
-        if (firstRun) Tour.start();
-      }));
+      el.addEventListener("click", () => startWith(el.dataset.k)));
+    modal.querySelector("#cp-go").addEventListener("click", () => {
+      const w = Math.min(30, Math.max(1, +modal.querySelector("#cp-w").value || 8));
+      const h = Math.min(60, Math.max(1, +modal.querySelector("#cp-h").value || 10));
+      const dpi = +modal.querySelector("#cp-dpi").value;
+      PAGE_PRESETS["custom"] = { label: `Custom ${w}×${h}\"`, w, h, dpi,
+        bleedIn: 0.125, safeIn: 0.25, note: "Your own dimensions." };
+      startWith("custom");
+    });
   }
   $("#btn-new").addEventListener("click", () => newPageModal(false));
 
   function updatePageStatus() {
-    const p = PAGE_PRESETS[App.page.presetKey];
+    const p = PAGE_PRESETS[App.page.presetKey] || { label: "Custom" };
     const vol = App.pages.length > 1 ? ` · page ${App.pageIndex + 1}/${App.pages.length}` : "";
     $("#st-page").textContent =
       `${App.projectName}${vol} — ${p.label} @ ${App.page.dpi}dpi (${App.page.w}×${App.page.h}px)`;
@@ -408,7 +507,7 @@ const UI = {};
     UI.flash(`Exporting ${App.pages.length} page(s)… allow multiple downloads if asked`);
     for (let i = 0; i < App.pages.length; i++) {
       await loadPage(App.pages[i]);
-      Engine.exportPNG(true, `_p${String(i + 1).padStart(2, "0")}`);
+      Engine.exportPNG(Settings.get("exportBleed"), `_p${String(i + 1).padStart(2, "0")}`);
       await new Promise(r => setTimeout(r, 350));   // let each download start
     }
     await loadPage(App.pages[cur]);
@@ -492,6 +591,12 @@ const UI = {};
       else if (k === "v" && clipboard) { pasteClipboard(); e.preventDefault(); }
       return;
     }
+    if (e.key === "Tab") {   // distraction-free: hide both side panels
+      panelsHiddenByTab = !panelsHiddenByTab;
+      UI.applySettings();
+      e.preventDefault();
+      return;
+    }
     if (e.key === "Escape") { Tools.cancelPlacing(); Tools.lassoClear(); return; }
     const tool = KEYMAP[e.key.toLowerCase()];
     if (tool) return setTool(tool);
@@ -558,6 +663,7 @@ const UI = {};
   UI.refreshLayers();
   UI.refreshUndoButtons();
   setTool("ink");
+  UI.applySettings();
   Engine.start();
   updatePageStatus();
 

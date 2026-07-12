@@ -4,6 +4,39 @@
    ============================================================ */
 "use strict";
 
+/* ============================================================
+   Settings — persisted to localStorage, edited via the ⚙ panel.
+   ============================================================ */
+const Settings = {
+  DEFAULTS: {
+    pageStrokeHistory: true,    // keep stroke logs across page switches
+    saveStrokeHistory: false,   // include stroke logs in save files (bigger files)
+    showToolRail: true,
+    showSidebar: true,
+    hiddenTools: [],            // tool names removed from the rail
+    autosave: false,
+    autosaveMin: 3,
+    exportBleed: true,          // false = crop exports to the trim line
+  },
+  data: {},
+  load() {
+    this.data = Object.assign({}, this.DEFAULTS,
+      JSON.parse(localStorage.getItem("inkwell-settings") || "{}"));
+  },
+  get(k) { return this.data[k]; },
+  set(k, v) {
+    this.data[k] = v;
+    localStorage.setItem("inkwell-settings", JSON.stringify(this.data));
+    UI?.applySettings?.();
+  },
+  reset() {
+    localStorage.removeItem("inkwell-settings");
+    this.load();
+    UI?.applySettings?.();
+  },
+};
+Settings.load();
+
 /* Page presets: real print dimensions -> pixels at working DPI.
    Trim = final printed edge. Bleed = art that runs past trim so the
    cutter never leaves a white sliver. Safe area = keep text inside. */
@@ -20,7 +53,35 @@ const PAGE_PRESETS = {
   "square":   { label: "Square 8×8\" (zine/insta)", w: 8, h: 8, dpi: 150,
                 bleedIn: 0.125, safeIn: 0.25,
                 note: "Zines and social-first comics." },
+  "golden":   { label: "Golden Age 7.75×10.5\"", w: 7.75, h: 10.5, dpi: 150,
+                bleedIn: 0.125, safeIn: 0.25,
+                note: "Classic 1940s comic proportions." },
+  "digest":   { label: "Digest 5.5×8.5\"", w: 5.5, h: 8.5, dpi: 150,
+                bleedIn: 0.125, safeIn: 0.2,
+                note: "Indie digests and minicomics." },
+  "us-letter": { label: "US Letter 8.5×11\"", w: 8.5, h: 11, dpi: 150,
+                bleedIn: 0.125, safeIn: 0.3,
+                note: "Prints on any home printer." },
+  "a4":       { label: "A4 210×297mm", w: 8.27, h: 11.69, dpi: 150,
+                bleedIn: 0.12, safeIn: 0.3,
+                note: "European standard paper." },
 };
+
+/* A loaded project may use a page size this install has never seen
+   (a custom size made elsewhere) — synthesize a preset so labels and
+   "add page" keep working. */
+function ensurePresetFor(page) {
+  if (PAGE_PRESETS[page.presetKey]) return;
+  const inW = (page.w - 2 * page.bleed) / page.dpi;
+  const inH = (page.h - 2 * page.bleed) / page.dpi;
+  PAGE_PRESETS[page.presetKey] = {
+    label: `Custom ${inW.toFixed(2)}×${inH.toFixed(2)}" @${page.dpi}dpi`,
+    w: inW, h: inH, dpi: page.dpi,
+    bleedIn: page.bleed / page.dpi,
+    safeIn: (page.safe - page.bleed) / page.dpi,
+    note: "Loaded from a saved project.",
+  };
+}
 
 const App = {
   projectName: "untitled",
@@ -53,7 +114,8 @@ function makeRasterLayer(name, opts = {}) {
            visible: true, locked: false, opacity: opts.opacity ?? 1,
            tint: opts.tint || null,   // tint: render-time recolor (blue pencils)
            ops: [],                   // stroke/shape/fill log for the stroke eraser
-           baseImg: null };           // pre-ops pixels (loaded saves)
+           baseImg: null,             // pre-ops pixels (loaded saves), as an Image
+           basePng: null };           // ...and the same as a data URL, for saving
 }
 function makeObjectLayer(name, role) {
   return { id: ++_layerSeq, kind: "objects", role, name, objects: [],
@@ -99,13 +161,16 @@ function newPage(presetKey) {
    pages snapshots the live page back into its slot, then rebuilds
    the target from its snapshot.
    ============================================================ */
-function serializePage() {
+function serializePage(includeHistory = Settings.get("pageStrokeHistory")) {
   return {
     page: App.page,
     guides: JSON.parse(JSON.stringify(App.guides)),
     layers: App.layers.map(l => l.kind === "raster"
       ? { kind: "raster", name: l.name, visible: l.visible, locked: l.locked,
-          opacity: l.opacity, tint: l.tint, png: snapshotRaster(l) }
+          opacity: l.opacity, tint: l.tint, png: snapshotRaster(l),
+          // stroke history: the pre-ops base plus the op log lets a future
+          // session keep whole-stroke editing on this art
+          ...(includeHistory ? { basePng: l.basePng || null, ops: l.ops } : {}) }
       : { kind: "objects", role: l.role, name: l.name, visible: l.visible,
           locked: l.locked, opacity: l.opacity, objects: l.objects }),
   };
@@ -113,18 +178,26 @@ function serializePage() {
 
 async function loadPage(data) {
   App.page = data.page;
+  ensurePresetFor(App.page);
   Object.assign(App.guides, data.guides || {});
   const waits = [];
   App.layers = data.layers.map(l => {
     if (l.kind === "raster") {
       const layer = makeRasterLayer(l.name, { tint: l.tint, opacity: l.opacity });
       layer.visible = l.visible; layer.locked = l.locked;
-      if (l.png) {
-        waits.push(restoreRaster(layer, l.png));
-        // loaded pixels become the rebuild base; the op log starts fresh,
-        // so the stroke eraser applies to strokes drawn from now on
+      if (l.png) waits.push(restoreRaster(layer, l.png));
+      if (Array.isArray(l.ops)) {
+        // stroke history travels with the page: whole-stroke tools keep
+        // working on this art
+        layer.ops = l.ops;
+        layer.basePng = l.basePng || null;
+      } else if (l.png) {
+        // flat save: pixels become the rebuild base, log starts fresh
+        layer.basePng = l.png;
+      }
+      if (layer.basePng) {
         layer.baseImg = new Image();
-        layer.baseImg.src = l.png;
+        layer.baseImg.src = layer.basePng;
       }
       return layer;
     }
@@ -275,10 +348,22 @@ function commitObjectChange(layer, beforeJson) {
    ============================================================ */
 function serializeProject() {
   syncCurrentPage();
+  let pages = App.pages;
+  if (!Settings.get("saveStrokeHistory")) {
+    // strip stroke history from the FILE (page-switch snapshots keep theirs)
+    pages = App.pages.map(pg => ({
+      ...pg,
+      layers: pg.layers.map(l => {
+        if (l.kind !== "raster") return l;
+        const { basePng, ops, ...flat } = l;
+        return flat;
+      }),
+    }));
+  }
   return JSON.stringify({
     version: 2,
     name: App.projectName,
-    pages: App.pages,
+    pages,
     current: App.pageIndex,
   });
 }

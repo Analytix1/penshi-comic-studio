@@ -399,7 +399,18 @@ const Tools = (() => {
   function rebuildLayer(layer) {
     const lctx = layer.canvas.getContext("2d");
     lctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
-    if (layer.baseImg && layer.baseImg.complete) lctx.drawImage(layer.baseImg, 0, 0);
+    if (layer.baseImg) {
+      if (layer.baseImg.complete) {
+        lctx.drawImage(layer.baseImg, 0, 0);
+      } else {
+        // base still decoding (e.g. right after a page switch): draw what we
+        // can now, and re-run the rebuild the moment the base is ready
+        layer.baseImg.addEventListener("load",
+          () => { rebuildLayer(layer); App.dirty = true; }, { once: true });
+      }
+    }
+    for (const op of layer.ops)
+      if (op.kind === "image") cachedImg(op.src, layer);   // warm the cache
     for (const op of layer.ops) replayOp(lctx, op);
     layer._stamp = (layer._stamp || 0) + 1;
   }
@@ -425,7 +436,7 @@ const Tools = (() => {
         return true;
       }
     }
-    if (!quiet) UI.flash("No stroke here — only strokes drawn this session can be stroke-erased.");
+    if (!quiet) UI.flash("No stroke found here — flat pixels need the normal eraser. (⚙ Settings → stroke history keeps saved art stroke-editable.)");
     return false;
   }
 
