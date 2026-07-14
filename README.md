@@ -3,7 +3,6 @@
 A local, browser-based comic/graphic-novel studio. No accounts, no cloud, **no AI image
 generation** — it's a drafting table that teaches real comic craft while you draw.
 Everything runs on your machine: a dependency-free Python server plus vanilla JS.
-MIT licensed.
 
 ## Run it
 
@@ -112,3 +111,18 @@ Bottom-to-top layer stack = the industry pipeline:
 Rough on Pencils, ink over it on Inks, toggle Pencils off, Export PNG. The Learn tab
 explains why each step exists; the Guides tab gives you page templates and a
 draggable 1/2/3-point perspective grid.
+
+## License
+
+Inkwell Comic Studio — Copyright (C) 2026 Analytix1
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the **GNU General Public License v3.0** as published by the Free
+Software Foundation. It is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the [LICENSE](LICENSE) file for the full
+text.
+
+In plain terms: use it, study it, modify it, share it, even sell it — but if you
+distribute a modified version, you must release your source under the GPL too, so
+it stays free for everyone.
