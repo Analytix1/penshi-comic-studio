@@ -2,6 +2,8 @@
 
 A local, browser-based comic/graphic-novel studio. No accounts, no cloud, **no AI image
 generation** — it's a drafting table that teaches real comic craft while you draw.
+Everything runs on your machine: a dependency-free Python server plus vanilla JS.
+MIT licensed.
 
 ## Run it
 
