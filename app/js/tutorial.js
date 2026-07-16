@@ -8,7 +8,7 @@
 "use strict";
 
 const Tutorial = (() => {
-  const DONE_KEY = "inkwell-drawschool";
+  const DONE_KEY = "penshi-drawschool";
   let active = null;        // { lesson, step }
 
   /* -------- drawing helpers (page-fraction coordinates) -------- */

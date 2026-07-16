@@ -65,7 +65,7 @@ const Reference = (() => {
       <ul>
         <li>The <b>tail points at the speaker's mouth</b>, never their body — select a balloon and drag the blue dot.</li>
         <li>Keep balloons to <b>~25 words max</b>. More than that: split into linked balloons or trim the script.</li>
-        <li>Comic lettering is traditionally <b>ALL CAPS</b> (Inkwell does this for you) with <b>bold</b> used for emphasis, roughly every 5–7 words in dramatic dialogue.</li>
+        <li>Comic lettering is traditionally <b>ALL CAPS</b> (Penshi does this for you) with <b>bold</b> used for emphasis, roughly every 5–7 words in dramatic dialogue.</li>
         <li><b>Thought bubbles</b> are cloud-scalloped with dot trails. Modern books often swap them for rectangular caption narration.</li>
         <li><b>Captions</b> carry narration and time jumps. <b>Bursts</b> carry SFX and shouts — draw the SFX big, it's part of the art.</li>
         <li>Letter <b>before</b> you finish the art in tight panels — pros place balloons at rough-layout stage so art never fights text.</li>
@@ -85,7 +85,7 @@ const Reference = (() => {
       characters appear to teleport sides and the reader loses who's who.</p>`],
 
     ["✏️ The pro pipeline (why the layers are named that)", `
-      <p>Inkwell's default layer stack is the industry pipeline, bottom to top:</p>
+      <p>Penshi's default layer stack is the industry pipeline, bottom to top:</p>
       <ul>
         <li><b>Panels</b> — layout first. Thumbnails → panel grid before any drawing.</li>
         <li><b>Pencils</b> — rough construction on this layer. It renders in <b>non-photo blue</b>, the color print cameras couldn't see, which is why pencillers used it: ink over it, never erase.</li>
@@ -219,7 +219,7 @@ const Reference = (() => {
         <div class="lib-item"><span class="ic">📖</span>
           <div class="meta"><div class="t">${t}</div><div class="muted">${d}</div>
           <a href="${url}" target="_blank" rel="noopener">open ↗</a></div></div>`).join("")}
-      <div class="hint">Tip: open a reference beside Inkwell in Windows
+      <div class="hint">Tip: open a reference beside Penshi in Windows
         Snap (Win+←/→) and draw from it — study, don't trace-and-paste.
         These books are drawn from Project Gutenberg and the Internet
         Archive's public-domain collections.</div>`;

@@ -124,7 +124,7 @@ const UI = {};
     Tools.state.color = hex;
     UI.flash("Color " + hex);
   };
-  const RECENT_KEY = "inkwell-recent-colors";
+  const RECENT_KEY = "penshi-recent-colors";
   UI.noteColor = hex => {
     let recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
     recent = [hex, ...recent.filter(c => c !== hex)].slice(0, 10);
@@ -273,7 +273,7 @@ const UI = {};
   $("#pen-tail").value = Tools.state.tailMode;
   $("#pen-tail").addEventListener("change", e => {
     Tools.state.tailMode = e.target.value;
-    localStorage.setItem("inkwell-tail-mode", e.target.value);
+    localStorage.setItem("penshi-tail-mode", e.target.value);
     UI.flash(e.target.value === "strokeeraser"
       ? "Pen tail now erases WHOLE strokes" : "Pen tail now erases pixels");
   });
@@ -459,7 +459,7 @@ const UI = {};
   });
 
   function newPageModal(firstRun = false) {
-    modal.innerHTML = `<h2>${firstRun ? "Welcome to Inkwell 🖋" : "New page"}</h2>
+    modal.innerHTML = `<h2>${firstRun ? "Welcome to Penshi 🖋" : "New page"}</h2>
       ${firstRun ? `<p class="muted" style="margin-top:-6px">Pick a page format —
         real print dimensions with proper bleed and safe areas.</p>` : ""}
       <div class="preset-grid">${Object.entries(PAGE_PRESETS)
@@ -692,7 +692,7 @@ const UI = {};
     }
     $("#tour-next").addEventListener("click", () => { i++; show(); });
     $("#tour-skip").addEventListener("click", () => { i = STEPS.length; show(); });
-    return { start() { i = 0; show(); localStorage.setItem("inkwell-toured", "1"); } };
+    return { start() { i = 0; show(); localStorage.setItem("penshi-toured", "1"); } };
   })();
   $("#btn-tour").addEventListener("click", () => Tour.start());
 
@@ -711,6 +711,6 @@ const UI = {};
   Engine.start();
   updatePageStatus();
 
-  if (!localStorage.getItem("inkwell-toured")) newPageModal(true);
+  if (!localStorage.getItem("penshi-toured")) newPageModal(true);
   else updatePageStatus();
 })();

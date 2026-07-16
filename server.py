@@ -1,5 +1,5 @@
 """
-Inkwell Comic Studio -- local backend server.
+Penshi Comic Studio -- local backend server.
 
 Pure Python stdlib (no pip installs). Responsibilities:
   1. Serve the static frontend from ./app
@@ -28,7 +28,7 @@ ASSETS_DIR = ROOT / "assets"      # personal reusable art stamps (eyes, titles, 
 # Resolution order:
 #   1. "resourcesDir" in an optional config.json next to this file (gitignored,
 #      so personal paths never end up in version control)
-#   2. INKWELL_RESOURCES environment variable
+#   2. PENSHI_RESOURCES environment variable
 #   3. a "drawing-resources" folder inside this project (auto-created)
 def _resources_dir() -> Path:
     cfg = ROOT / "config.json"
@@ -38,9 +38,9 @@ def _resources_dir() -> Path:
             if value:
                 return Path(value)
         except (json.JSONDecodeError, OSError) as e:
-            print(f"[inkwell] ignoring bad config.json: {e}", file=sys.stderr)
-    if os.environ.get("INKWELL_RESOURCES"):
-        return Path(os.environ["INKWELL_RESOURCES"])
+            print(f"[penshi] ignoring bad config.json: {e}", file=sys.stderr)
+    if os.environ.get("PENSHI_RESOURCES"):
+        return Path(os.environ["PENSHI_RESOURCES"])
     default = ROOT / "drawing-resources"
     default.mkdir(exist_ok=True)
     return default
@@ -66,7 +66,7 @@ def safe_child(base: Path, name: str) -> Path | None:
     return candidate
 
 
-class InkwellHandler(BaseHTTPRequestHandler):
+class PenshiHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     # ---------- plumbing ----------
@@ -96,7 +96,7 @@ class InkwellHandler(BaseHTTPRequestHandler):
             pass  # client cancelled (e.g. scrubbing through a PDF) -- not an error
 
     def log_message(self, fmt, *args):
-        sys.stderr.write("[inkwell] %s\n" % (fmt % args))
+        sys.stderr.write("[penshi] %s\n" % (fmt % args))
 
     # ---------- routing ----------
 
@@ -266,8 +266,8 @@ class InkwellHandler(BaseHTTPRequestHandler):
 def main():
     PROJECTS_DIR.mkdir(exist_ok=True)
     ASSETS_DIR.mkdir(exist_ok=True)
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), InkwellHandler)
-    print(f"Inkwell Comic Studio -> http://localhost:{PORT}")
+    server = ThreadingHTTPServer(("127.0.0.1", PORT), PenshiHandler)
+    print(f"Penshi Comic Studio -> http://localhost:{PORT}")
     print(f"  projects : {PROJECTS_DIR}")
     print(f"  resources: {RESOURCES_DIR}")
     try:

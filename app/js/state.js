@@ -4,6 +4,20 @@
    ============================================================ */
 "use strict";
 
+/* One-time localStorage migration for the Inkwell -> Penshi rename.
+   Runs before anything reads a key, so existing users keep their
+   settings, palette, tour-seen flag and Draw School progress. */
+(() => {
+  for (const key of ["settings", "recent-colors", "tail-mode", "drawschool", "toured"]) {
+    const oldK = "inkwell-" + key, newK = "penshi-" + key;
+    const v = localStorage.getItem(oldK);
+    if (v !== null) {
+      if (localStorage.getItem(newK) === null) localStorage.setItem(newK, v);
+      localStorage.removeItem(oldK);
+    }
+  }
+})();
+
 /* ============================================================
    Settings — persisted to localStorage, edited via the ⚙ panel.
    ============================================================ */
@@ -21,16 +35,16 @@ const Settings = {
   data: {},
   load() {
     this.data = Object.assign({}, this.DEFAULTS,
-      JSON.parse(localStorage.getItem("inkwell-settings") || "{}"));
+      JSON.parse(localStorage.getItem("penshi-settings") || "{}"));
   },
   get(k) { return this.data[k]; },
   set(k, v) {
     this.data[k] = v;
-    localStorage.setItem("inkwell-settings", JSON.stringify(this.data));
+    localStorage.setItem("penshi-settings", JSON.stringify(this.data));
     UI?.applySettings?.();
   },
   reset() {
-    localStorage.removeItem("inkwell-settings");
+    localStorage.removeItem("penshi-settings");
     this.load();
     UI?.applySettings?.();
   },

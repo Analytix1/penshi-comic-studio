@@ -22,7 +22,7 @@ const Tools = (() => {
     color: "#1a1a1a",
     gutter: 14,
     // what the Slim Pen's flip-end eraser does: "eraser" | "strokeeraser"
-    tailMode: localStorage.getItem("inkwell-tail-mode") || "eraser",
+    tailMode: localStorage.getItem("penshi-tail-mode") || "eraser",
   };
 
   /* Per-brush personalities */

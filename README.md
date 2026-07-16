@@ -1,4 +1,4 @@
-# 🖋 Inkwell — Comic Studio
+# 🖋 Penshi — Comic Studio
 
 A local, browser-based comic/graphic-novel studio. No accounts, no cloud, **no AI image
 generation** — it's a drafting table that teaches real comic craft while you draw.
@@ -9,12 +9,12 @@ Everything runs on your machine: a dependency-free Python server plus vanilla JS
 Requires Python 3.8+ (standard library only — no pip installs).
 
 ```powershell
-cd path\to\inkwell-comic-studio
+cd path\to\penshi-comic-studio
 python server.py
 ```
 
 Then open **http://localhost:8321** (Edge or Chrome recommended for full stylus
-support). On Windows you can just double-click **Start Inkwell.bat** instead.
+support). On Windows you can just double-click **Start Penshi.bat** instead.
 The server binds to 127.0.0.1 only — nothing is exposed to your network.
 
 ## Surface Slim Pen 2
@@ -114,7 +114,7 @@ draggable 1/2/3-point perspective grid.
 
 ## License
 
-Inkwell Comic Studio — Copyright (C) 2026 Analytix1
+Penshi Comic Studio — Copyright (C) 2026 Analytix1
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the **GNU General Public License v3.0** as published by the Free

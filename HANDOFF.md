@@ -1,13 +1,13 @@
-# Inkwell — architecture handoff & delegation prompts
+# Penshi — architecture handoff & delegation prompts
 
-This file exists so smaller Claude models (Opus, Sonnet) can extend Inkwell without
+This file exists so smaller Claude models (Opus, Sonnet) can extend Penshi without
 breaking its architecture. **Paste the "context block" first, then one task prompt.**
 
 ---
 
 ## Context block (paste this at the top of EVERY delegated prompt)
 
-> You are extending **Inkwell**, a local comic-creation app (repo root = this folder).
+> You are extending **Penshi**, a local comic-creation app (repo root = this folder).
 > Backend: `server.py`, pure Python stdlib `ThreadingHTTPServer` on port 8321 — static
 > files from `app/`, project JSON persistence under `/api/projects/<name>`, and a
 > read-only resource file server under `/resources/`. No pip dependencies allowed.
@@ -129,4 +129,5 @@ serialization so reference layers reload."
 - Balloon tail seam can show a faint line at extreme zoom.
 - No .kra/.psd interchange; export is flattened PNG only.
 - Flood fill has fixed tolerance 48; could be a slider.
-- The old first-run tour flag lives in localStorage under `inkwell-toured`.
+- The old first-run tour flag lives in localStorage under `penshi-toured`
+  (migrated from `inkwell-toured`; see the migration block atop state.js).
