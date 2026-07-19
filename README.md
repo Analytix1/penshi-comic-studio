@@ -4,18 +4,62 @@ A local, browser-based comic/graphic-novel studio. No accounts, no cloud, **no A
 generation** — it's a drafting table that teaches real comic craft while you draw.
 Everything runs on your machine: a dependency-free Python server plus vanilla JS.
 
-## Run it
+## Getting started (no coding experience needed)
 
-Requires Python 3.8+ (standard library only — no pip installs).
+Penshi runs entirely on your own computer. No account, no cloud — after the
+download, it works offline and nothing ever leaves your machine.
 
-```powershell
-cd path\to\penshi-comic-studio
-python server.py
-```
+### Step 1 — Download Penshi
 
-Then open **http://localhost:8321** (Edge or Chrome recommended for full stylus
-support). On Windows you can just double-click **Start Penshi.bat** instead.
-The server binds to 127.0.0.1 only — nothing is exposed to your network.
+- Near the top of this GitHub page, click the green **`<> Code`** button, then
+  **Download ZIP**.
+- Find the downloaded `penshi-comic-studio-main.zip`, right-click it →
+  **Extract All…**, and put the folder somewhere easy to find (like Documents).
+
+*(If you're comfortable with Git: `git clone https://github.com/Analytix1/penshi-comic-studio.git` works too, and lets you update later with `git pull`.)*
+
+### Step 2 — Install Python (one time, free)
+
+Python is the engine Penshi's local server runs on. Any version 3.8 or newer.
+
+- **Windows:** download it from [python.org/downloads](https://www.python.org/downloads/)
+  and run the installer. **Important:** on the installer's first screen, tick the
+  box that says **"Add python.exe to PATH"** before clicking Install.
+- **Mac:** open Terminal and run `python3 --version` — if it prints a version,
+  you already have it. Otherwise install from python.org.
+- Nothing else to install. No pip packages, no Node, no build steps.
+
+### Step 3 — Start drawing
+
+- **Windows:** open the extracted folder and double-click **`Start Penshi.bat`**.
+  Your browser opens at `http://localhost:8321` — that's the app.
+  - The first time, Windows SmartScreen may warn about an unrecognized script:
+    click **More info → Run anyway**. (The script is 20 lines that start the
+    local server and open your browser — open it in Notepad if you'd like to
+    check.)
+- **Mac / Linux:** open a terminal in the folder and run `python3 server.py`,
+  then open **http://localhost:8321** in your browser.
+- Use **Chrome or Edge** for the best stylus support (pressure + tilt).
+
+A guided tour starts on your first visit. Never drawn before? Open the **Learn**
+tab → **🎓 Draw School**.
+
+### Where your work lives
+
+Saved comics go in the `projects` folder inside the Penshi folder, and saved
+art stamps go in `assets`. Back those two folders up and you've backed up
+everything. The server only listens on `127.0.0.1` (your own machine) — it is
+not visible to your network or the internet.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `'python' is not recognized` | Reinstall Python with **Add python.exe to PATH** ticked — or try running `py server.py` instead |
+| A window flashes open and instantly closes | Open PowerShell in the folder and run `python server.py` to see the actual error message |
+| Browser says it can't connect | The server isn't running — do Step 3 first, then refresh |
+| Pen pressure isn't working | Use Chrome or Edge; some browsers don't report stylus pressure |
+| App opens but the Library shelf is empty | That's normal — see `config.example.json` to point it at your own reference folder |
 
 ## Surface Slim Pen 2
 
@@ -87,8 +131,10 @@ US Letter, A4) plus fully custom width × height at 150 or 300 dpi.
 - **Volumes**: every project is multi-page. The page tabs at the top-left of the
   canvas add (＋), switch, and delete (✕) pages; **Export all** downloads each page
   as a numbered PNG. Old single-page saves open fine and become one-page volumes.
-- **Lasso (L)**: circle strokes to select them as a group — drag to move, Del to
-  delete, **📦 Save asset** to capture them.
+- **Lasso (L)**: circle strokes to select them as a group — drag to move, pull the
+  corner/edge handles to **stretch** (Shift keeps proportions), drag the knob above
+  the box to **rotate** (Shift snaps to 15°), Del to delete, **📦 Save asset** to
+  capture them.
 - **Asset library** (Library tab → My assets): your saved stamps — eyes, logos,
   props — available in every project. Click one, then click the page to place it;
   `[` `]` resize before placing, Esc cancels. Assets live in the gitignored

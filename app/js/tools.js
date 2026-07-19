@@ -201,15 +201,46 @@ const Tools = (() => {
     }
     if (lasso) {                                       // committed selection box
       const b = lasso.bbox;
+      const z = App.view.zoom;
       const dx = lassoMove ? lassoMove.dx : 0, dy = lassoMove ? lassoMove.dy : 0;
       ctx.save();
       ctx.strokeStyle = "#e8b04b"; ctx.lineWidth = lw;
-      ctx.setLineDash([8 / App.view.zoom, 6 / App.view.zoom]);
-      ctx.strokeRect(b.x + dx, b.y + dy, b.w, b.h);
-      if (lassoMove) {
-        ctx.globalAlpha = 0.25;
+      ctx.setLineDash([8 / z, 6 / z]);
+      if (lassoXform) {
+        // ghost: where the bbox lands if you release now
+        const corners = [{ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y },
+                         { x: b.x + b.w, y: b.y + b.h }, { x: b.x, y: b.y + b.h }]
+          .map(pt => xformPoint(lassoXform, pt));
+        ctx.beginPath();
+        ctx.moveTo(corners[0].x, corners[0].y);
+        for (let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.globalAlpha = 0.18;
         ctx.fillStyle = "#e8b04b";
-        ctx.fillRect(b.x + dx, b.y + dy, b.w, b.h);
+        ctx.fill();
+      } else {
+        ctx.strokeRect(b.x + dx, b.y + dy, b.w, b.h);
+        if (lassoMove) {
+          ctx.globalAlpha = 0.25;
+          ctx.fillStyle = "#e8b04b";
+          ctx.fillRect(b.x + dx, b.y + dy, b.w, b.h);
+        } else {
+          // 8 stretch handles + the rotation knob
+          ctx.setLineDash([]);
+          ctx.fillStyle = "#e8b04b";
+          const hs = 7 / z;
+          for (const h of lassoHandles())
+            ctx.fillRect(h.x - hs / 2, h.y - hs / 2, hs, hs);
+          const rh = rotHandlePos();
+          ctx.beginPath();
+          ctx.moveTo(b.x + b.w / 2, b.y);
+          ctx.lineTo(rh.x, rh.y);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(rh.x, rh.y, 5.5 / z, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       ctx.restore();
     }
@@ -238,7 +269,12 @@ const Tools = (() => {
     ctx2.beginPath();
     if (op.shape === "line") { ctx2.moveTo(op.x1, op.y1); ctx2.lineTo(op.x2, op.y2); }
     else if (op.shape === "rect") ctx2.rect(op.x, op.y, op.w, op.h);
-    else ctx2.ellipse(op.cx, op.cy, op.rx, op.ry, 0, 0, Math.PI * 2);
+    else if (op.shape === "poly") {
+      ctx2.moveTo(op.pts[0].x, op.pts[0].y);
+      for (let i = 1; i < op.pts.length; i++) ctx2.lineTo(op.pts[i].x, op.pts[i].y);
+      ctx2.closePath();
+    }
+    else ctx2.ellipse(op.cx, op.cy, op.rx, op.ry, op.rot || 0, 0, Math.PI * 2);
     ctx2.stroke();
   }
 
@@ -354,8 +390,17 @@ const Tools = (() => {
                  { x: op.x + op.w, y: op.y + op.h }, { x: op.x, y: op.y + op.h }];
       return c.some((v, i) => distSeg(p, v, c[(i + 1) % 4]) <= r);
     }
+    if (op.shape === "poly")
+      return op.pts.some((v, i) => distSeg(p, v, op.pts[(i + 1) % op.pts.length]) <= r);
     if (op.rx < 1 || op.ry < 1) return false;
-    const v = Math.sqrt(((p.x - op.cx) / op.rx) ** 2 + ((p.y - op.cy) / op.ry) ** 2);
+    // rotated ellipses: test in the ellipse's own frame
+    let px = p.x - op.cx, py = p.y - op.cy;
+    if (op.rot) {
+      const cos = Math.cos(-op.rot), sin = Math.sin(-op.rot);
+      const rx2 = px * cos - py * sin, ry2 = px * sin + py * cos;
+      px = rx2; py = ry2;
+    }
+    const v = Math.sqrt((px / op.rx) ** 2 + (py / op.ry) ** 2);
     return Math.abs(v - 1) * Math.min(op.rx, op.ry) <= r;
   }
 
@@ -392,7 +437,17 @@ const Tools = (() => {
       fillPixels(lctx.canvas, op.x, op.y, op.color);
     } else if (op.kind === "image") {
       const img = cachedImg(op.src);
-      if (img.complete) lctx.drawImage(img, op.x, op.y, op.w, op.h);
+      if (img.complete) {
+        if (op.rot) {
+          lctx.save();
+          lctx.translate(op.x + op.w / 2, op.y + op.h / 2);
+          lctx.rotate(op.rot);
+          lctx.drawImage(img, -op.w / 2, -op.h / 2, op.w, op.h);
+          lctx.restore();
+        } else {
+          lctx.drawImage(img, op.x, op.y, op.w, op.h);
+        }
+      }
     }
   }
 
@@ -449,7 +504,35 @@ const Tools = (() => {
   let lasso = null;       // { layer, indices, bbox, path } — committed selection
   let lassoDraw = null;   // in-progress polygon
   let lassoMove = null;   // { start, dx, dy } — dragging the selection
+  let lassoXform = null;  // { mode:"scale"|"rotate", ... } — handle drag in progress
   let tailErase = false;  // pen tail held in stroke-eraser mode
+
+  const rotPt = (pt, c, ang) => {
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const dx = pt.x - c.x, dy = pt.y - c.y;
+    return { x: c.x + dx * cos - dy * sin, y: c.y + dx * sin + dy * cos };
+  };
+
+  /* where a live handle-drag maps a page point */
+  function xformPoint(t, pt) {
+    if (t.mode === "rotate") return rotPt(pt, t.center, t.angle);
+    return { x: t.anchor.x + (pt.x - t.anchor.x) * t.sx,
+             y: t.anchor.y + (pt.y - t.anchor.y) * t.sy };
+  }
+
+  /* 8 scale handles on the bbox edge midpoints + corners */
+  function lassoHandles() {
+    const b = lasso.bbox, hs = [];
+    for (const hy of [-1, 0, 1]) for (const hx of [-1, 0, 1]) {
+      if (hx === 0 && hy === 0) continue;
+      hs.push({ hx, hy, x: b.x + (hx + 1) / 2 * b.w, y: b.y + (hy + 1) / 2 * b.h });
+    }
+    return hs;
+  }
+  function rotHandlePos() {
+    const b = lasso.bbox;
+    return { x: b.x + b.w / 2, y: b.y - 30 / App.view.zoom };
+  }
 
   function pointInPoly(p, poly) {
     let inside = false;
@@ -463,35 +546,49 @@ const Tools = (() => {
 
   function opTestPoints(op) {
     if (op.kind === "stroke") return op.points;
-    if (op.kind === "image")
-      return [{ x: op.x, y: op.y }, { x: op.x + op.w, y: op.y },
-              { x: op.x, y: op.y + op.h }, { x: op.x + op.w, y: op.y + op.h }];
+    if (op.kind === "image") {
+      const c = [{ x: op.x, y: op.y }, { x: op.x + op.w, y: op.y },
+                 { x: op.x, y: op.y + op.h }, { x: op.x + op.w, y: op.y + op.h }];
+      if (!op.rot) return c;
+      const ctr = { x: op.x + op.w / 2, y: op.y + op.h / 2 };
+      return c.map(q => rotPt(q, ctr, op.rot));
+    }
     if (op.shape === "line")
       return [{ x: op.x1, y: op.y1 }, { x: op.x2, y: op.y2 },
               { x: (op.x1 + op.x2) / 2, y: (op.y1 + op.y2) / 2 }];
     if (op.shape === "rect")
       return [{ x: op.x, y: op.y }, { x: op.x + op.w, y: op.y },
               { x: op.x, y: op.y + op.h }, { x: op.x + op.w, y: op.y + op.h }];
-    return [{ x: op.cx - op.rx, y: op.cy }, { x: op.cx + op.rx, y: op.cy },
-            { x: op.cx, y: op.cy - op.ry }, { x: op.cx, y: op.cy + op.ry }];
+    if (op.shape === "poly") return op.pts;
+    const ext = [{ x: op.cx - op.rx, y: op.cy }, { x: op.cx + op.rx, y: op.cy },
+                 { x: op.cx, y: op.cy - op.ry }, { x: op.cx, y: op.cy + op.ry }];
+    if (!op.rot) return ext;
+    return ext.map(q => rotPt(q, { x: op.cx, y: op.cy }, op.rot));
+  }
+
+  function computeLassoBbox(layer, indices) {
+    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    for (const i of indices) {
+      const op = layer.ops[i];
+      const r = op.kind === "stroke" ? op.cfg.size / 2 : (op.size || 0) / 2;
+      for (const q of opTestPoints(op)) {
+        minX = Math.min(minX, q.x - r); minY = Math.min(minY, q.y - r);
+        maxX = Math.max(maxX, q.x + r); maxY = Math.max(maxY, q.y + r);
+      }
+    }
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
   }
 
   function finishLasso(path) {
     const layer = activeLayer();
     if (layer.kind !== "raster") { UI.flash("Lasso works on raster layers — pick Inks/Pencils/Colors."); return; }
     const indices = [];
-    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
     layer.ops.forEach((op, i) => {
       if (op.kind === "fill") return;                 // fills aren't portable
       const pts = opTestPoints(op);
       const inside = pts.filter(q => pointInPoly(q, path)).length;
       if (inside / pts.length < 0.6) return;          // mostly inside = selected
       indices.push(i);
-      for (const q of pts) {
-        const r = op.kind === "stroke" ? op.cfg.size / 2 : (op.size || 0) / 2;
-        minX = Math.min(minX, q.x - r); minY = Math.min(minY, q.y - r);
-        maxX = Math.max(maxX, q.x + r); maxY = Math.max(maxY, q.y + r);
-      }
     });
     if (!indices.length) {
       lasso = null;
@@ -499,8 +596,7 @@ const Tools = (() => {
       UI.flash("Nothing lassoed — circle strokes drawn this session on the active layer.");
       return;
     }
-    lasso = { layer, indices,
-              bbox: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } };
+    lasso = { layer, indices, bbox: computeLassoBbox(layer, indices) };
     UI.showLassoActions(lasso.bbox, indices.length);
     App.dirty = true;
   }
@@ -537,7 +633,7 @@ const Tools = (() => {
   }
 
   function lassoClear() {
-    lasso = null; lassoDraw = null; lassoMove = null;
+    lasso = null; lassoDraw = null; lassoMove = null; lassoXform = null;
     UI.hideLassoActions();
     App.dirty = true;
   }
@@ -750,16 +846,102 @@ const Tools = (() => {
     }
   }
 
-  /* start a lasso gesture: inside an existing selection = move it,
-     anywhere else = begin a new polygon */
+  /* start a lasso gesture: rotation knob = rotate, handle = stretch,
+     inside the box = move, anywhere else = begin a new polygon */
   function lassoDown(p) {
-    if (lasso && p.x >= lasso.bbox.x && p.x <= lasso.bbox.x + lasso.bbox.w &&
-        p.y >= lasso.bbox.y && p.y <= lasso.bbox.y + lasso.bbox.h) {
-      lassoMove = { start: p, dx: 0, dy: 0 };
-    } else {
-      lassoClear();
-      lassoDraw = [p];
+    if (lasso) {
+      const grabR = 11 / App.view.zoom;
+      const b = lasso.bbox;
+      const rh = rotHandlePos();
+      if (Math.hypot(p.x - rh.x, p.y - rh.y) < grabR) {
+        const center = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+        lassoXform = { mode: "rotate", center,
+                       a0: Math.atan2(p.y - center.y, p.x - center.x), angle: 0 };
+        return;
+      }
+      for (const h of lassoHandles()) {
+        if (Math.hypot(p.x - h.x, p.y - h.y) < grabR) {
+          // anchor = the opposite corner/edge; it stays put while you pull
+          const anchor = { x: b.x + (1 - h.hx) / 2 * b.w,
+                           y: b.y + (1 - h.hy) / 2 * b.h };
+          lassoXform = { mode: "scale", h, anchor, start: p, sx: 1, sy: 1 };
+          return;
+        }
+      }
+      if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+        lassoMove = { start: p, dx: 0, dy: 0 };
+        return;
+      }
     }
+    lassoClear();
+    lassoDraw = [p];
+  }
+
+  /* mutate one op through the transform; may return a REPLACEMENT op
+     (axis-aligned rects become 4-point polygons under rotation) */
+  function transformOp(op, t, fn) {
+    const rotate = t.mode === "rotate";
+    const meanS = rotate ? 1 : (Math.abs(t.sx) + Math.abs(t.sy)) / 2;
+    if (op.kind === "stroke") {
+      for (const q of op.points) { const n = fn(q); q.x = n.x; q.y = n.y; }
+      op.cfg.size = Math.max(0.5, op.cfg.size * meanS);
+      return op;
+    }
+    if (op.kind === "image") {
+      if (rotate) {
+        const c = fn({ x: op.x + op.w / 2, y: op.y + op.h / 2 });
+        op.x = c.x - op.w / 2; op.y = c.y - op.h / 2;
+        op.rot = (op.rot || 0) + t.angle;
+      } else {
+        const a = fn({ x: op.x, y: op.y }), b = fn({ x: op.x + op.w, y: op.y + op.h });
+        op.x = Math.min(a.x, b.x); op.y = Math.min(a.y, b.y);
+        op.w = Math.abs(b.x - a.x); op.h = Math.abs(b.y - a.y);
+      }
+      return op;
+    }
+    op.size = Math.max(0.5, (op.size || 1) * meanS);
+    if (op.shape === "line") {
+      const a = fn({ x: op.x1, y: op.y1 }), b = fn({ x: op.x2, y: op.y2 });
+      op.x1 = a.x; op.y1 = a.y; op.x2 = b.x; op.y2 = b.y;
+      return op;
+    }
+    if (op.shape === "poly") {
+      op.pts = op.pts.map(fn);
+      return op;
+    }
+    if (op.shape === "rect") {
+      if (rotate) {
+        const c = [{ x: op.x, y: op.y }, { x: op.x + op.w, y: op.y },
+                   { x: op.x + op.w, y: op.y + op.h }, { x: op.x, y: op.y + op.h }];
+        return { kind: "shape", shape: "poly", size: op.size, color: op.color,
+                 pts: c.map(fn) };
+      }
+      const a = fn({ x: op.x, y: op.y }), b = fn({ x: op.x + op.w, y: op.y + op.h });
+      op.x = Math.min(a.x, b.x); op.y = Math.min(a.y, b.y);
+      op.w = Math.abs(b.x - a.x); op.h = Math.abs(b.y - a.y);
+      return op;
+    }
+    // ellipse
+    const c = fn({ x: op.cx, y: op.cy });
+    op.cx = c.x; op.cy = c.y;
+    if (rotate) op.rot = (op.rot || 0) + t.angle;
+    else { op.rx = Math.max(0.5, op.rx * Math.abs(t.sx));
+           op.ry = Math.max(0.5, op.ry * Math.abs(t.sy)); }
+    return op;
+  }
+
+  function applyLassoTransform(t) {
+    const layer = lasso.layer;
+    const before = snapshotRaster(layer);
+    const beforeOps = JSON.stringify(layer.ops);
+    const fn = pt => xformPoint(t, pt);
+    for (const i of lasso.indices)
+      layer.ops[i] = transformOp(layer.ops[i], t, fn);
+    rebuildLayer(layer);
+    commitRasterOpsSnapshot(layer, before, beforeOps);
+    lasso.bbox = computeLassoBbox(layer, lasso.indices);
+    UI.showLassoActions(lasso.bbox, lasso.indices.length);
+    App.dirty = true;
   }
 
   function onMove(e) {
@@ -777,6 +959,25 @@ const Tools = (() => {
     if (placing) { placing.pos = pointFrom(e); App.dirty = true; return; }
     if (tailErase || (state.current === "strokeeraser" && (e.buttons & 1))) {
       strokeEraseAt(pointFrom(e), true);   // swipe across strokes to clear them
+      return;
+    }
+    if (lassoXform) {
+      const q = pointFrom(e);
+      if (lassoXform.mode === "rotate") {
+        let ang = Math.atan2(q.y - lassoXform.center.y, q.x - lassoXform.center.x)
+                  - lassoXform.a0;
+        if (e.shiftKey) ang = Math.round(ang / (Math.PI / 12)) * (Math.PI / 12);
+        lassoXform.angle = ang;
+      } else {
+        const { h, anchor, start } = lassoXform;
+        const dX = start.x - anchor.x, dY = start.y - anchor.y;
+        let sx = (h.hx === 0 || Math.abs(dX) < 1) ? 1 : (q.x - anchor.x) / dX;
+        let sy = (h.hy === 0 || Math.abs(dY) < 1) ? 1 : (q.y - anchor.y) / dY;
+        sx = Math.max(0.05, sx); sy = Math.max(0.05, sy);   // no flips (yet)
+        if (e.shiftKey && h.hx !== 0 && h.hy !== 0) sx = sy = (sx + sy) / 2;
+        lassoXform.sx = sx; lassoXform.sy = sy;
+      }
+      App.dirty = true;
       return;
     }
     if (lassoDraw) {
@@ -811,6 +1012,15 @@ const Tools = (() => {
     if (Guides.release()) return;
     if (tailErase) { tailErase = false; return; }
     if (stroke.active) { endStroke(); return; }
+    if (lassoXform) {
+      const t = lassoXform; lassoXform = null;
+      const changed = t.mode === "rotate"
+        ? Math.abs(t.angle) > 0.002
+        : Math.abs(t.sx - 1) > 0.002 || Math.abs(t.sy - 1) > 0.002;
+      if (changed) applyLassoTransform(t);
+      App.dirty = true;
+      return;
+    }
     if (lassoDraw) {
       const path = lassoDraw; lassoDraw = null;
       if (path.length >= 3) finishLasso(path);

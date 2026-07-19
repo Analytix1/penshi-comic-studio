@@ -98,21 +98,13 @@ region (floating buffer canvas until committed), with undo integration. This is 
 biggest missing Illustrator-ism." (Note: for op-logged strokes, the LASSO tool in
 tools.js already covers select/move/delete — this task is for flat pixels.)
 
-**O6 — Stretch & rotate for lasso selections**
-"tools.js has a lasso tool that selects op-log entries (`lasso.indices` into
-`layer.ops`) with move + delete. Add STRETCH and ROTATE: draw 8 scale handles +
-one rotation handle on `lasso.bbox` (render in Tools.renderScratch, hit-test in
-the lasso branch of onDown). Transform math per op kind, around the bbox center
-or dragged anchor: stroke → transform every point in op.points (and multiply
-op.cfg.size by the mean scale factor); shape line → transform endpoints; rect
-under rotation must be CONVERTED to a 4-point 'poly' shape kind you add
-(axis-aligned rects can't rotate) — add poly to drawShapeOp, hitShapeOp and
-opTestPoints; ellipse → transform cx/cy, scale rx/ry, and add a rotation field
-(drawShapeOp already uses ctx.ellipse which takes a rotation arg); image →
-transform x/y/w/h, and add a rotation field drawn via save/translate/rotate.
-Live preview: draw the transformed bbox ghost only; apply on pointerup via the
-existing applyLassoMove pattern (snapshot → mutate ops → rebuildLayer →
-commitRasterOpsSnapshot). Shift = uniform scale / 15° rotation snap."
+**O6 — Stretch & rotate for lasso selections** — ✅ DONE (implemented in tools.js:
+8 scale handles + rotation knob on `lasso.bbox`, per-op-kind transform math in
+`transformOp()`, rects convert to a `poly` shape kind under rotation, ellipses
+and images carry a `rot` field, Shift = uniform scale / 15° snap, ghost preview,
+undo via `commitRasterOpsSnapshot`). A natural extension left for later: allow
+NEGATIVE scaling for mirror-flips (currently clamped to +0.05; flipping needs
+sign-aware handling of ellipse `rot` and image draw).
 
 **O5 — Reference image import**
 "Allow dropping an image file onto the canvas to create a locked 'Reference' raster

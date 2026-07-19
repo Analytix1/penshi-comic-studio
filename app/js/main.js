@@ -39,7 +39,7 @@ const UI = {};
   /* ---------- tools ---------- */
   const TOOL_HINTS = {
     select: "Click an object to select. Drag to move, corner square to resize, blue dot to re-aim a balloon tail. Del removes it. Double-click text to edit.",
-    lasso: "Circle strokes to select them as a group (this session's strokes, active layer). Drag inside the box to move them, Del deletes, 📦 saves them to your asset library. Esc clears. The Slim Pen's SIDE BUTTON lassos from any tool — hold it and circle.",
+    lasso: "Circle strokes to select them as a group. Drag inside the box to move; corner/edge squares STRETCH (Shift = keep proportions); the knob above ROTATES (Shift = 15° snaps). Del deletes, 📦 saves to your asset library, Esc clears. The Slim Pen's side button lassos from any tool.",
     pan: "Drag to move around the page. Any tool: hold Space, use a finger, or the middle mouse button.",
     ink: "Your finish line. Pressure drives width — light for distant/delicate, heavy for shadow-side and foreground. Vary weight within one stroke.",
     pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
