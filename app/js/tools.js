@@ -35,6 +35,7 @@ const Tools = (() => {
 
   /* ---------- scratch buffer ---------- */
   const scratch = document.createElement("canvas");
+  const previewTint = document.createElement("canvas");  // tinted-layer preview pass
   let sctx = null;
   function resetScratch() {
     scratch.width = App.page.w; scratch.height = App.page.h;
@@ -184,8 +185,29 @@ const Tools = (() => {
     const shapeLive = !!shapeStart &&
       ["line", "rect", "ellipse"].includes(state.current);
     if (brushLive || shapeLive) {
-      ctx.save(); ctx.globalAlpha = brushLive ? stroke.alpha : 1;
-      ctx.drawImage(scratch, 0, 0);
+      // preview must look like the COMMITTED result: respect the target
+      // layer's tint (non-photo-blue Pencils) and opacity, or the stroke
+      // appears to change color the moment you lift the pen
+      const layer = brushLive ? stroke.layer : activeLayer();
+      const onRaster = layer && layer.kind === "raster";
+      ctx.save();
+      ctx.globalAlpha = (brushLive ? stroke.alpha : 1) *
+                        (onRaster ? layer.opacity : 1);
+      if (onRaster && layer.tint) {
+        if (previewTint.width !== scratch.width || previewTint.height !== scratch.height) {
+          previewTint.width = scratch.width; previewTint.height = scratch.height;
+        }
+        const tctx = previewTint.getContext("2d");
+        tctx.clearRect(0, 0, previewTint.width, previewTint.height);
+        tctx.drawImage(scratch, 0, 0);
+        tctx.globalCompositeOperation = "source-in";
+        tctx.fillStyle = layer.tint;
+        tctx.fillRect(0, 0, previewTint.width, previewTint.height);
+        tctx.globalCompositeOperation = "source-over";
+        ctx.drawImage(previewTint, 0, 0);
+      } else {
+        ctx.drawImage(scratch, 0, 0);
+      }
       ctx.restore();
     }
     const lw = 1.5 / App.view.zoom;
@@ -798,6 +820,9 @@ const Tools = (() => {
 
     if (placing) { commitPlacement(p); return; }   // stamp the floating asset
 
+    // an active lasso selection owns its handles/knob/box from ANY tool
+    if (lasso && lassoGrab(p)) return;
+
     // Alt+click = eyedropper: sample the visible color under the cursor
     if (e.altKey && !["select", "pan"].includes(state.current)) {
       const hex = Engine.sampleColor(p.x, p.y);
@@ -846,33 +871,40 @@ const Tools = (() => {
     }
   }
 
-  /* start a lasso gesture: rotation knob = rotate, handle = stretch,
-     inside the box = move, anywhere else = begin a new polygon */
-  function lassoDown(p) {
-    if (lasso) {
-      const grabR = 11 / App.view.zoom;
-      const b = lasso.bbox;
-      const rh = rotHandlePos();
-      if (Math.hypot(p.x - rh.x, p.y - rh.y) < grabR) {
-        const center = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
-        lassoXform = { mode: "rotate", center,
-                       a0: Math.atan2(p.y - center.y, p.x - center.x), angle: 0 };
-        return;
-      }
-      for (const h of lassoHandles()) {
-        if (Math.hypot(p.x - h.x, p.y - h.y) < grabR) {
-          // anchor = the opposite corner/edge; it stays put while you pull
-          const anchor = { x: b.x + (1 - h.hx) / 2 * b.w,
-                           y: b.y + (1 - h.hy) / 2 * b.h };
-          lassoXform = { mode: "scale", h, anchor, start: p, sx: 1, sy: 1 };
-          return;
-        }
-      }
-      if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
-        lassoMove = { start: p, dx: 0, dy: 0 };
-        return;
+  /* try to grab the active selection at p: rotation knob, stretch handle,
+     or inside-the-box move. Returns true if it started an interaction.
+     Called from ANY tool — once a selection exists, its handles own the
+     pointer, so you can't accidentally draw across your own selection. */
+  function lassoGrab(p) {
+    if (!lasso) return false;
+    const grabR = 11 / App.view.zoom;
+    const b = lasso.bbox;
+    const rh = rotHandlePos();
+    if (Math.hypot(p.x - rh.x, p.y - rh.y) < grabR) {
+      const center = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+      lassoXform = { mode: "rotate", center,
+                     a0: Math.atan2(p.y - center.y, p.x - center.x), angle: 0 };
+      return true;
+    }
+    for (const h of lassoHandles()) {
+      if (Math.hypot(p.x - h.x, p.y - h.y) < grabR) {
+        // anchor = the opposite corner/edge; it stays put while you pull
+        const anchor = { x: b.x + (1 - h.hx) / 2 * b.w,
+                         y: b.y + (1 - h.hy) / 2 * b.h };
+        lassoXform = { mode: "scale", h, anchor, start: p, sx: 1, sy: 1 };
+        return true;
       }
     }
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      lassoMove = { start: p, dx: 0, dy: 0 };
+      return true;
+    }
+    return false;
+  }
+
+  /* lasso-tool click: grab the selection, or start a new polygon */
+  function lassoDown(p) {
+    if (lassoGrab(p)) return;
     lassoClear();
     lassoDraw = [p];
   }

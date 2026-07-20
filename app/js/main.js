@@ -503,10 +503,12 @@ const UI = {};
   /* ---------- lasso action chip ---------- */
   const lassoChip = $("#lasso-actions");
   UI.showLassoActions = (bbox, count) => {
-    const s = Engine.toScreen(bbox.x, bbox.y);
+    // place BELOW the selection — above it would cover the rotation knob
+    const s = Engine.toScreen(bbox.x, bbox.y + bbox.h);
+    const stage = $("#stage");
     lassoChip.hidden = false;
-    lassoChip.style.left = Math.max(8, s.x) + "px";
-    lassoChip.style.top = Math.max(8, s.y - 40) + "px";
+    lassoChip.style.left = Math.max(8, Math.min(stage.clientWidth - 260, s.x)) + "px";
+    lassoChip.style.top = Math.max(8, Math.min(stage.clientHeight - 48, s.y + 14)) + "px";
     $("#lasso-count").textContent = count + (count === 1 ? " stroke" : " strokes");
   };
   UI.hideLassoActions = () => { lassoChip.hidden = true; };
