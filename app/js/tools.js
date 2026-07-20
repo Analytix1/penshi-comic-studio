@@ -171,11 +171,74 @@ const Tools = (() => {
     stroke.layer._stamp = (stroke.layer._stamp || 0) + 1;
     const op = { kind: "stroke", tool: stroke.tool, erase: stroke.erase,
                  alpha: stroke.alpha, cfg: stroke.cfg, points: stroke.points };
-    stroke.layer.ops.push(op);
-    commitRasterChange(stroke.layer, stroke.before, { add: op });
-    if (!stroke.erase) UI.noteColor(state.color);
+    if (stroke.erase) {
+      // an eraser pass may sever logged strokes into pieces — restructure
+      // the log so each visual fragment becomes its own stroke, then
+      // snapshot the whole ops array (many entries may have changed)
+      const beforeOps = JSON.stringify(stroke.layer.ops);
+      stroke.layer.ops.push(op);
+      splitStrokesByEraser(stroke.layer, op);
+      commitRasterOpsSnapshot(stroke.layer, stroke.before, beforeOps);
+    } else {
+      stroke.layer.ops.push(op);
+      commitRasterChange(stroke.layer, stroke.before, { add: op });
+      UI.noteColor(state.color);
+    }
     stroke.active = false;
     App.dirty = true;
+  }
+
+  /* When the pixel eraser's path crosses a logged stroke's centerline, the
+     stroke is visually cut — so cut it in the LOG too. Each surviving run
+     of points becomes its own stroke op, meaning the stroke eraser and
+     lasso treat the two halves as separate strokes from then on.
+     Pixels don't change here (the erase already happened); this is pure
+     bookkeeping so the log matches what's on the page. */
+  function splitStrokesByEraser(layer, eraseOp) {
+    const ePts = eraseOp.points;
+    if (!ePts.length) return;
+    const eBrush = BRUSHES.eraser;
+    // eraser bounding box, inflated by its max radius, for a cheap precheck
+    const eMaxR = eraseOp.cfg.size / 2 + 2;
+    let ex0 = 1e9, ey0 = 1e9, ex1 = -1e9, ey1 = -1e9;
+    for (const q of ePts) {
+      ex0 = Math.min(ex0, q.x); ey0 = Math.min(ey0, q.y);
+      ex1 = Math.max(ex1, q.x); ey1 = Math.max(ey1, q.y);
+    }
+    ex0 -= eMaxR; ey0 -= eMaxR; ex1 += eMaxR; ey1 += eMaxR;
+
+    const out = [];
+    for (const op of layer.ops) {
+      if (op === eraseOp || op.kind !== "stroke" || op.erase) { out.push(op); continue; }
+      const oR = op.cfg.size / 2;
+      if (!op.points.some(q => q.x >= ex0 - oR && q.x <= ex1 + oR &&
+                                q.y >= ey0 - oR && q.y <= ey1 + oR)) {
+        out.push(op); continue;
+      }
+      // a point is "cut" when the eraser's swept disc covers its centerline
+      const cut = op.points.map(q => {
+        if (ePts.length === 1) {
+          const re = widthFor(ePts[0].k, eBrush, eraseOp.cfg) / 2;
+          return Math.hypot(q.x - ePts[0].x, q.y - ePts[0].y) <= re;
+        }
+        for (let i = 1; i < ePts.length; i++) {
+          const re = widthFor(Math.max(ePts[i - 1].k, ePts[i].k), eBrush, eraseOp.cfg) / 2;
+          if (distSeg(q, ePts[i - 1], ePts[i]) <= re) return true;
+        }
+        return false;
+      });
+      if (!cut.some(v => v)) { out.push(op); continue; }
+      // split into runs of surviving points; each run ≥2 points lives on
+      let run = [];
+      const flush = () => {
+        if (run.length >= 2)
+          out.push({ ...op, cfg: { ...op.cfg }, points: run });
+        run = [];
+      };
+      op.points.forEach((q, i) => { if (!cut[i]) run.push(q); else flush(); });
+      flush();
+    }
+    layer.ops = out;
   }
 
   /* live preview: engine calls this inside the page transform.
@@ -226,10 +289,33 @@ const Tools = (() => {
       const z = App.view.zoom;
       const dx = lassoMove ? lassoMove.dx : 0, dy = lassoMove ? lassoMove.dy : 0;
       ctx.save();
+
+      // live ghost: the ACTUAL selected strokes drawn through the pending
+      // move/stretch/rotate, so you see the art land before you commit
+      if ((lassoMove || lassoXform) && lassoGhost) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        if (lassoMove) {
+          ctx.translate(dx, dy);
+        } else if (lassoXform.mode === "rotate") {
+          const c0 = lassoXform.center;
+          ctx.translate(c0.x, c0.y);
+          ctx.rotate(lassoXform.angle);
+          ctx.translate(-c0.x, -c0.y);
+        } else {
+          const a0 = lassoXform.anchor;
+          ctx.translate(a0.x, a0.y);
+          ctx.scale(lassoXform.sx, lassoXform.sy);
+          ctx.translate(-a0.x, -a0.y);
+        }
+        ctx.drawImage(lassoGhost, 0, 0);
+        ctx.restore();
+      }
+
       ctx.strokeStyle = "#e8b04b"; ctx.lineWidth = lw;
       ctx.setLineDash([8 / z, 6 / z]);
       if (lassoXform) {
-        // ghost: where the bbox lands if you release now
+        // frame outline: where the bbox lands if you release now
         const corners = [{ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y },
                          { x: b.x + b.w, y: b.y + b.h }, { x: b.x, y: b.y + b.h }]
           .map(pt => xformPoint(lassoXform, pt));
@@ -238,15 +324,10 @@ const Tools = (() => {
         for (let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
         ctx.closePath();
         ctx.stroke();
-        ctx.globalAlpha = 0.18;
-        ctx.fillStyle = "#e8b04b";
-        ctx.fill();
       } else {
         ctx.strokeRect(b.x + dx, b.y + dy, b.w, b.h);
         if (lassoMove) {
-          ctx.globalAlpha = 0.25;
-          ctx.fillStyle = "#e8b04b";
-          ctx.fillRect(b.x + dx, b.y + dy, b.w, b.h);
+          /* strokes ghost above is the preview — no fill needed */
         } else {
           // 8 stretch handles + the rotation knob
           ctx.setLineDash([]);
@@ -527,7 +608,18 @@ const Tools = (() => {
   let lassoDraw = null;   // in-progress polygon
   let lassoMove = null;   // { start, dx, dy } — dragging the selection
   let lassoXform = null;  // { mode:"scale"|"rotate", ... } — handle drag in progress
+  let lassoGhost = null;  // pre-rendered bitmap of the selected ops, for live preview
   let tailErase = false;  // pen tail held in stroke-eraser mode
+
+  /* render the selected ops once at drag start; every preview frame then
+     just draws this bitmap through the live transform — cheap and smooth */
+  function buildLassoGhost() {
+    const g = document.createElement("canvas");
+    g.width = App.page.w; g.height = App.page.h;
+    const gctx = g.getContext("2d");
+    for (const i of lasso.indices) replayOp(gctx, lasso.layer.ops[i]);
+    lassoGhost = g;
+  }
 
   const rotPt = (pt, c, ang) => {
     const cos = Math.cos(ang), sin = Math.sin(ang);
@@ -639,6 +731,7 @@ const Tools = (() => {
     rebuildLayer(layer);
     commitRasterOpsSnapshot(layer, before, beforeOps);
     lasso.bbox.x += dx; lasso.bbox.y += dy;
+    lassoGhost = null;   // ops changed — next drag re-renders it
     UI.showLassoActions(lasso.bbox, lasso.indices.length);
     App.dirty = true;
   }
@@ -656,6 +749,7 @@ const Tools = (() => {
 
   function lassoClear() {
     lasso = null; lassoDraw = null; lassoMove = null; lassoXform = null;
+    lassoGhost = null;
     UI.hideLassoActions();
     App.dirty = true;
   }
@@ -884,6 +978,7 @@ const Tools = (() => {
       const center = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
       lassoXform = { mode: "rotate", center,
                      a0: Math.atan2(p.y - center.y, p.x - center.x), angle: 0 };
+      buildLassoGhost();
       return true;
     }
     for (const h of lassoHandles()) {
@@ -892,11 +987,13 @@ const Tools = (() => {
         const anchor = { x: b.x + (1 - h.hx) / 2 * b.w,
                          y: b.y + (1 - h.hy) / 2 * b.h };
         lassoXform = { mode: "scale", h, anchor, start: p, sx: 1, sy: 1 };
+        buildLassoGhost();
         return true;
       }
     }
     if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
       lassoMove = { start: p, dx: 0, dy: 0 };
+      buildLassoGhost();
       return true;
     }
     return false;
@@ -972,6 +1069,7 @@ const Tools = (() => {
     rebuildLayer(layer);
     commitRasterOpsSnapshot(layer, before, beforeOps);
     lasso.bbox = computeLassoBbox(layer, lasso.indices);
+    lassoGhost = null;   // ops changed — next drag re-renders it
     UI.showLassoActions(lasso.bbox, lasso.indices.length);
     App.dirty = true;
   }
