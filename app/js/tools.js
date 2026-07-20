@@ -981,17 +981,28 @@ const Tools = (() => {
       buildLassoGhost();
       return true;
     }
+    // nearest stretch handle — but when the pointer is INSIDE the box, the
+    // handle only wins if it's closer than the box center. Otherwise thin
+    // selections (a single horizontal stroke) become impossible to MOVE,
+    // because the edge handles' grab radius blankets the whole interior.
+    let best = null;
     for (const h of lassoHandles()) {
-      if (Math.hypot(p.x - h.x, p.y - h.y) < grabR) {
-        // anchor = the opposite corner/edge; it stays put while you pull
-        const anchor = { x: b.x + (1 - h.hx) / 2 * b.w,
-                         y: b.y + (1 - h.hy) / 2 * b.h };
-        lassoXform = { mode: "scale", h, anchor, start: p, sx: 1, sy: 1 };
-        buildLassoGhost();
-        return true;
-      }
+      const d = Math.hypot(p.x - h.x, p.y - h.y);
+      if (d < grabR && (!best || d < best.d)) best = { h, d };
     }
-    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+    const inside = p.x >= b.x && p.x <= b.x + b.w &&
+                   p.y >= b.y && p.y <= b.y + b.h;
+    const centerDist = Math.hypot(p.x - (b.x + b.w / 2), p.y - (b.y + b.h / 2));
+    if (best && (!inside || best.d < centerDist)) {
+      const h = best.h;
+      // anchor = the opposite corner/edge; it stays put while you pull
+      const anchor = { x: b.x + (1 - h.hx) / 2 * b.w,
+                       y: b.y + (1 - h.hy) / 2 * b.h };
+      lassoXform = { mode: "scale", h, anchor, start: p, sx: 1, sy: 1 };
+      buildLassoGhost();
+      return true;
+    }
+    if (inside) {
       lassoMove = { start: p, dx: 0, dy: 0 };
       buildLassoGhost();
       return true;
@@ -1004,6 +1015,28 @@ const Tools = (() => {
     if (lassoGrab(p)) return;
     lassoClear();
     lassoDraw = [p];
+  }
+
+  /* tap-to-select: pick the topmost logged stroke/shape/image under the
+     point, searching visible unlocked raster layers top-down */
+  function tapSelect(p) {
+    const tol = 6 / App.view.zoom;
+    for (let li = App.layers.length - 1; li >= 0; li--) {
+      const layer = App.layers[li];
+      if (layer.kind !== "raster" || !layer.visible || layer.locked) continue;
+      for (let i = layer.ops.length - 1; i >= 0; i--) {
+        const op = layer.ops[i];
+        const hit = (op.kind === "stroke" && !op.erase && hitStrokeOp(op, p, tol)) ||
+                    (op.kind === "shape" && hitShapeOp(op, p, tol)) ||
+                    (op.kind === "image" && p.x >= op.x && p.x <= op.x + op.w &&
+                     p.y >= op.y && p.y <= op.y + op.h);
+        if (!hit) continue;
+        lasso = { layer, indices: [i], bbox: computeLassoBbox(layer, [i]) };
+        UI.showLassoActions(lasso.bbox, 1);
+        App.dirty = true;
+        return;
+      }
+    }
   }
 
   /* mutate one op through the transform; may return a REPLACEMENT op
@@ -1153,7 +1186,14 @@ const Tools = (() => {
     }
     if (lassoDraw) {
       const path = lassoDraw; lassoDraw = null;
-      if (path.length >= 3) finishLasso(path);
+      // a tiny path is a TAP: select the single stroke under the pointer
+      let spanX = 0, spanY = 0;
+      for (const q of path) {
+        spanX = Math.max(spanX, Math.abs(q.x - path[0].x));
+        spanY = Math.max(spanY, Math.abs(q.y - path[0].y));
+      }
+      if (Math.max(spanX, spanY) < 8 / App.view.zoom) tapSelect(path[0]);
+      else if (path.length >= 3) finishLasso(path);
       App.dirty = true;
       return;
     }
