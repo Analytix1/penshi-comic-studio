@@ -9,14 +9,69 @@ Everything runs on your machine: a dependency-free Python server plus vanilla JS
 Penshi runs entirely on your own computer. No account, no cloud — after the
 download, it works offline and nothing ever leaves your machine.
 
-### Step 1 — Download Penshi
+### Step 1 — Get Penshi onto your computer
+
+Two ways. **Option A is recommended** — it takes five extra minutes now and makes
+future updates a single command instead of a re-download.
+
+<details open>
+<summary><b>Option A — Clone with Git (recommended: easy updates later)</b></summary>
+
+**1. Install Git** (one time, free)
+
+- **Windows:** download from [git-scm.com/download/win](https://git-scm.com/download/win)
+  and run the installer. Click **Next** through every screen — the defaults are
+  fine. This also installs "Git Bash", a terminal you can use.
+- **Mac:** open Terminal and type `git --version`. If it prints a version you're
+  done; if it offers to install "command line developer tools", click **Install**.
+- **Linux:** `sudo apt install git` (Debian/Ubuntu) or your distro's equivalent.
+
+**2. Pick where Penshi should live**
+
+Decide on a parent folder — your Documents folder is a fine choice. Penshi will
+create its own folder inside it, so you don't need to make one first.
+
+**3. Open a terminal in that folder**
+
+- **Windows 11:** open Documents in File Explorer, right-click any empty space in
+  the window, choose **Open in Terminal**.
+- **Windows 10:** hold **Shift**, right-click empty space, choose **Open PowerShell
+  window here**.
+- **Mac:** open Terminal and type `cd ~/Documents` then press Enter.
+- *Either way, you can always type `cd ` (with a space) and then drag the folder
+  from your file manager onto the terminal window — it fills in the path for you.*
+
+**4. Clone the repository**
+
+Type this and press Enter (or copy-paste it):
+
+```bash
+git clone https://github.com/Analytix1/penshi-comic-studio.git
+```
+
+You'll see a few lines about "Cloning into..." and counting objects. When your
+cursor comes back, you're done — there's now a **`penshi-comic-studio`** folder
+inside Documents with everything in it. Nothing else to build or install.
+
+**5. Step into the folder** (you'll want this for Step 3 and for updates)
+
+```bash
+cd penshi-comic-studio
+```
+
+</details>
+
+<details>
+<summary><b>Option B — Download a ZIP (no Git, but manual updates)</b></summary>
 
 - Near the top of this GitHub page, click the green **`<> Code`** button, then
   **Download ZIP**.
 - Find the downloaded `penshi-comic-studio-main.zip`, right-click it →
   **Extract All…**, and put the folder somewhere easy to find (like Documents).
+- To update later you'll download a fresh ZIP and copy your `projects` and
+  `assets` folders across by hand. (This is why Option A is nicer.)
 
-*(If you're comfortable with Git: `git clone https://github.com/Analytix1/penshi-comic-studio.git` works too, and lets you update later with `git pull`.)*
+</details>
 
 ### Step 2 — Install Python (one time, free)
 
@@ -44,6 +99,26 @@ Python is the engine Penshi's local server runs on. Any version 3.8 or newer.
 A guided tour starts on your first visit. Never drawn before? Open the **Learn**
 tab → **🎓 Draw School**.
 
+### Updating to the latest version
+
+If you used **Option A (Git)**, updating is two commands. Open a terminal in your
+`penshi-comic-studio` folder (same trick as Step 1) and run:
+
+```bash
+git pull
+```
+
+That's it — next time you start Penshi you're on the newest version. If it prints
+`Already up to date.`, you already had it.
+
+**Your artwork is safe.** Your saved comics (`projects`), your asset stamps
+(`assets`), and your `config.json` are deliberately excluded from the repository,
+so `git pull` never touches them. It only updates Penshi's own program files.
+
+If you used **Option B (ZIP)**: download a fresh ZIP, extract it, then copy your
+old `projects` and `assets` folders (and `config.json`, if you made one) into the
+new folder before deleting the old one.
+
 ### Where your work lives
 
 Saved comics go in the `projects` folder inside the Penshi folder, and saved
@@ -55,6 +130,10 @@ not visible to your network or the internet.
 
 | Problem | Fix |
 |---|---|
+| `'git' is not recognized` | Git isn't installed or the terminal predates the install — close the terminal, reopen it, and try again. Still failing? Reinstall from [git-scm.com](https://git-scm.com/download/win) |
+| `git clone` says "destination path already exists" | You already cloned it here. Just `cd penshi-comic-studio` and run `git pull` instead |
+| `git pull` says "Your local changes would be overwritten" | You edited one of Penshi's program files. To throw those edits away and take the new version: `git checkout -- .` then `git pull`. (Your `projects` and `assets` are never affected) |
+| Not sure which folder you're in | Run `pwd` (Mac/Linux/Git Bash) or `cd` with nothing after it (Windows PowerShell) to print the current folder |
 | `'python' is not recognized` | Reinstall Python with **Add python.exe to PATH** ticked — or try running `py server.py` instead |
 | A window flashes open and instantly closes | Open PowerShell in the folder and run `python server.py` to see the actual error message |
 | Browser says it can't connect | The server isn't running — do Step 3 first, then refresh |
