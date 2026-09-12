@@ -1,4 +1,4 @@
-﻿# personal saved comics â€” can be large (layer bitmaps) and are per-machine
+# personal saved comics - can be large (layer bitmaps) and are per-machine
 projects/*.json
 projects/*.json.tmp
 
@@ -9,6 +9,7 @@ config.json
 assets/
 
 # your learning record: curriculum progress + practice attempts
+# (anchored to the repo root so it does NOT match app/learn/, the code)
 /learn/
 
 # local reference library default location
