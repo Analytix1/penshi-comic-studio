@@ -96,8 +96,8 @@ Python is the engine Penshi's local server runs on. Any version 3.8 or newer.
   then open **http://localhost:8321** in your browser.
 - Use **Chrome or Edge** for the best stylus support (pressure + tilt).
 
-A guided tour starts on your first visit. Never drawn before? Open the **Learn**
-tab → **🎓 Draw School**.
+A guided tour starts on your first visit. Never drawn before? Click **Learn** in the
+top bar and start with Foundations (see *Learn mode* below).
 
 ### Updating to the latest version
 
