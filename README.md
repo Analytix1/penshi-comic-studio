@@ -236,7 +236,7 @@ course that runs on the same canvas and tools you make comics with:
 - **7 sections · 20 chapters · 75 lessons · ~500 steps (about 33,000 words of
   instruction).** Foundations (thinking in 3-D forms, observation) → Extending
   (perspective, shading, gesture) → Gaining Form (heads, bodies incl. age & body
-  types, fabric, color) → Becoming Advanced (figure incl. hands, feet and
+  types, fabric, color) → Advanced Topics (figure incl. hands, feet and
   foreshortened hands, advanced color, advanced perspective) → Becoming a Creator
   (anatomy, character design, animals incl. reptiles & amphibians, creatures,
   machines/vehicles/weapons, environment incl. lighting a scene, worldbuilding) →
@@ -261,8 +261,8 @@ course that runs on the same canvas and tools you make comics with:
   page is saved to a **Portfolio** with a thumbnail and date, kept apart from your
   comic projects, so you can scroll back through months of work and see the change.
 
-Color lessons use the **color wheel in the Tool tab** — a hue ring with a
-saturation/value square and harmony modes (complementary, analogous, triadic,
+Color lessons use the **color wheel in the Tool tab** — a hue ring with separate
+Saturation and Value scales and harmony modes (complementary, analogous, triadic,
 split-complementary, tetradic, monochromatic) that works everywhere in the app.
 
 ## The workflow it teaches

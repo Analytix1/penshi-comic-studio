@@ -1,18 +1,21 @@
 /* ============================================================
    colorwheel.js — an HSV color wheel with harmony modes
    Lives in the Tool tab so it works everywhere (Studio and Learn).
-   Outer ring = hue. Inner square = saturation (→) and value (↓).
+   Ring = hue (the center shows the current color). Below it, two
+   SEPARATE scales: Saturation (grey → full hue) and Value (black →
+   full brightness), so each dial is its own motion — the way the
+   Color Theory lessons teach them.
    Harmony mode overlays the partner hues on the ring and offers
-   them as swatches below the wheel.
+   them as swatches below.
    ============================================================ */
 "use strict";
 
 const ColorWheel = (() => {
-  const SIZE = 196, R_OUT = 96, R_IN = 74, SQ = 96;   // px, square side
-  let canvas, ctx, host;
-  let h = 0, s = 0.8, v = 0.15;                       // current color
+  const SIZE = 196, R_OUT = 96, R_IN = 74, R_CHIP = 58;   // px
+  const BAR_W = 196, BAR_H = 18;
+  let canvas, ctx, host, bars = {};
+  let h = 0, s = 0.8, v = 0.15;                             // current color
   let harmony = "none";
-  let dragging = null;                                 // "ring" | "square"
   let ringCache = null;
 
   const HARMONIES = {
@@ -71,15 +74,10 @@ const ColorWheel = (() => {
     const cx = SIZE / 2, cy = SIZE / 2;
     ctx.clearRect(0, 0, SIZE, SIZE);
     ctx.drawImage(ringCache, 0, 0);
-    // saturation/value square for the current hue
-    const x0 = cx - SQ / 2, y0 = cy - SQ / 2;
-    const gh = ctx.createLinearGradient(x0, 0, x0 + SQ, 0);
-    gh.addColorStop(0, "#fff"); gh.addColorStop(1, `hsl(${h},100%,50%)`);
-    ctx.fillStyle = gh; ctx.fillRect(x0, y0, SQ, SQ);
-    const gv = ctx.createLinearGradient(0, y0, 0, y0 + SQ);
-    gv.addColorStop(0, "rgba(0,0,0,0)"); gv.addColorStop(1, "#000");
-    ctx.fillStyle = gv; ctx.fillRect(x0, y0, SQ, SQ);
-    ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1; ctx.strokeRect(x0 + .5, y0 + .5, SQ - 1, SQ - 1);
+    // the current color, as a chip in the middle of the ring
+    ctx.beginPath(); ctx.arc(cx, cy, R_CHIP, 0, Math.PI * 2);
+    ctx.fillStyle = hsvHex(h, s, v); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1; ctx.stroke();
     // harmony partners on the ring
     for (const hex of harmonyColors()) {
       const hh = hexToHsv(hex).h, a = (hh - 90) * Math.PI / 180, rr = (R_OUT + R_IN) / 2;
@@ -91,11 +89,29 @@ const ColorWheel = (() => {
     ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 7, 0, Math.PI * 2);
     ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.stroke();
     ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke();
-    // s/v marker
-    const mx = x0 + s * SQ, my = y0 + (1 - v) * SQ;
-    ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI * 2);
-    ctx.strokeStyle = v > 0.5 ? "#000" : "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    renderBar("s"); renderBar("v");
     renderSwatches();
+  }
+
+  /* one horizontal scale: "s" = grey→hue at the current value,
+     "v" = black→full brightness at the current saturation */
+  function renderBar(k) {
+    const b = bars[k]; if (!b) return;
+    const c = b.ctx, val = k === "s" ? s : v;
+    const g = c.createLinearGradient(0, 0, BAR_W, 0);
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10;
+      g.addColorStop(t, k === "s" ? hsvHex(h, t, v) : hsvHex(h, s, t));
+    }
+    c.clearRect(0, 0, BAR_W, BAR_H);
+    c.fillStyle = g; c.fillRect(0, 0, BAR_W, BAR_H);
+    c.strokeStyle = "rgba(255,255,255,.25)"; c.lineWidth = 1; c.strokeRect(.5, .5, BAR_W - 1, BAR_H - 1);
+    // marker: a slim pill that stays visible on any background
+    const x = Math.round(val * (BAR_W - 6)) + 3;
+    c.beginPath(); c.roundRect(x - 3, 1, 6, BAR_H - 2, 3);
+    c.strokeStyle = "#000"; c.lineWidth = 3; c.stroke();
+    c.strokeStyle = "#fff"; c.lineWidth = 1.5; c.stroke();
+    b.readout.textContent = Math.round(val * 100) + "%";
   }
 
   function renderSwatches() {
@@ -108,20 +124,27 @@ const ColorWheel = (() => {
   }
 
   /* ---------- input ---------- */
-  function pick(e, commit = true) {
+  function commit() { UI.setColor(hsvHex(h, s, v), true); render(); }
+
+  function pickRing(e) {
     const r = canvas.getBoundingClientRect();
     const x = (e.clientX - r.left) * (SIZE / r.width) - SIZE / 2;
     const y = (e.clientY - r.top) * (SIZE / r.height) - SIZE / 2;
-    const d = Math.hypot(x, y);
-    if (dragging === null) dragging = (d >= R_IN - 4 && d <= R_OUT + 4) ? "ring" : "square";
-    if (dragging === "ring") {
-      h = ((Math.atan2(y, x) * 180 / Math.PI) + 90 + 360) % 360;
-    } else {
-      s = Math.max(0, Math.min(1, (x + SQ / 2) / SQ));
-      v = Math.max(0, Math.min(1, 1 - (y + SQ / 2) / SQ));
-    }
-    if (commit) UI.setColor(hsvHex(h, s, v), true);
-    render();
+    h = ((Math.atan2(y, x) * 180 / Math.PI) + 90 + 360) % 360;
+    // a grey/black color has no visible hue: give it some so the ring does something
+    if (s < 0.02) s = 0.8;
+    if (v < 0.02) v = 0.8;
+    commit();
+  }
+  function pickBar(k, e) {
+    const el = bars[k].canvas, r = el.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    if (k === "s") s = t; else v = t;
+    commit();
+  }
+  function drag(el, fn) {
+    el.addEventListener("pointerdown", e => { try { el.setPointerCapture(e.pointerId); } catch {} fn(e); });
+    el.addEventListener("pointermove", e => { if (e.buttons & 1) fn(e); });
   }
 
   function init(container) {
@@ -137,13 +160,24 @@ const ColorWheel = (() => {
           <option value="tetradic">tetradic</option>
           <option value="monochromatic">monochromatic</option>
         </select></div>
-      <canvas class="cw-canvas" width="${SIZE}" height="${SIZE}"></canvas>
+      <canvas class="cw-canvas" width="${SIZE}" height="${SIZE}" title="Hue"></canvas>
+      <div class="cw-scale" data-k="s">
+        <div class="cw-scale-head"><span>Saturation</span><b class="cw-readout"></b></div>
+        <canvas class="cw-bar" width="${BAR_W}" height="${BAR_H}" title="Saturation: grey → full color"></canvas>
+      </div>
+      <div class="cw-scale" data-k="v">
+        <div class="cw-scale-head"><span>Value</span><b class="cw-readout"></b></div>
+        <canvas class="cw-bar" width="${BAR_W}" height="${BAR_H}" title="Value: black → full brightness"></canvas>
+      </div>
       <div class="swatch-row cw-harmony"></div>`;
     canvas = host.querySelector(".cw-canvas");
     ctx = canvas.getContext("2d");
-    canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); dragging = null; pick(e); });
-    canvas.addEventListener("pointermove", e => { if (e.buttons & 1) pick(e); });
-    canvas.addEventListener("pointerup", () => { dragging = null; });
+    drag(canvas, pickRing);
+    host.querySelectorAll(".cw-scale").forEach(sc => {
+      const k = sc.dataset.k, c = sc.querySelector(".cw-bar");
+      bars[k] = { canvas: c, ctx: c.getContext("2d"), readout: sc.querySelector(".cw-readout") };
+      drag(c, e => pickBar(k, e));
+    });
     host.querySelector(".cw-mode").addEventListener("change", e => { harmony = e.target.value; render(); });
     setHex(Tools.state.color);
   }
@@ -156,5 +190,6 @@ const ColorWheel = (() => {
     render();
   }
 
-  return { init, setHex, harmonyColors, hsvHex, hexToHsv, setHarmony(m) { harmony = m; render(); } };
+  return { init, setHex, harmonyColors, hsvHex, hexToHsv, setHarmony(m) { harmony = m; render(); },
+           get: () => ({ h, s, v }) };
 })();

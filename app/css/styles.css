@@ -353,6 +353,12 @@ button.primary { background: var(--accent); color: #201a10; border-color: var(--
 .cw-canvas { display: block; width: 196px; height: 196px; margin: 0 auto; cursor: crosshair;
   touch-action: none; }
 .cw-harmony { justify-content: center; margin-top: 8px; min-height: 22px; }
+.cw-scale { width: 196px; margin: 8px auto 0; }
+.cw-scale-head { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted);
+  margin-bottom: 3px; }
+.cw-scale-head b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.cw-bar { display: block; width: 196px; height: 18px; border-radius: 4px; cursor: ew-resize;
+  touch-action: none; }
 
 /* ===== settings ===== */
 #modal h3.set-h { margin: 16px 0 6px; font-size: 12px; letter-spacing: .06em;

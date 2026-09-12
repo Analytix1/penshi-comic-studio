@@ -1,9 +1,9 @@
-/* Curriculum · Section 4 — Becoming Advanced */
+/* Curriculum · Section 4 — Advanced Topics */
 "use strict";
 window.PENSHI_CURRICULUM = window.PENSHI_CURRICULUM || [];
 
 PENSHI_CURRICULUM.push({
-  id: "s4", num: 4, title: "Becoming Advanced",
+  id: "s4", num: 4, title: "Advanced Topics",
   tagline: "Deep figure work, mastery of color, and the ability to place anything anywhere in convincing space.",
   chapters: [
 
