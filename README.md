@@ -173,6 +173,7 @@ comic-studio/
       └─ main.js      UI wiring, shortcuts, tour, boot
    └─ learn/          Learn mode — its own folder
       ├─ learn.js     mode switch, curriculum home, Portfolio, lesson runner
+      ├─ drill.js     timed gesture drill (countdown, auto-clear, contact sheet)
       ├─ exemplars.js the guide drawings painted onto practice pages
       ├─ resources.js the citation database (every linked source)
       └─ curriculum/  one data file per section (01-foundations … 07-further)
@@ -232,12 +233,21 @@ US Letter, A4) plus fully custom width × height at 150 or 300 dpi.
 Click **Learn** in the top bar (next to **Studio**) to open a full, self-paced drawing
 course that runs on the same canvas and tools you make comics with:
 
-- **7 sections · 20 chapters · 68 lessons · ~400 steps.** Foundations (thinking in
-  3-D forms, observation) → Extending (perspective, shading, gesture) → Gaining Form
-  (heads, bodies, fabric, color) → Becoming Advanced (figure, advanced color,
-  advanced perspective) → Becoming a Creator (anatomy, character design, animals,
-  creatures, machines/vehicles/weapons, environment & worldbuilding) → Comics Craft
-  → Going Further (routines, self-critique, the resource shelf).
+- **7 sections · 20 chapters · 75 lessons · ~500 steps (about 33,000 words of
+  instruction).** Foundations (thinking in 3-D forms, observation) → Extending
+  (perspective, shading, gesture) → Gaining Form (heads, bodies incl. age & body
+  types, fabric, color) → Becoming Advanced (figure incl. hands, feet and
+  foreshortened hands, advanced color, advanced perspective) → Becoming a Creator
+  (anatomy, character design, animals incl. reptiles & amphibians, creatures,
+  machines/vehicles/weapons, environment incl. lighting a scene, worldbuilding) →
+  Comics Craft (panels, lettering, line quality & inking tools, inking for print, a
+  full page) → Going Further (routines, self-critique, reference ethics & copyright,
+  the resource shelf).
+- **A built-in timed gesture drill.** Press **⏱ Drill** on the Learn home page (or the
+  Start button on any timed step): pick seconds per pose and a pose count, draw from a
+  pose site in the next window, and the page clears itself when the timer hits zero.
+  Every pose is captured; when the drill ends they're laid out on a contact-sheet
+  page that's saved to your Portfolio. `P` pauses, `N` skips ahead.
 - **Lessons draw on the page.** Each practice page gets a locked, blue **Guide**
   layer with construction diagrams to work over — they stay on the page for good
   and save with your work. Steps switch you to the right tool and layer, and even

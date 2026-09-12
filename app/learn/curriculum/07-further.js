@@ -44,6 +44,28 @@ PENSHI_CURRICULUM.push({
       ],
       reflect: ["Is the thing that didn't improve something you've actually been practicing, or just hoping about?"] },
 
+    { id: "fur-ethics", title: "Reference ethics and copyright", minutes: 25,
+      goal: "Know the difference between studying a reference, using it, and copying it; read a photo's license in under a minute; and keep a reference log so your comic is yours to publish.",
+      why: "This curriculum sends you to thousands of photos and drawings, and every one of them belongs to someone. Studying from them is how every artist has ever learned and is legally and ethically fine. Tracing a photographer's composition into a page you sell is a different act, and the line between the two is worth knowing before the first page of your comic goes online. Penshi itself never generates or copies images for you; this lesson is about how you use what you find.",
+      refs: ["cc-licenses", "unsplash-license", "commons-reuse", "fair-use", "met-collection"],
+      pages: [
+        { title: "Study, use, copy",
+          hints: ["STUDY: drawing from a reference to learn a form. Always fine. Nobody owns how a horse's knee bends.", "USE: building your own drawing with a reference's help — a pose, a lighting setup, a costume detail. Fine when the result is your composition.", "COPY: reproducing a specific photo or drawing so it's recognizable as that image. Needs a license or permission if you publish or sell it.", "Public-domain and CC0 material can be copied outright. CC BY needs credit. NC means no selling. ND means no altering."],
+          steps: [
+            { h: "Sort your own references", t: "Open your Portfolio. For five practice pages that used a linked reference, write in the margin which of the three you did: study, use or copy. Most lesson work is study. The mug you measured is use. An upside-down copy of a cartoon is copy, which is fine for practice and not fine to publish as yours.", tool: "pencil", layer: "Pencils" },
+            { h: "Read a license in a minute", t: "Open the Creative Commons license page from References and the Unsplash license. Then open any photo on Wikimedia Commons and find its license line under the image. Write the four CC letters and what each forbids: BY (credit), SA (share alike), NC (no commercial), ND (no changes). Unsplash and Pexels: free to use, even commercially; museum open-access collections (The Met): public domain, copy freely.", tool: "pencil" },
+            { h: "The comics-specific rule", t: "Poses and lighting from a photo are ideas; the photo's exact composition, crop and the person's likeness are expression. Rule of thumb for publishing: if someone who has seen the photo would recognize it in your panel, you copied. Change the angle, combine two references, redraw from construction (the whole point of Sections 1 to 5) and it becomes yours. Draw one figure from a photo, then draw the same pose rotated 45° from your mannequin knowledge. The second one is publishable.", tool: "pencil" },
+          ] },
+        { title: "The reference log",
+          hints: ["Keep a plain text file beside your comic project: page, panel, reference URL, what you took from it.", "Credit generously in the back matter even when the license doesn't require it. It costs nothing and it's how the community works."],
+          steps: [
+            { h: "Start the log", t: "For your Com-4 one-page comic (or the next page you make), list every reference you opened: URL, license, what you used from it. Two minutes per page. If a reference is CC BY, the credit line goes in your comic's back matter. If it's NC and your comic will be sold, find another reference now, not after printing.", tool: "pencil", layer: "Pencils" },
+            { h: "Your own reference bank", t: "The safest reference is one you shot yourself. Photograph your own hands, a friend in a pose, the corner of your street, and put them in a folder. Penshi's Library tab shows any folder you point it at in config.json. Over a year this becomes the most useful reference collection you own, with no license questions at all.", tool: "pencil" },
+            { h: "What you owe the sources", t: "Write the credit line for one reference in CC BY form: creator, title, source link, license. Then write a plain thank-you line for a free-tool site you've used most (Line of Action, Posemaniacs, Unsplash). Comics artists share their references and their thanks in interviews and back pages; it's part of the craft.", tool: "pencil" },
+          ] },
+      ],
+      reflect: ["Of the references you use most, which licenses are they? If you don't know, find out today.", "Is there a drawing in your Portfolio you'd be uncomfortable publishing? Name why. That instinct is the whole lesson."] },
+
     { id: "fur-3", title: "The resource shelf", minutes: 20,
       goal: "Know the deepest resource for each topic in the curriculum, and what each is for.",
       why: "This curriculum synthesizes; the sources go deeper. Every lesson has cited its references — this page collects the ones worth your next hundred hours, sorted by what they're best at, with an honest note on what's free.",

@@ -375,3 +375,23 @@ button.primary { background: var(--accent); color: #201a10; border-color: var(--
 }
 .tour-target { outline: 2px solid var(--accent) !important; outline-offset: 3px;
   border-radius: 4px; position: relative; z-index: 110; }
+
+/* ===== timed gesture drill HUD ===== */
+#drill-hud {
+  position: absolute; top: 48px; right: 16px; z-index: 46; min-width: 150px;
+  background: var(--bg2); border: 1px solid var(--accent); border-radius: 10px;
+  padding: 10px 12px; box-shadow: 0 8px 26px rgba(0,0,0,.5); text-align: center;
+  user-select: none;
+}
+#drill-hud.warn { border-color: var(--danger); animation: drill-pulse .5s steps(2) infinite; }
+#drill-hud.paused { opacity: .75; }
+@keyframes drill-pulse { 50% { background: #3a2626; } }
+.dh-time { font-size: 38px; font-weight: 700; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.dh-time small { font-size: 14px; font-weight: 400; color: var(--muted); }
+#drill-hud.warn .dh-time { color: var(--danger); }
+.dh-meta { font-size: 12px; color: var(--muted); margin: 6px 0 8px; }
+.dh-row { display: flex; gap: 5px; justify-content: center; }
+.dh-row button { font-size: 12px; padding: 4px 8px; }
+.dh-row button.danger { border-color: var(--danger); color: var(--danger); }
+.ls-drill { margin: 6px 0 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ls-drill select { font-size: 12px; }

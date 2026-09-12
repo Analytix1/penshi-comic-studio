@@ -43,6 +43,31 @@ PENSHI_CURRICULUM.push({
       ],
       reflect: ["Cover the art. Can the balloons alone be read in the right order?"] },
 
+    { id: "com-ink", title: "Line quality and inking tools", minutes: 50,
+      goal: "Produce the four line families (uniform, swelling, tapered, broken) on purpose with Penshi's Ink tool, understand which traditional tool each imitates, and ink one drawing three ways to hear the difference in 'voice'.",
+      why: "Two inkers can ink the same pencils and make two different comics: one crisp and architectural, one loose and alive. The difference is line quality: how the line starts, swells, tapers and breaks. Traditional inkers get it from the physics of a nib or a brush; digitally you get it from pressure and speed, which means you have to CHOOSE it. This lesson gives you the vocabulary and the control so the choice is yours.",
+      refs: ["alphonso-dunn", "etherington", "janson-inking", "ctrlpaint", "mccloud"],
+      pages: [
+        { title: "Four line families", exemplar: "nibStrokes",
+          steps: [
+            { h: "Uniform: the fineliner", t: "Set the Ink tool small and hold light, even pressure. Draw a row of ten long lines with no variation at all: this is the technical pen, the tool for panel borders, backgrounds, machinery and anything that should feel measured rather than felt. Notice it takes discipline to keep the pressure flat with a stylus. That discipline is a skill in itself.", tool: "ink", layer: "Inks" },
+            { h: "Swelling: the dip nib", t: "A steel nib is thin when pushed and fat when pulled with pressure, so its natural mark is thin-thick-thin. Draw ten strokes that start light, press hardest in the middle of the curve and lift off light, like the guide's second line. Then a row of short ones. Nib lines suit faces, hands and folds: the swell lands where the form turns.", tool: "ink" },
+            { h: "Tapered: the brush", t: "A brush starts fat and whips to a hair as it lifts. Draw the guide's third line: heavy pressure at the start, then speed up and lift so the line tapers to nothing. Twenty of these, both directions. This is the classic comics line (most superhero and manga inks are brush or brush-pen) because the taper says 'energy' without any extra marks.", tool: "ink" },
+            { h: "Broken: dry brush", t: "Move fast with low pressure and let the line skip: grit, speed lines, rough texture, the dust on a road. Draw the fourth row. Broken lines are seasoning, not the meal; used everywhere they turn the page into noise.", tool: "ink" },
+            { h: "Corners and joins", t: "Draw a box with each family. Where two lines meet, uniform lines just touch; nib lines swell into the corner; brush lines overshoot slightly and taper past it (the 'flick'). A sloppy join reads as hesitation. Practice twenty corners with the brush taper until the flick is deliberate.", tool: "ink" },
+          ] },
+        { title: "One drawing, three voices",
+          hints: ["Pencil a simple head-and-shoulders on the Pencils layer (or reuse Head-2).", "Ink it three times on the Inks layer, using the page tabs or three areas: all uniform, all nib, all brush.", "Hide the Pencils layer and compare."],
+          steps: [
+            { h: "Pencil it once", t: "A three-quarter head with a collar, loosely constructed, a little bigger than a hand. This is the pencil an inker receives. Duplicate it by drawing it three times across the page (or add two pages), because you will ink it three ways.", tool: "pencil", layer: "Pencils" },
+            { h: "Ink it as a fineliner", t: "Uniform line only. Get depth from line SPACING (hatching density) since weight is off the table. This is the voice of ligne claire (Hergé) and much of European comics: clean, calm, everything equally in focus.", tool: "ink", layer: "Inks" },
+            { h: "Ink it with the nib swell", t: "Every contour thin-thick-thin, the swell where the form turns away from the light, thin where it faces it. Hatching from short nib strokes that fatten toward the shadow. This is the voice of classic pen-and-ink illustration and a lot of horror comics: precise but alive.", tool: "ink" },
+            { h: "Ink it with the brush", t: "Big tapered strokes, the outline heaviest, the interior detail a few flicks, the shadow side spotted black. Fewer lines than the other two. This is the mainstream comics voice: fast, energetic, reads at any size. Hide Pencils and put the three side by side. Write under each what it makes the character feel like.", tool: "ink" },
+            { h: "Pick a voice for your book", t: "You don't need to choose forever, but you need to choose per project: mixing all three on one page reads as indecision. Decide the dominant family for your comic and the one secondary family allowed (brush contours with fineliner backgrounds is the most common pairing). Write the rule in the margin and keep it for Com-3 and Com-4.", tool: "ink" },
+          ] },
+      ],
+      reflect: ["Which family did your hand do by default? Which one felt foreign? The foreign one is where a week of warm-ups pays off most.", "Look at three comics you own. Name each artist's dominant line family."] },
+
     { id: "com-3", title: "Inking for print: line weight and blacks", minutes: 50,
       goal: "Ink a finished panel with deliberate line weight, spotted blacks and hatching that reads at print size.",
       why: "Comics are printed in black. Line weight carries depth (near = heavy), spotted blacks carry composition, hatching carries tone — and it all has to survive being reduced 60% on the page. This is the Shading chapter applied to the medium.",

@@ -73,6 +73,29 @@ PENSHI_CURRICULUM.push({
       ],
       reflect: ["Which hand pose still needs a reference? Practice it with the Handy app or Posemaniacs until it doesn't."] },
 
+    { id: "fig-3b", title: "Foreshortened hands", minutes: 55,
+      goal: "Draw hands pointing toward and away from the camera — the reaching hand, the fist coming at the reader, the hand seen from the wrist — using stacked discs and overlap instead of outline.",
+      why: "The hand that reaches out of the panel is the most dramatic hand in comics and the one that breaks most often, because every finger is a tube pointing at the reader and outlines lie about tubes seen end-on. Foreshortening (Fig-2) applied to the hand block (Fig-3) is the fix: nearest segment first and biggest, everything behind it partly hidden, contour ellipses to say which way each tube points. Once this works, a hand can gesture in any direction the story needs.",
+      refs: ["etherington", "loa-hands", "handy", "posemaniacs", "loomis-head"],
+      pages: [
+        { title: "Discs and overlap", exemplar: "foreshortenHands",
+          steps: [
+            { h: "The pointing finger, head-on", t: "Copy the guide's stacked discs: a finger aimed at you is three short cylinders seen almost end-on, so each segment becomes a fat ellipse, and the nearest one is drawn first and biggest. The segments behind lose their outline where the front disc covers them. Draw five pointing fingers at angles from straight-at-you to 45°, watching the discs stretch into tubes as the angle opens.", tool: "pencil", layer: "Pencils" },
+            { h: "Contours decide the direction", t: "Draw two identical finger tubes. On one, draw contour ellipses that bow toward the viewer (the finger comes at you); on the other, ellipses that bow away (it points into the page). Same outline, opposite depth. This is the cheapest way to fix a hand that reads backward: change the bow of the contours, not the outline.", tool: "pencil" },
+            { h: "The palm box, tipped", t: "Rotate Fig-3's palm box so its far edge is nearer the viewer than the wrist (a hand reaching out). The box's near face is a squashed rectangle; the fingers grow from its far edge, so they come TOWARD you, overlapping the palm. Draw the box tipped 30°, 60° and 90° (fingers straight at the reader).", tool: "pencil" },
+            { h: "Knuckles on an arc in perspective", t: "The knuckle arc from Fig-3 is a curve in space. When the fist comes at you, that arc becomes an ellipse you're looking into: the middle knuckle nearest and biggest, the outer two smaller and set back. Draw a fist aimed at the reader from the guide's diagram, four knuckle discs on an ellipse, then the thumb crossing in front.", tool: "pencil" },
+          ] },
+        { title: "Reaching, grabbing, blocking",
+          hints: ["Handy app or Posemaniacs hands: rotate a pose until the fingers point at the camera.", "Nearest segment first. Then the next. Only draw an outline where nothing is in front of it.", "Ink the three best with heavy line on every overlap."],
+          steps: [
+            { h: "Reaching toward the reader", t: "From a rotated 3-D hand reference, draw an open hand reaching out of the panel: palm box tipped, fingers as disc stacks fanning toward you, the thumb wedge nearest of all if the palm faces down. Every place one form covers another gets a firm overlap line; nothing else gets an outline. Draw three from three references.", tool: "pencil", layer: "Pencils" },
+            { h: "Reaching away", t: "The same hand pointing INTO the page: the wrist is nearest and biggest, the fingertips smallest and furthest. Contours bow away. Beginners draw this one the same size as the reaching hand and it reads flat, so exaggerate the size drop from wrist to fingertip by at least a third.", tool: "pencil" },
+            { h: "The block and the grab", t: "A palm thrust flat at the reader ('stop'): the palm box seen square-on is nearly a circle with a finger disc-stack at each of four points on its rim and the thumb wedge at the side. A grabbing hand coming at the reader: fingers curled, so each disc stack bends toward the center of the frame. Draw both.", tool: "pencil" },
+            { h: "Ink and weight", t: "Ink your three best. Heaviest line where the nearest form meets air; medium where one finger overlaps another; hairline for the contour ellipses. Zoom out to 25%: the hand should still read as coming at you from the overlaps and size alone. Save the page and redo it in a month beside the Fig-3 hands page.", tool: "ink", layer: "Inks" },
+          ] },
+      ],
+      reflect: ["Cover the outline of one foreshortened finger with your thumb. Do the contours and overlaps alone still say which way it points?", "Which hand did you draw flat first? The reaching-away one, almost always. Push the size drop harder."] },
+
     { id: "fig-4", title: "Feet, and the figure in motion", minutes: 50,
       goal: "Construct the foot as a wedge with a heel block, then draw full figures walking, running and jumping.",
       why: "Feet ground the figure — a figure with floating feet floats. Motion is what comics are FOR, and motion is just gesture plus foreshortening plus a plumb line that's off-balance on purpose.",

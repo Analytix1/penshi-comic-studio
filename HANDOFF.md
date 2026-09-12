@@ -13,7 +13,7 @@ breaking its architecture. **Paste the "context block" first, then one task prom
 > read-only resource file server under `/resources/`. No pip dependencies allowed.
 > Frontend: vanilla JS (no frameworks, no build step), loaded in this order:
 > `state.js → engine.js → tools.js → panels.js → lettering.js → guides.js → reference.js →
-> colorwheel.js → learn/exemplars.js → learn/resources.js → learn/curriculum/01…07 → learn/learn.js → main.js`.
+> colorwheel.js → learn/exemplars.js → learn/resources.js → learn/curriculum/01…07 → learn/drill.js → learn/learn.js → main.js`.
 > LEARN MODE (app/learn/): a second top-level mode. `App.mode` is "studio" or
 > "learn". Curriculum content is pure data — each `learn/curriculum/NN-*.js` pushes a
 > section object onto `window.PENSHI_CURRICULUM` (format documented at the top of
@@ -23,7 +23,10 @@ breaking its architecture. **Paste the "context block" first, then one task prom
 > layer painted with the exemplar. Progress lives at /api/learn/progress; attempts at
 > /api/learn/attempts (learn/ folder, gitignored). Entering Learn snapshots the studio
 > document in memory and leaving restores it — never touch App.pages from Learn code
-> without going through Learn.enter/exit.
+> without going through Learn.enter/exit. A step may carry `drill: {seconds, poses}`;
+> learn/drill.js runs the timed gesture drill (captures a thumbnail, clears the
+> unlocked raster layers with an undoable command, and hands the thumbnails to
+> Learn.buildContactSheet, which lays them out as image ops on a new page).
 > Core invariants you must NOT violate:
 > 1. `App` (state.js) is the single source of truth; layers are bottom→top; raster
 >    layers own an offscreen `<canvas>` at full page resolution, object layers
@@ -89,9 +92,12 @@ in learn/resources.js — add new sources there WITH a real, verified URL and a 
 freemium / paid / public-domain flag), 1–3 pages, and 3–8 steps per page with a
 2–5 sentence `t` written as direct instruction. Prefer steps that set `tool` and
 `layer`. Do NOT invent references or URLs; do NOT add anything that generates art.
-Good candidates: a 'Line quality & inking tools' lesson in Comics Craft; 'Lighting a
-scene' in Environment; 'Drawing children & age' in Body Construction; 'Foreshortened
-hands' in Figure Drawing; 'Reptile & amphibian skin' in Animals."
+(Already done — don't duplicate: line quality & inking tools, lighting a scene, age &
+body types, foreshortened hands, reptile & amphibian surfaces, reference ethics, the
+timed gesture drill.) Good remaining candidates: 'Drawing horses' (the animal every
+comic eventually needs) in Animals; 'Water, glass and reflections' in Shading;
+'Crowds and background figures' in Figure Drawing; 'Interiors: furniture and props
+with history' in Environment; 'Sound effects lettering' in Comics Craft."
 
 **S8 — More exemplar drawings**
 "Add functions to the `D` table in app/learn/exemplars.js (page-fraction helpers:

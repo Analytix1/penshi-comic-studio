@@ -124,6 +124,7 @@ const Learn = (() => {
         <div class="lh-nav">
           <button class="${view === "curriculum" ? "on" : ""}" data-v="curriculum">Curriculum</button>
           <button class="${view === "portfolio" ? "on" : ""}" data-v="portfolio">Portfolio</button>
+          <button id="lh-drill" title="Timed gesture drill: 30-second poses, the page clears itself">⏱ Drill</button>
           <button id="lh-studio" title="Back to drawing comics">◀ Studio</button>
         </div>
       </div>
@@ -132,6 +133,7 @@ const Learn = (() => {
       view = b.dataset.v; if (view === "curriculum") portfolioFilter = null; renderHome();
     }));
     $("#lh-studio").addEventListener("click", exit);
+    $("#lh-drill").addEventListener("click", () => startLesson("gest-drill"));
     home.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => startLesson(b.dataset.start)));
     home.querySelectorAll("[data-continue]").forEach(b => b.addEventListener("click", () => {
       const a = attempts.find(x => x.lessonId === b.dataset.continue);
@@ -272,6 +274,7 @@ const Learn = (() => {
 
   async function closeLesson(save, goHome = true) {
     if (!active) return;
+    if (Drill.isActive()) await Drill.finish();   // lands the contact sheet before we leave
     if (save) await saveAttempt(true);
     active = null;
     if (goHome && App.mode === "learn") { showHome(); renderLessonPanel(); }
@@ -292,6 +295,53 @@ const Learn = (() => {
       if (!quiet) UI.flash("Saved to your Portfolio ✓");
     } catch { UI.flash("Couldn't save practice — is server.py running?"); }
     await loadAttempts();
+  }
+
+  /* ============================================================
+     Timed gesture drill → contact-sheet page
+     ============================================================ */
+  function startDrill(seconds, poses) {
+    if (!active) return;
+    Drill.start({ seconds, poses, onDone: buildContactSheet });
+  }
+
+  async function buildContactSheet(thumbs, drill) {
+    // a new page in the attempt: a locked Guide layer carries the caption,
+    // the poses go on Inks as image ops (so they survive rebuilds and can be
+    // lasso-moved like anything else)
+    await addPage();
+    const g = makeRasterLayer("Guide", { tint: GUIDE_TINT, opacity: 0.85 });
+    g.locked = true;
+    App.layers.splice(1, 0, g);
+    const P = App.page, gctx = g.canvas.getContext("2d");
+    gctx.fillStyle = "#1b2a3a"; gctx.textBaseline = "middle";
+    gctx.font = `600 ${P.dpi * 0.2}px "Segoe UI", system-ui, sans-serif`;
+    gctx.fillText(`Gesture drill — ${thumbs.length} pose${thumbs.length > 1 ? "s" : ""} × ${drill.seconds} s`, P.w * 0.08, P.h * 0.05);
+    gctx.font = `${P.dpi * 0.11}px "Segoe UI", system-ui, sans-serif`;
+    gctx.fillText(fmtDate(Date.now()) + " · which three are the most alive? Circle them, then ask why.", P.w * 0.08, P.h * 0.085);
+    g._stamp = 1;
+
+    const inks = App.layers.find(l => l.name === "Inks") || App.layers.find(l => l.kind === "raster" && !l.locked);
+    const ictx = inks.canvas.getContext("2d");
+    const cols = Math.ceil(Math.sqrt(thumbs.length)), rows = Math.ceil(thumbs.length / cols);
+    const x0 = P.w * 0.06, y0 = P.h * 0.12, gw = P.w * 0.88, gh = P.h * 0.84, gap = P.dpi * 0.08;
+    const cw = (gw - gap * (cols - 1)) / cols, ch = (gh - gap * (rows - 1)) / rows;
+    for (let i = 0; i < thumbs.length; i++) {
+      const img = new Image(); img.src = thumbs[i];
+      try { await img.decode(); } catch { continue; }
+      const s = Math.min(cw / img.width, ch / img.height);
+      const w = img.width * s, h = img.height * s;
+      const x = x0 + (i % cols) * (cw + gap) + (cw - w) / 2, y = y0 + Math.floor(i / cols) * (ch + gap) + (ch - h) / 2;
+      const op = { kind: "image", src: thumbs[i], x, y, w, h };
+      ictx.drawImage(img, x, y, w, h);
+      inks.ops.push(op);
+    }
+    inks._stamp = (inks._stamp || 0) + 1;
+    App.activeLayer = App.layers.indexOf(inks);
+    App.dirty = true;
+    UI.refreshLayers(); UI.refreshPageTabs(); Engine.fitPage();
+    await saveAttempt(true);
+    UI.flash(`Drill done: ${thumbs.length} poses on a contact sheet (page ${App.pageIndex + 1}) ✓`);
   }
 
   /* ============================================================
@@ -394,6 +444,12 @@ const Learn = (() => {
         <li class="${isStepDone(active.page, i) ? "done" : ""} ${i === active.step ? "cur" : ""}" data-i="${i}">
           <label class="ls-check"><input type="checkbox" data-chk="${i}" ${isStepDone(active.page, i) ? "checked" : ""}></label>
           <div class="ls-body"><b>${st.h}</b>${i === active.step ? `<p>${st.t}</p>
+            ${st.drill ? `<div class="ls-drill">
+              <select id="ls-drill-sec" title="Seconds per pose">${[15, 30, 45, 60, 90, 120].map(s =>
+                `<option value="${s}" ${s === (st.drill.seconds || 30) ? "selected" : ""}>${s} s</option>`).join("")}</select>
+              <select id="ls-drill-n" title="Number of poses">${[5, 10, 15, 20, 30, 40].map(n =>
+                `<option value="${n}" ${n === (st.drill.poses || 20) ? "selected" : ""}>${n} poses</option>`).join("")}</select>
+              <button id="ls-drill-go" class="primary">⏱ Start drill</button></div>` : ""}
             ${st.tool || st.layer ? `<span class="ls-auto">${st.tool ? "tool: " + st.tool : ""}${st.tool && st.layer ? " · " : ""}${st.layer ? "layer: " + st.layer : ""}</span>` : ""}` : ""}</div>
         </li>`).join("")}</ol>
       <div class="row">
@@ -418,8 +474,13 @@ const Learn = (() => {
       const g = App.layers.find(l => l.name === "Guide");
       if (g) { g.visible = !g.visible; App.dirty = true; UI.refreshLayers(); }
     });
+    const go = $("#ls-drill-go");
+    if (go) go.addEventListener("click", e => {
+      e.stopPropagation();
+      startDrill(+$("#ls-drill-sec").value, +$("#ls-drill-n").value);
+    });
     host.querySelectorAll(".ls-steps li").forEach(li => li.addEventListener("click", e => {
-      if (e.target.tagName === "INPUT") return;
+      if (e.target.tagName === "INPUT" || e.target.closest(".ls-drill")) return;
       active.step = +li.dataset.i; applyStep(); renderLessonPanel();
     }));
     host.querySelectorAll("[data-chk]").forEach(cb => cb.addEventListener("change", () => {
@@ -436,7 +497,7 @@ const Learn = (() => {
     UI.onPagesRefreshed = onPagesRefreshed;
   }
 
-  return { init, enter, exit, startLesson, saveAttempt,
+  return { init, enter, exit, startLesson, saveAttempt, startDrill,
            isActive: () => App.mode === "learn", hasLesson: () => !!active,
            lessonCount: () => allLessons().length };
 })();

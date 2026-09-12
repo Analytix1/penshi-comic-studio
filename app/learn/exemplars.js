@@ -654,6 +654,127 @@ const Exemplars = (() => {
       label(ctx, 0.45, 0.78, "thicken the edges that face AWAY from the light", { fs: 0.1 });
       label(ctx, 0.45, 0.84, "and the outline where the form meets air, not another form", { fs: 0.1 });
     },
+
+    /* ---------------- added lessons ---------------- */
+    ageProportions(ctx) {
+      title(ctx, "Age is proportion: heads-tall and where the halfway point falls");
+      // real relative heights: an adult head is the unit; each figure is
+      // drawn at its true size next to the adult (toddler ~ half an adult)
+      const cols = [["toddler", 4, 0.48], ["child (6)", 5.5, 0.66], ["teen", 6.5, 0.9], ["adult", 7.5, 1], ["elder", 7, 0.95]];
+      const base = 0.82, adultH = 0.6;
+      cols.forEach(([name, heads, rel], i) => {
+        const mx = 0.14 + i * 0.18, H = adultH * rel, u = H / heads, t0 = base - H;
+        const ry = u * 0.5, rx = ry * (P.h / P.w) * 0.85;
+        ellipse(ctx, mx, t0 + ry, rx, ry);                                        // head
+        line(ctx, mx, t0 + u, mx, base - u * (heads / 2));                        // torso to the halfway point
+        line(ctx, mx, base - u * (heads / 2), mx - 0.025, base);                  // legs
+        line(ctx, mx, base - u * (heads / 2), mx + 0.025, base);
+        line(ctx, mx - 0.035, t0 + u * 1.3, mx - 0.05, t0 + u * 3.2);             // arms
+        line(ctx, mx + 0.035, t0 + u * 1.3, mx + 0.05, t0 + u * 3.2);
+        style(ctx, { dash: true }); line(ctx, mx - 0.07, t0 + H / 2, mx + 0.07, t0 + H / 2); style(ctx);
+        label(ctx, mx - 0.06, base + 0.035, name, { fs: 0.1 });
+        label(ctx, mx - 0.06, base + 0.06, `${heads} heads`, { fs: 0.09 });
+      });
+      style(ctx, { dash: true }); line(ctx, 0.08, base, 0.92, base); style(ctx);
+      note(ctx, 0.92, "Dashed line = the body's halfway point. Toddler: at the navel. Adult: at the crotch. Elder: crotch, but stooped and narrower.");
+    },
+    foreshortenHands(ctx) {
+      title(ctx, "Foreshortened hands: stack the circles, overlap the segments");
+      // hand pointing at the viewer: palm circle, then finger discs stacked toward us
+      circle(ctx, 0.28, 0.5, 0.11);
+      label(ctx, 0.16, 0.66, "palm box seen head-on = a circle-ish square", { fs: 0.09 });
+      [[0.28, 0.4, 0.045], [0.28, 0.35, 0.05], [0.28, 0.31, 0.055]].forEach(([x, y, r]) => circle(ctx, x, y, r));
+      label(ctx, 0.36, 0.33, "finger coming AT you: 3 discs, each nearer = bigger, overlapping", { fs: 0.09 });
+      // side: fist with overlapping tubes
+      circle(ctx, 0.7, 0.48, 0.1);
+      [0, 1, 2, 3].forEach(i => ellipse(ctx, 0.62 + i * 0.05, 0.42, 0.028, 0.02));
+      style(ctx, { dash: true }); curve(ctx, 0.6, 0.42, 0.7, 0.36, 0.8, 0.42); style(ctx);
+      label(ctx, 0.58, 0.64, "knuckles on an ARC, the arc itself in perspective", { fs: 0.09 });
+      note(ctx, 0.8, "Rule: draw the nearest segment first, biggest. Everything behind it loses outline where it's covered.");
+      note(ctx, 0.86, "Contour ellipses on each finger tube show which way it points. No contour = no depth.");
+    },
+    sceneLight(ctx) {
+      title(ctx, "Lighting a scene: key, fill, rim — and the shadow that places the figure");
+      // room box in one-point
+      rect(ctx, 0.3, 0.25, 0.4, 0.3);                      // back wall
+      line(ctx, 0.08, 0.12, 0.3, 0.25); line(ctx, 0.92, 0.12, 0.7, 0.25);
+      line(ctx, 0.08, 0.7, 0.3, 0.55); line(ctx, 0.92, 0.7, 0.7, 0.55);
+      // window (key light) on the left wall
+      poly(ctx, [[0.14, 0.28], [0.24, 0.31], [0.24, 0.45], [0.14, 0.5]]);
+      arrow(ctx, 0.2, 0.38, 0.42, 0.5); label(ctx, 0.15, 0.55, "KEY: the one strong source", { fs: 0.09 });
+      // figure
+      ellipse(ctx, 0.5, 0.44, 0.02, 0.028); line(ctx, 0.5, 0.47, 0.5, 0.58);
+      line(ctx, 0.5, 0.58, 0.47, 0.66); line(ctx, 0.5, 0.58, 0.53, 0.66);
+      line(ctx, 0.5, 0.5, 0.46, 0.55); line(ctx, 0.5, 0.5, 0.54, 0.55);
+      // cast shadow away from key
+      style(ctx, { dash: true }); poly(ctx, [[0.5, 0.66], [0.62, 0.7], [0.66, 0.66], [0.53, 0.63]]); style(ctx);
+      label(ctx, 0.56, 0.74, "cast shadow points AWAY from the key and pins the feet to the floor", { fs: 0.09 });
+      arrow(ctx, 0.85, 0.35, 0.6, 0.48); label(ctx, 0.62, 0.3, "RIM from behind: a bright edge", { fs: 0.09 });
+      arrow(ctx, 0.5, 0.85, 0.5, 0.68); label(ctx, 0.36, 0.88, "FILL: bounce from the floor and walls, always dimmer", { fs: 0.09 });
+      note(ctx, 0.95, "One key. Everything else is weaker. Where the key can't reach, the scene goes to the fill's color.");
+    },
+    scaleTypes(ctx) {
+      title(ctx, "Reptile & amphibian surfaces: scales are a pattern ON a form");
+      // overlapping scales (snake/fish)
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) {
+        const x = 0.1 + c * 0.05 + (r % 2) * 0.025, y = 0.24 + r * 0.05;
+        arc(ctx, x, y, 0.025, 0.028, Math.PI * 0.05, Math.PI * 0.95);
+      }
+      label(ctx, 0.1, 0.5, "overlapping (snake belly, fish): rows offset like roof tiles", { fs: 0.09 });
+      // bead / granular (lizard, gecko)
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++)
+        circle(ctx, 0.55 + c * 0.05 + (r % 2) * 0.02, 0.24 + r * 0.05, 0.012 + ((r + c) % 3) * 0.003);
+      label(ctx, 0.55, 0.5, "beaded (gecko, gila monster): pebbles, irregular sizes", { fs: 0.09 });
+      // plates (crocodile / turtle)
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++)
+        rect(ctx, 0.1 + c * 0.075, 0.6 + r * 0.075, 0.065, 0.065);
+      label(ctx, 0.1, 0.79, "plates / scutes (croc back, turtle shell): big, with a keel", { fs: 0.09 });
+      // smooth wet (frog) — contour ellipses + one highlight
+      ellipse(ctx, 0.72, 0.68, 0.14, 0.08);
+      [-0.08, -0.03, 0.03, 0.08].forEach(dx => ellipse(ctx, 0.72 + dx, 0.68, 0.012, 0.075));
+      circle(ctx, 0.66, 0.63, 0.012);
+      label(ctx, 0.58, 0.79, "smooth & wet (frog, salamander): NO texture — one sharp highlight", { fs: 0.09 });
+      note(ctx, 0.9, "Scales follow contour lines and get SMALLER toward joints, the belly, and the tail tip.");
+    },
+    nibStrokes(ctx) {
+      title(ctx, "Line quality: the four line families every inking tool makes");
+      // 1 uniform (technical pen)
+      style(ctx, { lw: S(0.014) }); curve(ctx, 0.1, 0.24, 0.5, 0.16, 0.9, 0.24); style(ctx);
+      label(ctx, 0.1, 0.29, "uniform — technical pen / fineliner: mechanical, good for backgrounds & borders", { fs: 0.09 });
+      // 2 swelling (nib): thin-thick-thin built from segments
+      for (let i = 0; i < 24; i++) {
+        const t = i / 24, w = 0.006 + Math.sin(t * Math.PI) * 0.03;
+        style(ctx, { lw: S(w) }); line(ctx, 0.1 + t * 0.8, 0.4 - Math.sin(t * Math.PI) * 0.06, 0.1 + (t + 1 / 24) * 0.8, 0.4 - Math.sin((t + 1 / 24) * Math.PI) * 0.06);
+      }
+      style(ctx);
+      label(ctx, 0.1, 0.46, "swelling — dip nib: thin on the upstroke, thick under pressure on the pull", { fs: 0.09 });
+      // 3 tapered (brush): thick to nothing
+      for (let i = 0; i < 24; i++) {
+        const t = i / 24, w = 0.035 * (1 - t) + 0.002;
+        style(ctx, { lw: S(w) }); line(ctx, 0.1 + t * 0.8, 0.58 + Math.sin(t * 2) * 0.03, 0.1 + (t + 1 / 24) * 0.8, 0.58 + Math.sin((t + 1 / 24) * 2) * 0.03);
+      }
+      style(ctx);
+      label(ctx, 0.1, 0.65, "tapered — brush: starts fat, whips to a hair. The comics line.", { fs: 0.09 });
+      // 4 dry / broken
+      for (let i = 0; i < 40; i++) {
+        if (i % 3 === 0) continue;
+        const t = i / 40; style(ctx, { lw: S(0.008 + (i % 4) * 0.004) });
+        line(ctx, 0.1 + t * 0.8, 0.77, 0.1 + (t + 1 / 40) * 0.8, 0.77);
+      }
+      style(ctx);
+      label(ctx, 0.1, 0.83, "broken — dry brush / rough nib: texture, speed, grit", { fs: 0.09 });
+      note(ctx, 0.92, "Penshi: Ink tool = pressure→width (nib/brush); low pressure = fineliner. Practice each family for a row.");
+    },
+    drillSheet(ctx) {
+      title(ctx, "Timed gesture drill");
+      note(ctx, 0.14, "1.  Open a pose site in a browser tab and snap it beside Penshi (Win + ← / →).");
+      note(ctx, 0.19, "2.  Press ⏱ Start in the Lesson panel. The timer counts down; the page CLEARS when it hits zero.");
+      note(ctx, 0.24, "3.  Every cleared pose is captured. When the drill ends, a contact sheet of all poses is added as a new page.");
+      note(ctx, 0.29, "4.  Line of action first. Then the bean. Then rhythm lines for limbs. Never the outline.");
+      style(ctx, { dash: true }); rect(ctx, 0.08, 0.36, 0.84, 0.52); style(ctx);
+      label(ctx, 0.3, 0.6, "draw here — big, fast, from the shoulder", { fs: 0.14 });
+      note(ctx, 0.93, "30 seconds is the standard. If your poses look 'finished', shorten it. If they're unreadable, lengthen it once.");
+    },
   };
 
   /* which exemplars draw real colors (guide layer must be untinted) */

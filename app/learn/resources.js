@@ -184,6 +184,48 @@ const LearnResources = {
   "aldoori": { title: "Ahmed Aldoori — character design & mash-up studies (YouTube)", by: "Ahmed Aldoori",
     url: "https://www.youtube.com/@AhmedAldoori", free: "free" },
   "sinix": { title: "Sinix Design — anatomy, design, folds (YouTube)", by: "Sinix", url: "https://www.youtube.com/@SinixDesign", free: "free" },
+
+  /* ---- inking / line quality ---- */
+  "etherington": { title: "How to THINK When You Draw — free tutorial blog", by: "Lorenzo & Robin Etherington",
+    url: "https://theetheringtonbrothers.blogspot.com/", free: "free",
+    note: "Hundreds of one-page tutorials: line weight, foreshortened hands, folds, shadows, creatures. A comics-artist's eye." },
+  "alphonso-dunn": { title: "Alphonso Dunn — pen & ink technique (YouTube)", by: "Alphonso Dunn",
+    url: "https://www.youtube.com/@AlphonsoDunn", free: "free",
+    note: "The clearest free teaching on hatching, line variation and ink texture. His book 'Pen & Ink Drawing' is the paid companion." },
+  "janson-inking": { title: "The DC Comics Guide to Inking Comics", by: "Klaus Janson", url: "", free: "paid",
+    note: "A working inker on brush vs pen, spotting blacks, and inking over someone else's pencils." },
+
+  /* ---- age / proportion ---- */
+  "hamm-figure": { title: "Drawing the Head and Figure (1963)", by: "Jack Hamm",
+    url: "https://archive.org/search?query=jack+hamm+drawing+the+head+and+figure", free: "paid",
+    note: "Dense proportion charts, including children and age changes. Archive search for previews; cheap used." },
+
+  /* ---- reptiles / amphibians ---- */
+  "inaturalist": { title: "iNaturalist — species photos from naturalists worldwide", by: "iNaturalist (nonprofit)",
+    url: "https://www.inaturalist.org/", free: "free",
+    note: "Search any species: thousands of field photos at every angle. The best free animal reference on the web." },
+  "amphibiaweb": { title: "AmphibiaWeb — every amphibian species, with photos", by: "AmphibiaWeb (UC Berkeley)",
+    url: "https://amphibiaweb.org/", free: "free" },
+  "reptile-db": { title: "The Reptile Database", by: "Reptile Database", url: "https://reptile-database.reptarium.cz/", free: "free",
+    note: "Taxonomy and photos for every living reptile. Use it to find the species name, then image-search it." },
+
+  /* ---- light ---- */
+  "gurney-yt": { title: "James Gurney — plein-air & light demos (YouTube)", by: "James Gurney",
+    url: "https://www.youtube.com/@JamesGurney", free: "free",
+    note: "Watch him solve real lighting on location; the Color and Light book in motion." },
+
+  /* ---- reference ethics / licensing ---- */
+  "cc-licenses": { title: "Creative Commons — the six license types explained", by: "Creative Commons",
+    url: "https://creativecommons.org/share-your-work/cclicenses/", free: "free",
+    note: "BY, BY-SA, BY-NC, BY-ND and what each lets you do with a photo." },
+  "unsplash-license": { title: "Unsplash license", by: "Unsplash", url: "https://unsplash.com/license", free: "free",
+    note: "Free for commercial and personal use; you can't resell the unmodified photo." },
+  "commons-reuse": { title: "Wikimedia Commons — reusing content outside Wikimedia", by: "Wikimedia",
+    url: "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia", free: "free",
+    note: "How to check a file's license and give credit correctly." },
+  "fair-use": { title: "U.S. Copyright Office — Fair Use Index", by: "U.S. Copyright Office",
+    url: "https://www.copyright.gov/fair-use/", free: "free",
+    note: "The four factors courts weigh. Study is fine; tracing a photographer's work into a sold comic is not automatically." },
 };
 
 function resourceLink(id) {

@@ -215,6 +215,29 @@ PENSHI_CURRICULUM.push({
           ] },
       ],
       reflect: ["Which animal did you find hardest? Go back to its skeleton on Sketchfab; the answer is always in the joints."] },
+
+    { id: "anim-6", title: "Reptile and amphibian surfaces", minutes: 55,
+      goal: "Draw four reptile and amphibian surface types (overlapping scales, beaded skin, plates, smooth wet skin) as patterns that follow the animal's form, and build a lizard, a snake and a frog from construction.",
+      why: "Scales are the texture beginners draw as a flat net stamped on top of the animal, and it kills the drawing instantly. A scale pattern is a set of contour lines: it wraps the body, shrinks toward joints and the tail, and stretches at the belly. Learn the four surface families and you can render any reptile, and half of all dragons, without inventing a single scale.",
+      refs: ["inaturalist", "amphibiaweb", "reptile-db", "commons-zootomy", "drawabox-l5", "whitlatch"],
+      pages: [
+        { title: "Four surfaces", exemplar: "scaleTypes",
+          steps: [
+            { h: "Overlapping scales", t: "Copy the guide's roof-tile rows: each scale is an arc, the next row offset by half a scale, every row following a contour line around the body. Now draw a curved tube (a snake's body) and wrap it in these rows so they bend with it and compress on the inside of the curve. Draw the scales smaller as the tube tapers.", tool: "pencil", layer: "Pencils" },
+            { h: "Beaded skin", t: "Geckos and gila monsters wear pebbles: irregular, rounded, no overlap, different sizes mixed. The pattern still follows the form, but it's suggested, not counted: render a patch fully near the focal point and let it fade to a few dots elsewhere. Draw a bent lizard leg with beads dense at the elbow and sparse on the thigh.", tool: "pencil" },
+            { h: "Plates and scutes", t: "Crocodile backs and turtle shells are big plates with a ridge (keel) down each, laid in rows that widen over the back and narrow toward the tail. They are boxes on a surface, so each plate gets a lit top and a shadow side. Draw a crocodile's back from above and from the side.", tool: "pencil" },
+            { h: "Smooth and wet", t: "Frogs and salamanders have no texture at all. Their form is described by contour lines and ONE sharp specular highlight per form, because wet skin is a mirror. Draw the guide's frog body with four contour ellipses and a single small highlight where the light hits most directly. Adding more highlights makes it look like plastic.", tool: "pencil" },
+          ] },
+        { title: "Lizard, snake, frog",
+          hints: ["iNaturalist: search 'bearded dragon', 'corn snake', 'tree frog'. Pick photos with the whole animal visible.", "Construction first: the sprawling limb plan for the lizard, one long tapered tube for the snake, a fat bean with folded Z-legs for the frog.", "Texture LAST and only where it earns its place."],
+          steps: [
+            { h: "Lizard: the sprawl", t: "A lizard's legs come out sideways and then bend down (a sprawl), unlike a mammal's legs under the body. Construct: head wedge, a long flattened ribcage tube, pelvis, tail tube tapering to nothing, and four legs that go OUT then DOWN with the elbow and knee pointing sideways. Draw it from above (the classic view) and from the side.", tool: "pencil", layer: "Pencils" },
+            { h: "Snake: a tube with a plan", t: "One tapered tube from a wedge head, but it moves in S-curves that are wider in the middle of the body and tighten at the tail. Draw the line of action first, exactly as with a figure, then the tube, then contour ellipses every few body-widths that tilt with each curve. Only then the belly scales (wide, single row) and the back scales (small, many rows).", tool: "pencil" },
+            { h: "Frog: springs folded under a bean", t: "A frog is a wide bean (ribcage and pelvis together) with a flat head, huge eyes on top, and hind legs folded into a Z that is longer than the body. Construct the bean, the eye domes, the Z-legs with big webbed feet. No texture: contour lines and one highlight per form.", tool: "pencil" },
+            { h: "Ink with texture judgment", t: "Ink all three. Render scales fully only in one area of each animal (the head and neck, usually), and let the rest be suggested by a few contour rows. Heavy line where the belly meets the ground. Compare against the reference: the goal is that the texture reads as 'on the form', never 'on the paper'.", tool: "ink", layer: "Inks" },
+          ] },
+      ],
+      reflect: ["Where did your scales stay the same size along the whole body? That is the tell. Shrink them toward joints and the tail.", "Point to a reptile's elbow on a photo. Sideways, not under the body?"] },
     ] },
 
   /* ============================================================ */
@@ -389,6 +412,29 @@ PENSHI_CURRICULUM.push({
           ] },
       ],
       reflect: ["Cover the figures. Does the scene still tell the story? It should."] },
+
+    { id: "env-3b", title: "Lighting a scene", minutes: 60,
+      goal: "Light one room and one exterior with a single key light, a fill and (optionally) a rim, placing every cast shadow from the key so the figures sit in the space, and re-light the same room for noon, dusk and night.",
+      why: "Shading (Section 2) lit one object. A scene is many objects sharing ONE light, and that shared light is what makes them belong together: every cast shadow points the same way, every shadow side faces away from the same source, and the fill color is the room's own color bounced back. Comics pages are read by their lighting before their drawing. Learn to plan it like a film set: key, fill, rim, in that order of importance.",
+      refs: ["gurney-book", "gurney-yt", "gurney-blog", "framed-ink", "ctrlpaint"],
+      pages: [
+        { title: "Key, fill, rim", exemplar: "sceneLight",
+          steps: [
+            { h: "Place the key", t: "Copy the guide room. Choose the key light: the window on the left. Draw the arrow from it. Everything now follows from that arrow: the floor near the window is brightest; the far wall is lit at an angle; the wall the window is IN is in its own shadow. Mark on each surface whether it faces the key (light), turns from it (halftone) or faces away (shadow), exactly like the cube in Shade-2.", tool: "pencil", layer: "Pencils" },
+            { h: "Cast shadows from the key", t: "Every object throws a shadow AWAY from the key, along the arrow. The figure's shadow falls on the floor to the right and slightly toward the viewer, and it is what pins the feet to the floor. A table's shadow does the same. Construct each shadow by projecting the object's top corners along the key's rays until they hit the floor; the guide shows the figure's. Draw the room's furniture and cast every shadow.", tool: "pencil" },
+            { h: "Fill: the bounce", t: "Shadows are not black. Light bouncing off the floor and walls fills them, dimmer and tinted the color of whatever it bounced off (warm wood floor: warm fill). On the Colors layer, paint the shadow side of the figure and furniture with a fill value two steps darker than the halftone and shifted toward the room's color. Keep every fill darker than every lit surface or the scene flattens.", tool: "marker", layer: "Colors" },
+            { h: "Rim: the optional third light", t: "A second, weaker source from behind (a lamp in the back corner, a doorway) puts a bright edge on the figure's far side and separates it from the wall. Add one. Rule: a rim light must never be brighter than the key, or the reader stops knowing where the light comes from.", tool: "marker" },
+          ] },
+        { title: "The same room, three times of day",
+          hints: ["Page tab ＋ twice, or divide the page into three panels.", "Noon: key from above, short shadows, cool skylight fill. Dusk: key from the side, long warm shadows, purple fill. Night: key from a lamp INSIDE the room, everything else drops into a deep cool fill.", "Chromatic greys (Acolor-4) for everything that isn't the key."],
+          steps: [
+            { h: "Noon", t: "Redraw the room with the key coming steeply through the window: short, hard-edged shadows directly under things, the floor a bright patch, the fill cool (sky bounce). Values are high-contrast and simple. This is the honest, flat, daytime look: nothing hidden.", tool: "marker", layer: "Colors" },
+            { h: "Dusk", t: "Same room, the key low and warm through the window: long shadows across the floor and up the far wall, everything the light touches orange, everything it misses a cool violet fill. The contrast between warm light and cool shadow is the whole mood. Keep the saturation in the lit areas and let the shadows go grey-violet.", tool: "marker" },
+            { h: "Night, lit from inside", t: "The window is now dark and the key is a lamp in the room: a warm pool that falls off fast with distance, shadows pointing AWAY from the lamp in all directions, the corners of the room dropping into a near-black cool fill. Objects far from the lamp are barely there. Ink the shadows as spotted blacks and let the lamp's pool be the only detail.", tool: "ink", layer: "Inks" },
+            { h: "Exterior", t: "One outdoor scene from Env-2 or Env-3, lit by a sun (key) with a sky (fill). The sky fill is much stronger outdoors, so shadows are lighter and bluer than indoors. Cast shadows of trees and buildings run parallel to each other on flat ground and converge toward the sun's position on the horizon when the sun is low. Draw it, then save all four to the Portfolio.", tool: "marker", layer: "Colors" },
+          ] },
+      ],
+      reflect: ["Point to the key light in each of your four scenes. Could a stranger find it from the shadows alone?", "Which time of day would you use for a scene where a character decides to leave home? Why that one?"] },
 
     { id: "env-4", title: "Worldbuilding: color, theme and invention", minutes: 70,
       goal: "Design an original setting by combining real landforms, real architecture and a color theme into a world that conveys meaning — then draw it from two angles.",
