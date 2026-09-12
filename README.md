@@ -121,9 +121,9 @@ new folder before deleting the old one.
 
 ### Where your work lives
 
-Saved comics go in the `projects` folder inside the Penshi folder, and saved
-art stamps go in `assets`. Back those two folders up and you've backed up
-everything. The server only listens on `127.0.0.1` (your own machine) — it is
+Saved comics go in the `projects` folder inside the Penshi folder, saved art
+stamps go in `assets`, and your curriculum progress plus every practice page live
+in `learn`. Back those three folders up and you've backed up everything. The server only listens on `127.0.0.1` (your own machine) — it is
 not visible to your network or the internet.
 
 ### Troubleshooting
@@ -168,8 +168,14 @@ comic-studio/
       ├─ panels.js    panel objects + page templates
       ├─ lettering.js balloons, thoughts, captions, SFX bursts
       ├─ guides.js    print guides, composition overlays, perspective grid
-      ├─ reference.js Learn lessons + Library tab
+      ├─ reference.js Craft tab (comics reference) + Library tab
+      ├─ colorwheel.js HSV wheel with harmony modes (Tool tab)
       └─ main.js      UI wiring, shortcuts, tour, boot
+   └─ learn/          Learn mode — its own folder
+      ├─ learn.js     mode switch, curriculum home, Portfolio, lesson runner
+      ├─ exemplars.js the guide drawings painted onto practice pages
+      ├─ resources.js the citation database (every linked source)
+      └─ curriculum/  one data file per section (01-foundations … 07-further)
 ```
 
 **Your reference library**: any PDFs or images you drop into the `drawing-resources`
@@ -221,13 +227,33 @@ US Letter, A4) plus fully custom width × height at 150 or 300 dpi.
 - **⧉ on any Learn lesson** pops it out into a draggable floating window, so you
   can keep several lessons open while you draw.
 
-## Draw School (for total beginners)
+## Learn mode — the drawing curriculum
 
-Learn tab → **🎓 Draw School**: a 9-lesson hands-on course — line control, shapes,
-forms, light & shadow, perspective, gesture, heads, figures, and finally your first
-comic page. Lessons project faint example constructions straight onto the canvas
-(a light table) for you to practice over, auto-select the right tool and layer,
-and remember which lessons you've finished.
+Click **Learn** in the top bar (next to **Studio**) to open a full, self-paced drawing
+course that runs on the same canvas and tools you make comics with:
+
+- **7 sections · 20 chapters · 68 lessons · ~400 steps.** Foundations (thinking in
+  3-D forms, observation) → Extending (perspective, shading, gesture) → Gaining Form
+  (heads, bodies, fabric, color) → Becoming Advanced (figure, advanced color,
+  advanced perspective) → Becoming a Creator (anatomy, character design, animals,
+  creatures, machines/vehicles/weapons, environment & worldbuilding) → Comics Craft
+  → Going Further (routines, self-critique, the resource shelf).
+- **Lessons draw on the page.** Each practice page gets a locked, blue **Guide**
+  layer with construction diagrams to work over — they stay on the page for good
+  and save with your work. Steps switch you to the right tool and layer, and even
+  turn on the perspective grid when a lesson needs it.
+- **Study from real sources.** Every lesson cites its references — Drawabox, Proko,
+  Loomis and Bridgman (public domain), Line of Action, Posemaniacs, museum
+  collections, NASA landform imagery and more — with a free / freemium / paid badge.
+  Links open in your browser; you draw in Penshi. Nothing is AI-generated; the
+  design chapters teach you to recombine references into your own creations.
+- **Progress and Portfolio.** Every step you tick is remembered; every practice
+  page is saved to a **Portfolio** with a thumbnail and date, kept apart from your
+  comic projects, so you can scroll back through months of work and see the change.
+
+Color lessons use the **color wheel in the Tool tab** — a hue ring with a
+saturation/value square and harmony modes (complementary, analogous, triadic,
+split-complementary, tetradic, monochromatic) that works everywhere in the app.
 
 ## The workflow it teaches
 

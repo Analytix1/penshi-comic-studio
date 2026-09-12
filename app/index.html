@@ -12,6 +12,11 @@
 <header id="topbar">
   <div class="brand">🖋 <b>Penshi</b><span class="muted"> comic studio</span></div>
 
+  <div id="mode-tabs" title="Studio = make comics · Learn = the drawing curriculum">
+    <button class="mtab on" data-mode="studio">Studio</button>
+    <button class="mtab" data-mode="learn">Learn</button>
+  </div>
+
   <div class="tb-group">
     <button id="btn-new"  title="New page (Ctrl+Alt+N)">New</button>
     <button id="btn-save" title="Save project (Ctrl+S)">Save</button>
@@ -82,7 +87,8 @@
     <div id="zoom-hud" class="muted"></div>
     <div id="lesson-panel" hidden></div>
     <div id="page-tabs"></div>
-    <div id="lasso-actions" hidden>
+    <div id="learn-home" hidden></div>
+    <div id="lasso-actions" hidden
       <span id="lasso-count" class="muted"></span>
       <button id="lasso-save" title="Save the circled strokes to your asset library">📦 Save asset</button>
       <button id="lasso-del" title="Delete the circled strokes">🗑</button>
@@ -96,7 +102,7 @@
       <button class="stab active" data-panel="tab-tool">Tool</button>
       <button class="stab" data-panel="tab-layers">Layers</button>
       <button class="stab" data-panel="tab-guides">Guides</button>
-      <button class="stab" data-panel="tab-learn">Learn</button>
+      <button class="stab" id="stab-learn" data-panel="tab-learn">Craft</button>
       <button class="stab" data-panel="tab-library">Library</button>
     </div>
 
@@ -115,6 +121,7 @@
         Pressure → opacity</label>
       <label>Color <input type="color" id="opt-color" value="#1a1a1a"></label>
       <div id="swatches"></div>
+      <div id="color-wheel"></div>
       <div id="tool-hint" class="hint"></div>
     </section>
 
@@ -195,7 +202,18 @@
 <script src="js/lettering.js"></script>
 <script src="js/guides.js"></script>
 <script src="js/reference.js"></script>
-<script src="js/tutorial.js"></script>
+<script src="js/colorwheel.js"></script>
+<!-- Learn mode: exemplar drawings, citations, the curriculum, the runner -->
+<script src="learn/exemplars.js"></script>
+<script src="learn/resources.js"></script>
+<script src="learn/curriculum/01-foundations.js"></script>
+<script src="learn/curriculum/02-extending.js"></script>
+<script src="learn/curriculum/03-gaining-form.js"></script>
+<script src="learn/curriculum/04-advanced.js"></script>
+<script src="learn/curriculum/05-creator.js"></script>
+<script src="learn/curriculum/06-comics.js"></script>
+<script src="learn/curriculum/07-further.js"></script>
+<script src="learn/learn.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -123,7 +123,6 @@ const Engine = (() => {
 
       // non-printing overlays
       Guides.render(ctx);
-      Tutorial.renderOverlay(ctx);   // Draw School exemplars (light table)
       renderSelection(ctx);
 
       ctx.restore();
@@ -190,6 +189,27 @@ const Engine = (() => {
     }, "image/png");
   }
 
+  /* small flattened snapshot of the live page (portfolio thumbnails) */
+  function renderThumbnail(maxW = 260) {
+    const s = Math.min(1, maxW / App.page.w);
+    const t = document.createElement("canvas");
+    t.width = Math.max(1, Math.round(App.page.w * s));
+    t.height = Math.max(1, Math.round(App.page.h * s));
+    const tctx = t.getContext("2d");
+    tctx.fillStyle = App.page.paper || "#ffffff";
+    tctx.fillRect(0, 0, t.width, t.height);
+    tctx.scale(s, s);
+    for (const layer of App.layers) {
+      if (!layer.visible) continue;
+      tctx.globalAlpha = layer.opacity;
+      if (layer.kind === "raster") tctx.drawImage(layer.tint ? tinted(layer) : layer.canvas, 0, 0);
+      else if (layer.role === "panels") Panels.render(tctx, layer);
+      else if (layer.role === "lettering") Lettering.render(tctx, layer);
+      tctx.globalAlpha = 1;
+    }
+    return t.toDataURL("image/jpeg", 0.72);
+  }
+
   /* eyedropper: what color is actually visible at page pixel (px,py)?
      Composites all visible layers into a 1×1 readback, same order as export. */
   function sampleColor(px, py) {
@@ -218,5 +238,6 @@ const Engine = (() => {
   }
 
   return { resize, fitPage, toPage, toScreen, zoomAt, exportPNG, sampleColor,
+           renderThumbnail,
            start() { resize(); fitPage(); render(); } };
 })();

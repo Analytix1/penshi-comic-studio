@@ -23,6 +23,9 @@ ROOT = Path(__file__).resolve().parent
 APP_DIR = ROOT / "app"
 PROJECTS_DIR = ROOT / "projects"
 ASSETS_DIR = ROOT / "assets"      # personal reusable art stamps (eyes, titles, ...)
+LEARN_DIR = ROOT / "learn"        # curriculum progress + practice attempts (separate
+LEARN_ATTEMPTS = LEARN_DIR / "attempts"   # from projects/, so study work is its own record)
+ATTEMPT_ID = re.compile(r"^[\w\-]{1,80}$")
 
 # The user's personal reference library (PDFs/images shown in the Library tab).
 # Resolution order:
@@ -113,6 +116,12 @@ class PenshiHandler(BaseHTTPRequestHandler):
             return self.serve_resource(path.removeprefix("/resources/"))
         if path == "/api/assets":
             return self.list_assets()
+        if path == "/api/learn/progress":
+            return self.learn_progress_get()
+        if path == "/api/learn/attempts":
+            return self.learn_attempts_list()
+        if path.startswith("/api/learn/attempts/"):
+            return self.learn_attempt_get(path.removeprefix("/api/learn/attempts/"))
         return self.serve_static(path)
 
     def do_POST(self):
@@ -121,6 +130,10 @@ class PenshiHandler(BaseHTTPRequestHandler):
             return self.save_project(path.removeprefix("/api/projects/"))
         if path == "/api/assets":
             return self.save_asset()
+        if path == "/api/learn/progress":
+            return self.learn_progress_set()
+        if path.startswith("/api/learn/attempts/"):
+            return self.learn_attempt_save(path.removeprefix("/api/learn/attempts/"))
         self.send_json({"error": "not found"}, 404)
 
     def do_DELETE(self):
@@ -129,7 +142,90 @@ class PenshiHandler(BaseHTTPRequestHandler):
             return self.delete_project(path.removeprefix("/api/projects/"))
         if path.startswith("/api/assets/"):
             return self.delete_asset(path.removeprefix("/api/assets/"))
+        if path.startswith("/api/learn/attempts/"):
+            return self.learn_attempt_delete(path.removeprefix("/api/learn/attempts/"))
         self.send_json({"error": "not found"}, 404)
+
+    # ---------- learning: progress + practice attempts ----------
+
+    def _read_body_json(self, limit):
+        length = int(self.headers.get("Content-Length", 0))
+        if length <= 0 or length > limit:
+            return None
+        try:
+            return json.loads(self.rfile.read(length))
+        except json.JSONDecodeError:
+            return None
+
+    def learn_progress_get(self):
+        f = LEARN_DIR / "progress.json"
+        if f.is_file():
+            try:
+                return self.send_json(json.loads(f.read_text(encoding="utf-8")))
+            except (json.JSONDecodeError, OSError):
+                pass
+        self.send_json({"lessons": {}, "updated": None})
+
+    def learn_progress_set(self):
+        data = self._read_body_json(4 * 1024 * 1024)
+        if not isinstance(data, dict):
+            return self.send_json({"error": "bad progress payload"}, 400)
+        data["updated"] = time.time()
+        f = LEARN_DIR / "progress.json"
+        tmp = f.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data), encoding="utf-8")
+        os.replace(tmp, f)
+        self.send_json({"ok": True})
+
+    def learn_attempts_list(self):
+        items = []
+        for f in sorted(LEARN_ATTEMPTS.glob("*.json"),
+                        key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                d = json.loads(f.read_text(encoding="utf-8"))
+                d.pop("project", None)      # list is metadata + thumbnail only
+                d["id"] = f.stem
+                items.append(d)
+            except (json.JSONDecodeError, OSError):
+                continue
+        self.send_json({"attempts": items})
+
+    def learn_attempt_get(self, aid):
+        if not ATTEMPT_ID.match(aid):
+            return self.send_json({"error": "bad attempt id"}, 400)
+        target = safe_child(LEARN_ATTEMPTS, aid + ".json")
+        if not (target and target.is_file()):
+            return self.send_json({"error": "no such attempt"}, 404)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(target.stat().st_size))
+        self.end_headers()
+        with open(target, "rb") as fh:
+            while chunk := fh.read(64 * 1024):
+                self.wfile.write(chunk)
+
+    def learn_attempt_save(self, aid):
+        if not ATTEMPT_ID.match(aid):
+            return self.send_json({"error": "bad attempt id"}, 400)
+        data = self._read_body_json(MAX_PROJECT_BYTES)
+        if not isinstance(data, dict) or "lessonId" not in data or "project" not in data:
+            return self.send_json({"error": "bad attempt payload"}, 400)
+        target = safe_child(LEARN_ATTEMPTS, aid + ".json")
+        if target is None:
+            return self.send_json({"error": "bad attempt id"}, 400)
+        tmp = target.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data), encoding="utf-8")
+        os.replace(tmp, target)
+        self.send_json({"ok": True, "id": aid})
+
+    def learn_attempt_delete(self, aid):
+        if not ATTEMPT_ID.match(aid):
+            return self.send_json({"error": "bad attempt id"}, 400)
+        target = safe_child(LEARN_ATTEMPTS, aid + ".json")
+        if target and target.is_file():
+            target.unlink()
+            return self.send_json({"ok": True})
+        self.send_json({"error": "no such attempt"}, 404)
 
     # ---------- static frontend ----------
 
@@ -266,6 +362,7 @@ class PenshiHandler(BaseHTTPRequestHandler):
 def main():
     PROJECTS_DIR.mkdir(exist_ok=True)
     ASSETS_DIR.mkdir(exist_ok=True)
+    LEARN_ATTEMPTS.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(("127.0.0.1", PORT), PenshiHandler)
     print(f"Penshi Comic Studio -> http://localhost:{PORT}")
     print(f"  projects : {PROJECTS_DIR}")

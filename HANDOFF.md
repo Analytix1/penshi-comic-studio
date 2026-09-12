@@ -12,7 +12,18 @@ breaking its architecture. **Paste the "context block" first, then one task prom
 > files from `app/`, project JSON persistence under `/api/projects/<name>`, and a
 > read-only resource file server under `/resources/`. No pip dependencies allowed.
 > Frontend: vanilla JS (no frameworks, no build step), loaded in this order:
-> `state.js → engine.js → tools.js → panels.js → lettering.js → guides.js → reference.js → main.js`.
+> `state.js → engine.js → tools.js → panels.js → lettering.js → guides.js → reference.js →
+> colorwheel.js → learn/exemplars.js → learn/resources.js → learn/curriculum/01…07 → learn/learn.js → main.js`.
+> LEARN MODE (app/learn/): a second top-level mode. `App.mode` is "studio" or
+> "learn". Curriculum content is pure data — each `learn/curriculum/NN-*.js` pushes a
+> section object onto `window.PENSHI_CURRICULUM` (format documented at the top of
+> 01-foundations.js: section → chapters → lessons → pages → steps; `exemplar` keys
+> map to functions in exemplars.js; `refs` map to ids in resources.js). Lessons run on
+> the real canvas: each attempt is a Volume whose pages carry a locked "Guide" raster
+> layer painted with the exemplar. Progress lives at /api/learn/progress; attempts at
+> /api/learn/attempts (learn/ folder, gitignored). Entering Learn snapshots the studio
+> document in memory and leaving restores it — never touch App.pages from Learn code
+> without going through Learn.enter/exit.
 > Core invariants you must NOT violate:
 > 1. `App` (state.js) is the single source of truth; layers are bottom→top; raster
 >    layers own an offscreen `<canvas>` at full page resolution, object layers
@@ -70,6 +81,24 @@ Add a checkbox in the top bar; persist the preference in localStorage."
 "Add zoom presets (25/50/100/200%) as a dropdown next to the zoom HUD, plus a
 'mirror view' toggle (flip the viewport horizontally — classic art-check trick;
 must not affect export)."
+
+**S7 — More curriculum lessons**
+"Add lessons to app/learn/curriculum/ following the exact format in 01-foundations.js.
+Each lesson needs: id (unique slug), title, minutes, goal, why, refs (ids that exist
+in learn/resources.js — add new sources there WITH a real, verified URL and a free /
+freemium / paid / public-domain flag), 1–3 pages, and 3–8 steps per page with a
+2–5 sentence `t` written as direct instruction. Prefer steps that set `tool` and
+`layer`. Do NOT invent references or URLs; do NOT add anything that generates art.
+Good candidates: a 'Line quality & inking tools' lesson in Comics Craft; 'Lighting a
+scene' in Environment; 'Drawing children & age' in Body Construction; 'Foreshortened
+hands' in Figure Drawing; 'Reptile & amphibian skin' in Animals."
+
+**S8 — More exemplar drawings**
+"Add functions to the `D` table in app/learn/exemplars.js (page-fraction helpers:
+line, ellipse, circle, rect, poly, curve, arrow, dot, label, title, note; cube(),
+cylinder(), mannequin(), loomisHead() composites). Each exemplar is a clear
+line diagram with a title and a one-line note. Reference it from a page's
+`exemplar` field. If it draws real colors, add its key to the COLORFUL set."
 
 ## Tasks sized for OPUS (multi-module, but architecture already decided)
 

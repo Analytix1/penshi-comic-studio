@@ -98,6 +98,7 @@ function ensurePresetFor(page) {
 }
 
 const App = {
+  mode: "studio",      // "studio" (make comics) | "learn" (the curriculum)
   projectName: "untitled",
   page: null,          // { presetKey, w, h, dpi, bleed, safe }  (pixels)
   layers: [],          // bottom -> top (the LIVE page)

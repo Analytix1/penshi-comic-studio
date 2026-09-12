@@ -102,7 +102,10 @@ const UI = {};
   });
   $("#opt-pressure-size").addEventListener("change", e => Tools.state.pressureSize = e.target.checked);
   $("#opt-pressure-opacity").addEventListener("change", e => Tools.state.pressureOpacity = e.target.checked);
-  $("#opt-color").addEventListener("input", e => Tools.state.color = e.target.value);
+  $("#opt-color").addEventListener("input", e => {
+    Tools.state.color = e.target.value;
+    ColorWheel.setHex(e.target.value);
+  });
   $("#opt-gutter").addEventListener("input", e => {
     Tools.state.gutter = +e.target.value;
     $("#lbl-gutter").textContent = e.target.value;
@@ -119,10 +122,11 @@ const UI = {};
     "Muted / story": ["#2c3e60", "#3c5a3c", "#6e2f3c", "#b8923a", "#5c6b7d",
       "#8c7a5c", "#a6763c", "#d9a6a6", "#c9c2a6", "#f5eeda"],
   };
-  UI.setColor = hex => {
+  UI.setColor = (hex, quiet = false) => {
     $("#opt-color").value = hex;
     Tools.state.color = hex;
-    UI.flash("Color " + hex);
+    ColorWheel.setHex(hex);
+    if (!quiet) UI.flash("Color " + hex);
   };
   const RECENT_KEY = "penshi-recent-colors";
   UI.noteColor = hex => {
@@ -288,6 +292,11 @@ const UI = {};
   });
 
   $("#btn-save").addEventListener("click", async () => {
+    if (App.mode === "learn") {            // practice pages go to the Portfolio
+      if (Learn.hasLesson()) Learn.saveAttempt(false);
+      else UI.flash("Open a lesson first — practice pages save to the Portfolio.");
+      return;
+    }
     if (App.projectName === "untitled") {
       const n = prompt("Project name:", "my-comic");
       if (!n) return;
@@ -431,6 +440,7 @@ const UI = {};
   backdrop.addEventListener("click", e => { if (e.target === backdrop) closeModal(); });
 
   $("#btn-open").addEventListener("click", async () => {
+    if (App.mode === "learn") return UI.flash("Switch to Studio to open comic projects.");
     let list;
     try { list = (await apiList()).projects; }
     catch { return UI.flash("Backend unreachable — is server.py running?"); }
@@ -491,10 +501,14 @@ const UI = {};
       startWith("custom");
     });
   }
-  $("#btn-new").addEventListener("click", () => newPageModal(false));
+  $("#btn-new").addEventListener("click", () => {
+    if (App.mode === "learn") return UI.flash("Switch to Studio to start a new comic.");
+    newPageModal(false);
+  });
 
   function updatePageStatus() {
     const p = PAGE_PRESETS[App.page.presetKey] || { label: "Custom" };
+    UI.updatePageStatus = updatePageStatus;
     const vol = App.pages.length > 1 ? ` · page ${App.pageIndex + 1}/${App.pages.length}` : "";
     $("#st-page").textContent =
       `${App.projectName}${vol} — ${p.label} @ ${App.page.dpi}dpi (${App.page.w}×${App.page.h}px)`;
@@ -534,6 +548,7 @@ const UI = {};
     add.title = "Add a page to this volume";
     add.addEventListener("click", async () => { await addPage(); updatePageStatus(); });
     host.appendChild(add);
+    UI.onPagesRefreshed?.();
     if (App.pages.length > 1) {
       const del = document.createElement("button");
       del.className = "ptab ptab-del";
@@ -671,7 +686,8 @@ const UI = {};
       ["#side-tabs", "Five tabs: TOOL options (size, pressure, color) · LAYERS (the pro pipeline: Panels→Pencils→Colors→Inks→Lettering) · GUIDES (perspective grids & page templates) · LEARN (comic-craft mini-lessons) · LIBRARY (your drawing books + free classics)."],
       ["#tab-tool", "Tool options. 'Pressure → size' is what makes ink lines live and breathe. Smoothing steadies shaky lines — crank it for long confident curves."],
       ["[data-panel=tab-guides]", "In GUIDES: one-click page templates (6-grid, 9-panel, 4-koma, widescreen…), rule-of-thirds overlays, and a draggable 1/2/3-point perspective grid."],
-      ["[data-panel=tab-learn]", "LEARN is the craft manual: panel transitions, balloon rules, the 180° rule, pacing, spotting blacks. Short enough to read mid-drawing."],
+      ["#mode-tabs", "Two modes. STUDIO is where you make comics. LEARN is a full drawing curriculum — seven sections from 'lines you can trust' to designing worlds — with lessons that paint guide drawings onto practice pages and a Portfolio that keeps every page you've ever practiced."],
+      ["[data-panel=tab-learn]", "CRAFT is the comics reference: panel transitions, balloon rules, the 180° rule, pacing, spotting blacks. In Learn mode this tab becomes your lesson's step-by-step panel."],
       ["#btn-save", "Save stores the whole layered project on your machine (the projects folder). Export PNG flattens the visible layers — hide Pencils first. That's it: pick a template and make a page! 🖋"],
     ];
     let i = -1, target = null;
@@ -705,7 +721,8 @@ const UI = {};
   Reference.buildLearn();
   Reference.buildLibrary();
   UI.refreshLibrary = Reference.buildLibrary;
-  Tutorial.buildUI();
+  ColorWheel.init($("#color-wheel"));
+  Learn.init();
   UI.refreshLayers();
   UI.refreshUndoButtons();
   setTool("ink");

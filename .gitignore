@@ -8,6 +8,9 @@ config.json
 # personal asset library (your own drawn stamps)
 assets/
 
+# your learning record: curriculum progress + practice attempts
+learn/
+
 # local reference library default location
 drawing-resources/
 
