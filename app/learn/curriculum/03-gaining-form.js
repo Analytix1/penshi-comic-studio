@@ -49,7 +49,7 @@ PENSHI_CURRICULUM.push({
             { h: "Profile", t: "The side plane is now a full circle inside the ball (you see it flat-on). The jaw is a bracket hanging from it, the jaw angle just behind the circle's center. The ear sits on the side-plane circle, behind its center and between the brow and nose lines. The features are on the front edge: brow bump, nose wedge, lips, chin, in a zigzag. Nothing curves — but the ear placement will catch you if you skipped the side plane, and the neck comes off the back of the skull at an angle, not straight down.", tool: "pencil" },
             { h: "Draw all three of the same character", t: "Pick simple distinguishing features (a big nose, a wide jaw, a specific hairline) and draw the same person front, three-quarter and profile. Same ball size, same thirds, same jaw length. This is a 'model sheet' — comics artists make one per character so the face stays consistent across two hundred panels. Line them up so the thirds are level across all three.", tool: "pencil" },
           ] },
-        { title: "Tilt, up and down", exemplar: "loomisAngles",
+        { title: "Tilt, up and down", exemplar: "headTilt",
           steps: [
             { h: "Looking down", t: "When the head tips forward, the brow line and thirds CURVE downward like the lines of latitude on a globe seen from above. More cranium is visible; the features compress toward the chin; the ears rise relative to the eyes; the top of the head becomes the biggest shape. The nose tip drops below the mouth line's level. Draw it, front and three-quarter.", tool: "pencil", layer: "Pencils" },
             { h: "Looking up", t: "Tilt back: the thirds curve upward, you see the underside of the nose and jaw (two planes you never drew before), the ears drop below the eye line, the neck is fully visible as a cylinder entering the jaw's underside. The eyes look like they're sitting on the brow. Draw it. These two views are where most artists' faces fall apart — it's all in curving the thirds and in trusting that the underside exists.", tool: "pencil" },
@@ -306,7 +306,7 @@ PENSHI_CURRICULUM.push({
       why: "Everything in this section converges here: a constructed head on a mannequin body in folded clothing, colored with a palette chosen by rule. This is the first character you can put in a comic, and the flats-then-shadow pipeline is exactly how comics are colored professionally — flats are a job title in the industry.",
       refs: ["adobe-color", "gurney-book", "ctrlpaint", "marco-bucci"],
       pages: [
-        { title: "Flats", exemplar: "harmonies",
+        { title: "Flats", exemplar: "flatsSteps",
           hints: ["Redraw (or trace over) your inked character from Fabric-3 on the Inks layer.", "Colors layer, Fill tool for big areas, Marker for edges.", "Pick a harmony FIRST and swatch the palette in the margin."],
           steps: [
             { h: "Choose the harmony from the character", t: "What's this character like? Calm → analogous cool. Heroic → triadic. Dangerous → complementary with a red accent. Tired → monochromatic with one warm spot. Pick, set it in the wheel, and swatch 5–6 colors in the margin, including a skin tone and a near-black (never pure black — a very dark version of your dominant hue). Write the harmony's name next to the swatches.", tool: "marker", layer: "Colors" },

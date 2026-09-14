@@ -104,7 +104,12 @@ with history' in Environment; 'Sound effects lettering' in Comics Craft."
 line, ellipse, circle, rect, poly, curve, arrow, dot, label, title, note; cube(),
 cylinder(), mannequin(), loomisHead() composites). Each exemplar is a clear
 line diagram with a title and a one-line note. Reference it from a page's
-`exemplar` field. If it draws real colors, add its key to the COLORFUL set."
+`exemplar` field. If it draws real colors, add its key to the COLORFUL set.
+Vertical distances around a circle must go through `V()` — raw sizes are page-WIDTH
+fractions, so an unconverted vertical offset comes out ~30% too far.
+RULE: an exemplar must teach THAT page, not its lesson in general. Reusing one
+diagram across two pages of the same lesson is a bug unless the diagram explicitly
+covers both (as `sphereShade` does). Render a new one and LOOK at it before shipping."
 
 ## Tasks sized for OPUS (multi-module, but architecture already decided)
 

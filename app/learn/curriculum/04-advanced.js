@@ -17,7 +17,7 @@ PENSHI_CURRICULUM.push({
       why: "The long pose is where all previous chapters meet. Beginners skip stages ('I'll just draw the outline'); the discipline of the stages is what makes the drawing hold together. The three repeats are not optional: the third will be dramatically better than the first, and that difference is the lesson.",
       refs: ["proko-figure", "loa-figure", "loa-360", "hampton", "loomis-figure"],
       pages: [
-        { title: "The stages", exemplar: "mannequinBoxes",
+        { title: "The stages", exemplar: "figureStages",
           hints: ["Line of Action figure tool, timer 20 min, or 360° views for a pose you can rotate.", "Stage 1 (2 min): line of action + bean.", "Stage 2 (5 min): boxes and tubes.", "Stage 3 (5 min): landmarks — pit of neck, nipples, navel, iliac crests, kneecaps.", "Stage 4 (8 min): contour — the outline that follows the forms, heavier on the shadow side."],
           steps: [
             { h: "Stage 1 — gesture (2 minutes)", t: "Line of action, then the bean. Big, light, from the shoulder. Ask: what is this pose DOING? Reaching, resting, bracing? The answer is the line. Do not pass go until the gesture reads.", tool: "pencil", layer: "Pencils" },
@@ -143,7 +143,7 @@ PENSHI_CURRICULUM.push({
       why: "The simple harmonies give you four choices; the full set gives you a palette for any mood. More importantly, knowing them lets you DIAGNOSE a palette that isn't working: usually it's two harmonies fighting, or an accent that isn't really an accent.",
       refs: ["adobe-color", "paletton", "gurney-book", "marco-bucci", "coolors"],
       pages: [
-        { title: "The full set", exemplar: "harmonies",
+        { title: "The full set", exemplar: "harmoniesAdvanced",
           steps: [
             { h: "Split-complementary", t: "Tool tab wheel → Split-complementary: a base hue plus the two neighbors of its complement. All the punch of complementary with less vibration; the most forgiving harmony there is. Swatch it. Most comics color is secretly split-comp.", tool: "marker", layer: "Colors" },
             { h: "Tetradic (double complementary)", t: "Two complementary pairs — four hues in a rectangle on the wheel. Rich but easy to overload: ONE hue must dominate, one supports, two accent. Swatch four, then repaint your mug with a tetrad where blue leads.", tool: "marker" },
@@ -188,7 +188,7 @@ PENSHI_CURRICULUM.push({
       why: "Pure neutral grey almost never exists in a good image. Every 'grey' leans warm or cool, and that lean is what makes shadows breathe and skies glow. Mastering grey is mastering the 80% of any picture that isn't the saturated accent.",
       refs: ["gurney-book", "albers", "gurney-blog", "marco-bucci"],
       pages: [
-        { title: "Chromatic greys", exemplar: "temperature",
+        { title: "Chromatic greys", exemplar: "chromaticGreys",
           steps: [
             { h: "Make greys from complements", t: "In the Tool tab wheel, pick a blue at very low saturation — that's a cool grey. Pick its complement (orange) at very low saturation — a warm grey. Swatch a row from warm grey to cool grey with neutral in the middle. All of them are 'grey'; none of them is the same.", tool: "marker", layer: "Colors" },
             { h: "Grey takes on its opposite", t: "Put your neutral grey swatch next to a saturated red: it looks greenish. Next to green: it looks pinkish. Next to yellow: violet-ish. The eye 'pushes' a neutral toward the complement of its neighbor (simultaneous contrast). Paint the four pairs.", tool: "marker" },
@@ -209,7 +209,7 @@ PENSHI_CURRICULUM.push({
       why: "Eyeballing works until you need a colonnade of equally spaced columns, or a row of identical windows receding down a street. Then you need the geometry — and once you know it, you can lay out a whole city block in an hour.",
       refs: ["scott-robertson", "norling", "storey", "chelsea"],
       pages: [
-        { title: "Equal spacing in depth", exemplar: "persp2ptBox",
+        { title: "Equal spacing in depth", exemplar: "measureRepeat",
           steps: [
             { h: "The diagonal trick, two-point", t: "Draw a two-point box (grid on: 2 VPs). Draw the diagonals of its front face to find the center. A vertical through the center splits the face in half in perspective. Now draw a diagonal from a top corner through the midpoint of the FAR edge and extend it until it hits the base line: that's where the NEXT identical box's edge goes. Repeat for a row of five.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
             { h: "Windows down a wall", t: "Use the same trick on a long wall to place six identical windows, spacing tightening as they recede. Each window's top and bottom aim at the wall's VP; each side is vertical.", tool: "pencil" },
@@ -245,7 +245,7 @@ PENSHI_CURRICULUM.push({
       why: "Wheels are where car drawings die and arches are where architecture drawings die: a slightly wrong ellipse is instantly visible. Scott Robertson's method — ellipse minor axis = the cylinder's axis, and the ellipse sits in a perspective square — is precise and learnable.",
       refs: ["scott-robertson", "norling", "drawabox", "loa-env"],
       pages: [
-        { title: "Ellipses at any angle", exemplar: "circleInPersp",
+        { title: "Ellipses at any angle", exemplar: "ellipseAxis",
           steps: [
             { h: "Minor axis = the axle", t: "A wheel is an ellipse whose MINOR axis points along the axle. Draw an axle line aimed at a VP; at its end draw an ellipse whose minor axis lies on the axle. Draw a second wheel further along the same axle: same rule, smaller, slightly different degree. That's a car's wheelbase — get this and the car works.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
             { h: "Ellipse in a perspective square", t: "For a horizontal circle (a table, a manhole, a fountain), draw the perspective square first, diagonals for center, then fit the ellipse to the four midpoints. Three at different depths. Then a VERTICAL square on a wall for an arch or a clock.", tool: "pencil" },

@@ -13,6 +13,10 @@ const Exemplars = (() => {
   let P = null;                       // current page {w,h,dpi}
   const X = f => P.w * f, Y = f => P.h * f;
   const S = f => P.dpi * f;           // size in inches -> px
+  /* circle/rect sizes are page-WIDTH fractions (they go through X());
+     V() converts such a distance into the height fraction Y() wants, so
+     vertical offsets around a circle stay circular. */
+  const V = d => d * (P.w / P.h);
 
   function style(ctx, o = {}) {
     ctx.strokeStyle = o.stroke || "#1b2a3a";
@@ -775,10 +779,387 @@ const Exemplars = (() => {
       label(ctx, 0.3, 0.6, "draw here — big, fast, from the shoulder", { fs: 0.14 });
       note(ctx, 0.93, "30 seconds is the standard. If your poses look 'finished', shorten it. If they're unreadable, lengthen it once.");
     },
+
+    /* ---------------- page-specific diagrams ---------------- */
+    ghostedLines(ctx) {
+      title(ctx, "Lines you can trust: ghost the motion, then commit in one stroke");
+      /* ghosting — faint passes, then the committed line */
+      style(ctx, { dash: true });
+      for (let k = 1; k <= 3; k++) line(ctx, 0.08, 0.16 + k * 0.008, 0.44, 0.21 + k * 0.008);
+      style(ctx);
+      line(ctx, 0.08, 0.16, 0.44, 0.21);
+      label(ctx, 0.08, 0.26, "hover the path 2–3× · then ONE stroke", { fs: 0.1 });
+      /* dot pairs */
+      [[0.55, 0.14, 0.92, 0.14], [0.55, 0.2, 0.9, 0.235], [0.55, 0.3, 0.83, 0.27]]
+        .forEach(([x1, y1, x2, y2]) => { dot(ctx, x1, y1, 0.022); dot(ctx, x2, y2, 0.022); line(ctx, x1, y1, x2, y2); });
+      label(ctx, 0.55, 0.35, "start ON the first dot, end ON the second", { fs: 0.1 });
+      /* arcs from the elbow and shoulder */
+      curve(ctx, 0.1, 0.42, 0.02, 0.52, 0.1, 0.62); label(ctx, 0.13, 0.52, "C", { fs: 0.14, bold: true });
+      curve(ctx, 0.26, 0.42, 0.38, 0.48, 0.26, 0.52);
+      curve(ctx, 0.26, 0.52, 0.15, 0.56, 0.27, 0.62); label(ctx, 0.3, 0.52, "S", { fs: 0.14, bold: true });
+      ctx.beginPath(); ctx.moveTo(X(0.4), Y(0.52));
+      for (let i = 0; i <= 40; i++) ctx.lineTo(X(0.4 + i * 0.0125), Y(0.52 + Math.sin(i * 0.55) * 0.045));
+      ctx.stroke();
+      label(ctx, 0.4, 0.44, "one serpentine, one motion, from the shoulder", { fs: 0.1 });
+      /* the three faults */
+      label(ctx, 0.08, 0.7, "the three faults — name yours", { fs: 0.11, bold: true });
+      ctx.beginPath(); ctx.moveTo(X(0.08), Y(0.77));
+      for (let i = 0; i <= 60; i++) ctx.lineTo(X(0.08 + i * 0.0035), Y(0.77 + Math.sin(i * 1.9) * 0.006));
+      ctx.stroke();
+      label(ctx, 0.08, 0.81, "wobbly — too slow, or wrist-driven", { fs: 0.095 });
+      curve(ctx, 0.4, 0.77, 0.5, 0.735, 0.61, 0.77);
+      style(ctx, { dash: true }); line(ctx, 0.4, 0.77, 0.61, 0.77); style(ctx);
+      label(ctx, 0.4, 0.81, "arcing — the shoulder swings a curve", { fs: 0.095 });
+      for (let k = 0; k < 4; k++) line(ctx, 0.72, 0.768 + k * 0.004, 0.92, 0.772 - k * 0.003);
+      label(ctx, 0.72, 0.81, "hairy — patched with many passes", { fs: 0.095 });
+      note(ctx, 0.9, "A slightly-wrong CONFIDENT line beats a perfect hairy one: accuracy is trainable, hairiness is a habit.");
+    },
+    boxSubdivide(ctx) {
+      title(ctx, "Subdivide, nest, cut — everything you build sits inside a box");
+      /* diagonals find the perspective center */
+      const bx = 0.22, by = 0.3, w = 0.2, h = 0.14;
+      rect(ctx, bx, by, w, h);
+      line(ctx, bx, by, bx + w, by + V(h)); line(ctx, bx + w, by, bx, by + V(h));
+      dot(ctx, bx + w / 2, by + V(h) / 2, 0.022);
+      style(ctx, { dash: true });
+      line(ctx, bx + w / 2, by, bx + w / 2, by + V(h)); line(ctx, bx, by + V(h) / 2, bx + w, by + V(h) / 2);
+      style(ctx);
+      label(ctx, 0.15, by + V(h) + 0.05, "diagonals = the TRUE center", { fs: 0.1 });
+      label(ctx, 0.15, by + V(h) + 0.085, "(halves are unequal on paper — correct)", { fs: 0.09 });
+      /* nested box */
+      cube(ctx, 0.68, 0.36, 0.11);
+      cube(ctx, 0.68, 0.36, 0.055);
+      label(ctx, 0.58, 0.56, "nest: same convergence, smaller", { fs: 0.1 });
+      /* cut a corner, and bore a hole */
+      cube(ctx, 0.27, 0.72, 0.1);
+      poly(ctx, [[0.27, 0.59], [0.37, 0.665], [0.27, 0.72]], false);
+      label(ctx, 0.14, 0.86, "cut: a plane slices a corner off", { fs: 0.1 });
+      cube(ctx, 0.7, 0.72, 0.1);
+      ellipse(ctx, 0.7, 0.7, 0.035, 0.022);
+      style(ctx, { dash: true }); ellipse(ctx, 0.73, 0.665, 0.03, 0.019); style(ctx);
+      line(ctx, 0.665, 0.7, 0.7, 0.665); line(ctx, 0.735, 0.7, 0.76, 0.665);
+      label(ctx, 0.6, 0.86, "bore: an ellipse on each face, joined", { fs: 0.1 });
+      note(ctx, 0.93, "Stack, nest and cut, and a box becomes a house, a truck cab, a window. Every attached form shares the parent's edges.");
+    },
+    floorGrid(ctx) {
+      title(ctx, "The floor grid: equal marks + ONE diagonal = squares in depth");
+      const hy = 0.3, vx = 0.5, fy = 0.84, x0 = 0.1, x1 = 0.9;
+      style(ctx, { dash: true }); line(ctx, 0.04, hy, 0.96, hy); style(ctx);
+      dot(ctx, vx, hy, 0.026); label(ctx, vx + 0.02, hy - 0.028, "VP", { fs: 0.1 });
+      line(ctx, x0, fy, x1, fy);
+      const n = 8, marks = [];
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + (x1 - x0) * i / n;
+        marks.push(x); dot(ctx, x, fy, 0.015);
+        line(ctx, x, fy, vx, hy);
+      }
+      /* every ray at depth t: t = 0 at the front edge, 1 at the VP */
+      const ray = (x, t) => [x + (vx - x) * t, fy + (hy - fy) * t];
+      /* the diagonal transfers equal spacing along the front edge into depth:
+         wherever it crosses a ray, that's the next row */
+      const depths = [0.17, 0.32, 0.44, 0.54, 0.62];
+      depths.forEach(t => line(ctx, ...ray(marks[0], t), ...ray(marks[n], t)));
+      style(ctx, { lw: S(0.03), dash: true });
+      line(ctx, marks[0], fy, ...ray(marks[n], 0.62));
+      style(ctx);
+      label(ctx, 0.12, 0.78, "the diagonal", { fs: 0.1, bold: true });
+      /* an object placed on a named square */
+      const sq = (c, r) => ray(marks[c], depths[r]);
+      const [ax, ay] = sq(2, 1), [bx2, by2] = sq(3, 2);
+      ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = "#1b2a3a";
+      ctx.beginPath(); ctx.moveTo(X(ax), Y(ay)); ctx.lineTo(X(sq(3, 1)[0]), Y(sq(3, 1)[1]));
+      ctx.lineTo(X(bx2), Y(by2)); ctx.lineTo(X(sq(2, 2)[0]), Y(sq(2, 2)[1]));
+      ctx.closePath(); ctx.fill(); ctx.restore(); style(ctx);
+      note(ctx, 0.9, "Equal marks along the front edge, all sent to the VP. One diagonal across them: every ray it crosses gets a horizontal.");
+      note(ctx, 0.95, "Now anything sits on a named square — 'three back, two left' — and its size comes out right automatically.");
+    },
+    buildingCorner(ctx) {
+      title(ctx, "A building on the corner: divide each face to place windows");
+      /* VPs sit far off the page — the whole point of the lesson */
+      const hy = 0.3, V1 = -1.1, V2 = 2.1, cx = 0.5, top = 0.36, bot = 0.82;
+      style(ctx, { dash: true }); line(ctx, 0.04, hy, 0.96, hy); style(ctx);
+      label(ctx, 0.05, hy - 0.028, "← VP1, far off the page", { fs: 0.095 });
+      label(ctx, 0.62, hy - 0.028, "VP2, far off the page →", { fs: 0.095 });
+      const yOn = (x, y0, vx) => y0 + (hy - y0) * ((x - cx) / (vx - cx));
+      const L = 0.13, R = 0.87;
+      const face = (x, y0) => yOn(x, y0, x < cx ? V1 : V2);
+      line(ctx, cx, top, cx, bot);                                  // near corner
+      line(ctx, cx, top, L, face(L, top)); line(ctx, cx, bot, L, face(L, bot));
+      line(ctx, cx, top, R, face(R, top)); line(ctx, cx, bot, R, face(R, bot));
+      line(ctx, L, face(L, top), L, face(L, bot));
+      line(ctx, R, face(R, top), R, face(R, bot));
+      /* windows: each bay found by shrinking toward the VP, so spacing tightens */
+      const bays = (from, to) => {
+        let x = from;
+        for (let i = 0; i < 4; i++) {
+          const nx = x + (to - x) * 0.33;
+          const t0 = face(x, top), b0 = face(x, bot), t1 = face(nx, top), b1 = face(nx, bot);
+          const ix = x + (nx - x) * 0.18, jx = x + (nx - x) * 0.82;
+          const it = face(ix, top), ib = face(ix, bot), jt = face(jx, top), jb = face(jx, bot);
+          for (let r = 0; r < 2; r++) {
+            const f0 = 0.22 + r * 0.34, f1 = 0.46 + r * 0.34;
+            poly(ctx, [[ix, it + (ib - it) * f0], [jx, jt + (jb - jt) * f0],
+                       [jx, jt + (jb - jt) * f1], [ix, it + (ib - it) * f1]]);
+          }
+          void t0; void b0; void t1; void b1;
+          x = nx;
+        }
+      };
+      bays(cx, L); bays(cx, R);
+      /* a figure at the base for scale: eyes on the horizon */
+      const fx = 0.68, fb = face(fx, bot);
+      circle(ctx, fx, hy + 0.018, 0.013);
+      line(ctx, fx, hy + 0.032, fx, fb - 0.05);
+      line(ctx, fx, fb - 0.05, fx - 0.016, fb); line(ctx, fx, fb - 0.05, fx + 0.016, fb);
+      line(ctx, fx - 0.025, hy + 0.05, fx + 0.025, hy + 0.045);
+      label(ctx, 0.7, hy + 0.06, "a figure your height:", { fs: 0.09 });
+      label(ctx, 0.7, hy + 0.09, "eyes ON the horizon", { fs: 0.09 });
+      note(ctx, 0.9, "Window spacing TIGHTENS as the face recedes — that tightening is what makes the building read as big.");
+      note(ctx, 0.95, "Find each bay with the diagonals of the face; never space windows evenly on the page.");
+    },
+    balancePlumb(ctx) {
+      title(ctx, "Balance: the plumb line from the pit of the neck lands on the support");
+      /* tilt = how far the body leans right; feet = [x offsets]; pit = plumb x offset */
+      const fig = (mx, tilt, feet, pit, shoulder, hip, caption) => {
+        const hy = 0.26, hr = 0.028, ground = 0.66;
+        circle(ctx, mx + tilt * 1.2, hy, hr);
+        const pitY = hy + V(hr * 1.5), pitX = mx + tilt;
+        dot(ctx, pitX, pitY, 0.018);
+        ellipse(ctx, mx + tilt * 0.85, 0.345, 0.046, 0.056, tilt * 1.4);     // ribcage
+        ellipse(ctx, mx + tilt * 0.35, 0.465, 0.038, 0.042, -tilt * 1.1);    // pelvis
+        line(ctx, mx + tilt * 0.7, 0.4, mx + tilt * 0.45, 0.43);             // waist
+        /* shoulder and hip bars tilt against each other */
+        style(ctx, { lw: S(0.022) });
+        line(ctx, mx + tilt * 0.85 - 0.05, 0.315 + shoulder, mx + tilt * 0.85 + 0.05, 0.315 - shoulder);
+        line(ctx, mx + tilt * 0.35 - 0.042, 0.45 + hip, mx + tilt * 0.35 + 0.042, 0.45 - hip);
+        style(ctx);
+        /* arms */
+        line(ctx, mx + tilt * 0.85 - 0.046, 0.335, mx + tilt - 0.07, 0.44);
+        line(ctx, mx + tilt * 0.85 + 0.046, 0.335, mx + tilt + 0.07, 0.44);
+        /* legs down to the feet */
+        feet.forEach(([fx, lift]) => {
+          line(ctx, mx + tilt * 0.35, 0.5, mx + fx, ground - lift);
+          dot(ctx, mx + fx, ground - lift, 0.026);
+        });
+        line(ctx, mx - 0.09, ground, mx + 0.09, ground);                     // the floor
+        /* the plumb line */
+        style(ctx, { dash: true, lw: S(0.02) });
+        line(ctx, pitX, pitY, pitX, ground + 0.03);
+        style(ctx);
+        caption.forEach((t, i) => label(ctx, mx - 0.12, 0.73 + i * 0.032, t, { fs: 0.092 }));
+      };
+      fig(0.2, 0.02, [[0, 0], [0.055, 0.012]], 0.0, 0.012, -0.012,
+          ["weight on ONE leg:", "the line lands on that foot"]);
+      fig(0.52, 0.0, [[-0.04, 0], [0.04, 0]], 0.0, 0, 0,
+          ["standing on two:", "it lands between them"]);
+      fig(0.84, 0.055, [[-0.07, 0.02], [-0.015, 0]], 0.055, 0.008, -0.008,
+          ["running: the line falls", "AHEAD of both feet"]);
+      arrow(ctx, 0.9, 0.56, 0.96, 0.56);
+      label(ctx, 0.08, 0.18, "the bar through the shoulders and the bar through the hips tilt OPPOSITE ways —", { fs: 0.1 });
+      label(ctx, 0.08, 0.215, "tilt them the same way and the figure topples over", { fs: 0.1 });
+      note(ctx, 0.86, "A figure whose plumb line lands outside its support is falling — whether you meant it or not.");
+      note(ctx, 0.92, "Landing ahead of the feet reads as motion; behind them reads as recoiling or being struck.");
+    },
+    headTilt(ctx) {
+      title(ctx, "Tilt: the thirds curve like lines of latitude on a globe");
+      const heads = [["level", 0], ["looking down", 1], ["looking up", -1]];
+      heads.forEach(([name, d], i) => {
+        const cx = 0.22 + i * 0.28, cy = 0.4, r = 0.1;
+        circle(ctx, cx, cy, r);
+        /* the jaw hangs from the ball's sides, so its ends sit ON the circle */
+        const jx = r * 0.68, jy = cy + V(r * Math.sqrt(1 - 0.68 * 0.68));
+        curve(ctx, cx - jx, jy, cx, cy + V(r * (1.75 - d * 0.35)), cx + jx, jy);
+        /* the three thirds, bowing with the tilt like lines of latitude */
+        for (let k = 0; k < 3; k++) {
+          const ty = cy - V(r * 0.32) + V(k * r * 0.58) + V(d * r * 0.2);
+          const half = r * (k === 2 ? 0.82 : 0.97);
+          curve(ctx, cx - half, ty, cx, ty + V(d * r * 0.55), cx + half, ty);
+        }
+        /* centerline, curving down the front of the ball */
+        curve(ctx, cx, cy - V(r) + V(d * r * 0.12), cx, cy, cx, cy + V(r * 1.6));
+        /* the ear rides opposite the tilt */
+        ellipse(ctx, cx + r * 0.9, cy + V(r * 0.12) - V(d * r * 0.4), 0.014, 0.022);
+        label(ctx, cx - 0.08, 0.68, name, { fs: 0.105 });
+      });
+      note(ctx, 0.76, "Down: more cranium, the thirds bow DOWN, the features compress toward the chin, the ears ride high.");
+      note(ctx, 0.83, "Up: the thirds bow UP, you see the underside of the nose and jaw, the ears drop below the eye line.");
+      note(ctx, 0.9, "Nothing here is a new face — it is the same ball, rotated. Draw the ball and the axes before any feature.");
+    },
+    figureStages(ctx) {
+      title(ctx, "The long pose, in four stages — never skip one");
+      const names = ["1 · gesture (2 min)", "2 · mannequin (5 min)", "3 · landmarks (5 min)", "4 · contour (8 min)"];
+      names.forEach((n, i) => {
+        const mx = 0.16 + i * 0.24, top = 0.2, u = 0.07;
+        /* every stage shows the same pose, one layer further on */
+        curve(ctx, mx + 0.02, top, mx - 0.03, top + V(0.16), mx + 0.03, top + V(0.33));
+        if (i >= 1) {
+          ellipse(ctx, mx + 0.005, top + V(0.075), 0.05, 0.062, 0.25);
+          ellipse(ctx, mx - 0.005, top + V(0.2), 0.044, 0.05, -0.2);
+        }
+        if (i === 0) { ellipse(ctx, mx + 0.02, top, 0.026, 0.032); }
+        if (i >= 1) {
+          circle(ctx, mx + 0.025, top - V(0.02), 0.028);
+          cylinder(ctx, mx - 0.045, top + V(0.08), 0.018, 0.11, 0.007);
+          cylinder(ctx, mx + 0.05, top + V(0.08), 0.018, 0.11, 0.007);
+          cylinder(ctx, mx - 0.025, top + V(0.26), 0.021, 0.13, 0.008);
+          cylinder(ctx, mx + 0.03, top + V(0.26), 0.021, 0.13, 0.008);
+        }
+        if (i >= 2) for (const [dx, dy] of [[0.02, 0.045], [0, 0.115], [-0.005, 0.185], [-0.04, 0.24], [0.035, 0.24], [-0.03, 0.42], [0.035, 0.42]])
+          dot(ctx, mx + dx, top + V(dy), 0.018);
+        if (i === 3) {
+          style(ctx, { lw: S(0.028) });
+          curve(ctx, mx - 0.055, top + V(0.05), mx - 0.075, top + V(0.2), mx - 0.045, top + V(0.4));
+          curve(ctx, mx + 0.06, top + V(0.05), mx + 0.08, top + V(0.2), mx + 0.055, top + V(0.4));
+          style(ctx);
+        }
+        label(ctx, mx - 0.1, 0.74, n, { fs: 0.095 });
+      });
+      note(ctx, 0.84, "Stage 3's dots are the bony landmarks — pit of neck, nipples, navel, iliac crests, kneecaps. The surface hangs from them.");
+      note(ctx, 0.91, "Stage 4's line is the EDGE of the forms you built, never a separate tracing. Heavier on the shadow side.");
+    },
+    measureRepeat(ctx) {
+      title(ctx, "Equal spacing in depth: the diagonal repeat");
+      const hy = 0.22, vx = 0.93;
+      style(ctx, { dash: true }); line(ctx, 0.02, hy, 0.99, hy); style(ctx);
+      dot(ctx, vx, hy, 0.026); label(ctx, vx - 0.06, hy - 0.03, "VP", { fs: 0.1 });
+      const top = 0.36, bot = 0.78;
+      const yT = x => top + (hy - top) * ((x - 0.1) / (vx - 0.1));
+      const yB = x => bot + (hy - bot) * ((x - 0.1) / (vx - 0.1));
+      line(ctx, 0.1, top, vx, hy); line(ctx, 0.1, bot, vx, hy);
+      /* four equal panels, each found from the previous one's diagonal */
+      let x = 0.1;
+      const xs = [x];
+      for (let i = 0; i < 4; i++) {
+        const t = yT(x), b = yB(x);
+        line(ctx, x, t, x, b);
+        /* mid of the far edge, then a diagonal from the near top through it */
+        const nx = x + (vx - x) * 0.3;
+        const mid = (yT(nx) + yB(nx)) / 2;
+        style(ctx, { dash: true });
+        line(ctx, x, t, nx + (vx - nx) * 0.55, yT(nx + (vx - nx) * 0.55));
+        line(ctx, x, t, vx, (yT(vx) + yB(vx)) / 2);
+        style(ctx);
+        dot(ctx, nx, mid, 0.016);
+        x = nx; xs.push(x);
+      }
+      line(ctx, x, yT(x), x, yB(x));
+      label(ctx, 0.1, 0.86, "a diagonal through the midpoint of the far edge lands on the next identical edge", { fs: 0.1 });
+      note(ctx, 0.93, "Same trick for columns, fence posts, windows and floor tiles. To transfer a HEIGHT, run two rays from a known object to the VP.");
+    },
+    ellipseAxis(ctx) {
+      title(ctx, "Minor axis = the axle — the rule that makes wheels work");
+      const hy = 0.2;
+      style(ctx, { dash: true }); line(ctx, 0.02, hy, 0.98, hy); style(ctx); dot(ctx, 0.88, hy, 0.024);
+      /* an axle aimed at the VP with two wheels on it */
+      const ax = [0.18, 0.52], bx = [0.62, 0.38];
+      style(ctx, { dash: true }); line(ctx, ax[0], ax[1], 0.88, hy); style(ctx);
+      ellipse(ctx, ax[0], ax[1], 0.048, 0.085, -0.32);
+      ellipse(ctx, bx[0], bx[1], 0.034, 0.06, -0.32);
+      style(ctx, { lw: S(0.022) });
+      line(ctx, ax[0] - 0.026, ax[1] - 0.04, ax[0] + 0.026, ax[1] + 0.04);
+      line(ctx, bx[0] - 0.019, bx[1] - 0.029, bx[0] + 0.019, bx[1] + 0.029);
+      style(ctx);
+      label(ctx, 0.1, 0.66, "both minor axes lie ON the axle · the far wheel is smaller", { fs: 0.1 });
+      /* a barrel lying down */
+      ellipse(ctx, 0.23, 0.83, 0.032, 0.055, -0.3);
+      ellipse(ctx, 0.42, 0.78, 0.028, 0.048, -0.3);
+      line(ctx, 0.213, 0.778, 0.404, 0.734); line(ctx, 0.247, 0.882, 0.436, 0.826);
+      label(ctx, 0.12, 0.93, "a cylinder on its side", { fs: 0.095 });
+      /* a vertical square on a wall → an arch */
+      poly(ctx, [[0.62, 0.6], [0.84, 0.66], [0.84, 0.9], [0.62, 0.9]]);
+      style(ctx, { dash: true }); line(ctx, 0.62, 0.6, 0.84, 0.9); line(ctx, 0.84, 0.66, 0.62, 0.9); style(ctx);
+      arc(ctx, 0.73, 0.79, 0.11, 0.09, Math.PI, Math.PI * 2, 0.12);
+      label(ctx, 0.6, 0.95, "an arch = an ellipse in a VERTICAL perspective square", { fs: 0.095 });
+    },
+    flatsSteps(ctx) {
+      title(ctx, "Flatting a character: palette → flats → one shadow → one accent");
+      const pal = ["#3d5a80", "#98c1d9", "#e0a878", "#7a4b3a", "#e8564b"];
+      pal.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(X(0.08 + i * 0.07), Y(0.12), X(0.06), X(0.06)); });
+      style(ctx);
+      label(ctx, 0.47, 0.155, "pick the harmony FIRST, swatch 5–6 colors", { fs: 0.1 });
+      const bust = (ox, shade, accent) => {
+        /* head */
+        ctx.fillStyle = "#e0a878"; ctx.beginPath(); ctx.ellipse(X(ox), Y(0.4), X(0.05), X(0.062), 0, 0, Math.PI * 2); ctx.fill();
+        /* hair */
+        ctx.fillStyle = "#7a4b3a"; ctx.beginPath(); ctx.ellipse(X(ox), Y(0.365), X(0.052), X(0.04), 0, Math.PI, Math.PI * 2); ctx.fill();
+        /* body */
+        ctx.fillStyle = "#3d5a80";
+        ctx.beginPath(); ctx.moveTo(X(ox - 0.09), Y(0.66)); ctx.lineTo(X(ox - 0.055), Y(0.47));
+        ctx.lineTo(X(ox + 0.055), Y(0.47)); ctx.lineTo(X(ox + 0.09), Y(0.66)); ctx.closePath(); ctx.fill();
+        /* collar */
+        ctx.fillStyle = "#98c1d9";
+        ctx.beginPath(); ctx.moveTo(X(ox - 0.04), Y(0.47)); ctx.lineTo(X(ox), Y(0.52)); ctx.lineTo(X(ox + 0.04), Y(0.47)); ctx.closePath(); ctx.fill();
+        if (shade) {
+          ctx.save(); ctx.globalAlpha = 0.34; ctx.fillStyle = "#1c2540";
+          ctx.beginPath(); ctx.moveTo(X(ox + 0.012), Y(0.34)); ctx.lineTo(X(ox + 0.05), Y(0.38));
+          ctx.lineTo(X(ox + 0.05), Y(0.46)); ctx.lineTo(X(ox + 0.09), Y(0.66)); ctx.lineTo(X(ox + 0.02), Y(0.66));
+          ctx.closePath(); ctx.fill(); ctx.restore();
+        }
+        if (accent) { ctx.fillStyle = "#e8564b"; ctx.beginPath(); ctx.arc(X(ox - 0.032), Y(0.55), S(0.09), 0, Math.PI * 2); ctx.fill(); }
+        style(ctx);
+      };
+      bust(0.22, false, false); label(ctx, 0.14, 0.72, "1 · flats only", { fs: 0.1 });
+      bust(0.5, true, false); label(ctx, 0.42, 0.72, "2 · one shadow per flat", { fs: 0.1 });
+      bust(0.78, true, true); label(ctx, 0.7, 0.72, "3 · ONE accent", { fs: 0.1 });
+      /* the greyscale check */
+      const greys = ["#cfcfcf", "#8f8f8f", "#5c5c5c", "#2e2e2e"];
+      greys.forEach((g, i) => { ctx.fillStyle = g; ctx.fillRect(X(0.08 + i * 0.09), Y(0.79), X(0.08), X(0.05)); });
+      style(ctx);
+      label(ctx, 0.46, 0.815, "squint: do the flats still separate in VALUE?", { fs: 0.1 });
+      note(ctx, 0.9, "Shadow = lower value, slightly lower saturation, shifted cooler. Never 'add black'. If the values are muddy no hue will save it.");
+    },
+    harmoniesAdvanced(ctx) {
+      title(ctx, "The full set: split-complementary, tetradic, accented analogous");
+      const sets = [
+        ["split-complementary", [210, 20, 50], [55, 58, 58], "all the punch, less vibration — most comics color is secretly this"],
+        ["tetradic (2 pairs)", [210, 30, 120, 300], [50, 58, 58, 58], "rich but loud: ONE leads, one supports, two accent"],
+        ["accented analogous", [175, 195, 215, 25], [52, 55, 58, 60], "three neighbours plus one spark — the film-poster palette"],
+      ];
+      sets.forEach(([n, hs, ls, why], row) => {
+        const y = 0.18 + row * 0.21;
+        label(ctx, 0.07, y + 0.035, n, { fs: 0.11, bold: true });
+        hs.forEach((hh, i) => {
+          /* the last swatch of each set is the accent: drawn smaller */
+          const acc = (row === 2 && i === 3) || (row === 0 && i === 2);
+          ctx.fillStyle = `hsl(${hh},${acc ? 85 : 62}%,${ls[i]}%)`;
+          ctx.fillRect(X(0.07 + i * 0.14), Y(y + 0.075), X(acc ? 0.06 : 0.12), X(acc ? 0.06 : 0.08));
+        });
+        style(ctx);
+        label(ctx, 0.07, y + 0.155, why, { fs: 0.09 });
+      });
+      note(ctx, 0.86, "Hierarchy is the rule every harmony obeys: one hue leads (60–70%), one supports, the accent stays under 10%.");
+      note(ctx, 0.93, "A palette that 'feels off' is usually two harmonies fighting, or three colors all claiming to be the accent.");
+    },
+    chromaticGreys(ctx) {
+      title(ctx, "The life of grey: every grey leans warm or cool");
+      /* the warm→cool grey ramp */
+      for (let i = 0; i < 9; i++) {
+        const t = i / 8;
+        ctx.fillStyle = `hsl(${25 + t * 185},${12 - Math.abs(t - 0.5) * 14}%,58%)`;
+        ctx.fillRect(X(0.08 + i * 0.094), Y(0.18), X(0.086), X(0.09));
+      }
+      style(ctx);
+      label(ctx, 0.08, 0.32, "warm grey", { fs: 0.1 }); label(ctx, 0.78, 0.32, "cool grey", { fs: 0.1 });
+      label(ctx, 0.4, 0.32, "neutral", { fs: 0.1 });
+      /* the same neutral pushed by its neighbours */
+      const fields = [["hsl(0,72%,52%)", "next to red → reads green"], ["hsl(130,55%,45%)", "next to green → reads pink"],
+                      ["hsl(50,85%,55%)", "next to yellow → reads violet"]];
+      fields.forEach(([c, cap], i) => {
+        const x = 0.08 + i * 0.3;
+        ctx.fillStyle = c; ctx.fillRect(X(x), Y(0.42), X(0.26), X(0.2));
+        ctx.fillStyle = "#8c8c8c"; ctx.fillRect(X(x + 0.08), Y(0.5), X(0.1), X(0.09));
+        style(ctx);
+        label(ctx, x, 0.68, cap, { fs: 0.09 });
+      });
+      label(ctx, 0.08, 0.74, "all three centre squares are the SAME grey", { fs: 0.105, bold: true });
+      note(ctx, 0.82, "Mix greys from a hue and its complement, both at very low saturation — not from black and white.");
+      note(ctx, 0.89, "Saturation is a budget: spend most of the picture on greys so one accent can be loud.");
+    },
   };
 
   /* which exemplars draw real colors (guide layer must be untinted) */
-  const COLORFUL = new Set(["colorWheel12", "hsvBars", "harmonies", "temperature"]);
+  const COLORFUL = new Set(["colorWheel12", "hsvBars", "harmonies", "temperature",
+                            "flatsSteps", "harmoniesAdvanced", "chromaticGreys"]);
 
   function paint(ctx, key, page) {
     const fn = D[key];
