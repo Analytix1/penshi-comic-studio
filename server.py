@@ -82,13 +82,48 @@ class PenshiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_file(self, path: Path):
+    def _drain_body(self):
+        """Read and discard this request's body.
+
+        Mandatory before returning early from a POST: on a keep-alive
+        connection an unread body is parsed as the NEXT request line, so a
+        rejected save (e.g. a project named "Chapter 1: The Fall") poisoned
+        the connection and the following request came back 501.
+        """
+        try:
+            remaining = max(0, int(self.headers.get("Content-Length", 0)))
+        except ValueError:
+            return
+        while remaining:
+            chunk = self.rfile.read(min(remaining, 64 * 1024))
+            if not chunk:
+                return
+            remaining -= len(chunk)
+
+    def reject(self, obj, status=400):
+        """Error reply for a request that may carry a body."""
+        self._drain_body()
+        self.send_json(obj, status)
+
+    def send_file(self, path: Path, cache: str = "no-cache"):
         ctype = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
         try:
-            size = path.stat().st_size
+            st = path.stat()
+            # Without a validator the browser may serve stale JS after a
+            # `git pull`; with one, an unchanged file costs a 304 and no body.
+            etag = f'"{int(st.st_mtime)}-{st.st_size}"'
+            if self.headers.get("If-None-Match") == etag:
+                self.send_response(304)
+                self.send_header("ETag", etag)
+                self.send_header("Cache-Control", cache)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             self.send_response(200)
             self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(size))
+            self.send_header("Content-Length", str(st.st_size))
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", cache)
             # PDFs open in the browser's viewer instead of downloading
             self.send_header("Content-Disposition", "inline")
             self.end_headers()
@@ -134,7 +169,7 @@ class PenshiHandler(BaseHTTPRequestHandler):
             return self.learn_progress_set()
         if path.startswith("/api/learn/attempts/"):
             return self.learn_attempt_save(path.removeprefix("/api/learn/attempts/"))
-        self.send_json({"error": "not found"}, 404)
+        self.reject({"error": "not found"}, 404)
 
     def do_DELETE(self):
         path = unquote(urlparse(self.path).path)
@@ -149,8 +184,16 @@ class PenshiHandler(BaseHTTPRequestHandler):
     # ---------- learning: progress + practice attempts ----------
 
     def _read_body_json(self, limit):
-        length = int(self.headers.get("Content-Length", 0))
-        if length <= 0 or length > limit:
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            return None
+        if length <= 0:
+            return None
+        if length > limit:
+            # too big to be worth draining; end the connection instead of
+            # leaving the body to be misread as the next request
+            self.close_connection = True
             return None
         try:
             return json.loads(self.rfile.read(length))
@@ -206,7 +249,7 @@ class PenshiHandler(BaseHTTPRequestHandler):
 
     def learn_attempt_save(self, aid):
         if not ATTEMPT_ID.match(aid):
-            return self.send_json({"error": "bad attempt id"}, 400)
+            return self.reject({"error": "bad attempt id"})
         data = self._read_body_json(MAX_PROJECT_BYTES)
         if not isinstance(data, dict) or "lessonId" not in data or "project" not in data:
             return self.send_json({"error": "bad attempt payload"}, 400)
@@ -269,9 +312,15 @@ class PenshiHandler(BaseHTTPRequestHandler):
 
     def save_project(self, name: str):
         if not SAFE_NAME.match(name):
-            return self.send_json({"error": "bad project name"}, 400)
-        length = int(self.headers.get("Content-Length", 0))
-        if length <= 0 or length > MAX_PROJECT_BYTES:
+            return self.reject({"error": "bad project name"})
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            length = 0
+        if length <= 0:
+            return self.send_json({"error": "bad payload size"}, 400)
+        if length > MAX_PROJECT_BYTES:
+            self.close_connection = True
             return self.send_json({"error": "bad payload size"}, 400)
         raw = self.rfile.read(length)
         try:
@@ -309,8 +358,14 @@ class PenshiHandler(BaseHTTPRequestHandler):
         self.send_json({"assets": items})
 
     def save_asset(self):
-        length = int(self.headers.get("Content-Length", 0))
-        if length <= 0 or length > 20 * 1024 * 1024:
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            length = 0
+        if length <= 0:
+            return self.send_json({"error": "bad payload size"}, 400)
+        if length > 20 * 1024 * 1024:
+            self.close_connection = True
             return self.send_json({"error": "bad payload size"}, 400)
         try:
             data = json.loads(self.rfile.read(length))
@@ -355,7 +410,7 @@ class PenshiHandler(BaseHTTPRequestHandler):
     def serve_resource(self, name: str):
         target = safe_child(RESOURCES_DIR, name)
         if target and target.is_file():
-            return self.send_file(target)
+            return self.send_file(target, cache="private, max-age=3600")
         self.send_json({"error": "not found"}, 404)
 
 

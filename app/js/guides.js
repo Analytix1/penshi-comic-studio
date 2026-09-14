@@ -17,6 +17,14 @@ const Guides = (() => {
   const vpPx = i => ({ x: App.guides.vp[i].x * App.page.w,
                        y: App.guides.vp[i].y * App.page.h });
 
+  /* The horizon is dragged by two grips near the page edges, NOT by the whole
+     line: a full-width grab band made it impossible to start a stroke anywhere
+     near eye level — exactly what the perspective lessons ask you to do. */
+  function horizonGrips() {
+    const P = App.page, hy = App.guides.horizonY * P.h;
+    return [{ x: P.w * 0.045, y: hy }, { x: P.w * 0.955, y: hy }];
+  }
+
   function render(ctx) {
     const g = App.guides, P = App.page;
     const lw = 1 / App.view.zoom;
@@ -61,6 +69,17 @@ const Guides = (() => {
     ctx.lineWidth = lw * 1.5;
     ctx.beginPath(); ctx.moveTo(-P.w, hy); ctx.lineTo(P.w * 2, hy); ctx.stroke();
 
+    // the two drag grips — the only places the horizon can be grabbed
+    const gw = 20 / App.view.zoom, gh = 9 / App.view.zoom;
+    ctx.fillStyle = "rgba(109,179,242,.9)";
+    ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.lineWidth = lw;
+    for (const grip of horizonGrips()) {
+      ctx.beginPath();
+      ctx.roundRect(grip.x - gw / 2, grip.y - gh / 2, gw, gh, gh / 2);
+      ctx.fill(); ctx.stroke();
+    }
+
     const colors = ["rgba(232,96,96,.34)", "rgba(96,180,96,.34)", "rgba(109,140,242,.34)"];
     const n = g.vps;
     for (let i = 0; i < n; i++) {
@@ -99,7 +118,13 @@ const Guides = (() => {
       if (i < 2) vp.y = g.horizonY * P.h;
       if (Math.hypot(p.x - vp.x, p.y - vp.y) < grabR) { grabbed = "vp" + i; return true; }
     }
-    if (Math.abs(p.y - g.horizonY * P.h) < grabR / 1.5) { grabbed = "horizon"; return true; }
+    // the horizon moves only from its grips, so a stroke that starts on the
+    // horizon line still draws
+    for (const grip of horizonGrips()) {
+      if (Math.abs(p.x - grip.x) < grabR && Math.abs(p.y - grip.y) < grabR / 1.4) {
+        grabbed = "horizon"; return true;
+      }
+    }
     return false;
   }
   function drag(p) {

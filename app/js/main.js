@@ -495,6 +495,9 @@ const UI = {};
   /* autosave loop */
   let lastAutosave = Date.now(), lastAutosaveUndo = -2;
   setInterval(async () => {
+    // Learn mode borrows App.projectName for the attempt id; autosaving it
+    // would file practice pages in projects/ as if they were comics.
+    if (App.mode === "learn") return;
     if (!Settings.get("autosave") || App.projectName === "untitled") return;
     if (Date.now() - lastAutosave < Settings.get("autosaveMin") * 60000) return;
     if (Undo.index === lastAutosaveUndo) return;   // nothing changed
@@ -646,7 +649,11 @@ const UI = {};
       await new Promise(r => setTimeout(r, 350));   // let each download start
     }
     await loadPage(App.pages[cur]);
+    // every layer object was just replaced; undo entries captured before the
+    // export would restore onto the discarded ones and silently do nothing
+    Undo.clear();
     UI.refreshLayers(); App.dirty = true;
+    UI.flash(`Exported ${App.pages.length} page(s) — undo history reset`);
   });
 
   /* ---------- pop-out floating windows (read lessons while drawing) ---------- */
@@ -708,7 +715,10 @@ const UI = {};
   const KEYMAP = { v: "select", l: "lasso", h: "pan", b: "ink", p: "pencil", m: "marker",
                    e: "eraser", s: "strokeeraser", g: "fill", k: "panel", t: "balloon" };
   window.addEventListener("keydown", e => {
-    if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
+    // SELECT matters too: with the Tail/harmony/VP dropdowns focused, plain
+    // letters were still switching tools underneath you.
+    if (["TEXTAREA", "INPUT", "SELECT", "OPTION"].includes(e.target.tagName) ||
+        e.target.isContentEditable) return;
     if (e.code === "Space" && !e.repeat) { Tools.setSpacePan(true); e.preventDefault(); return; }
     if (e.ctrlKey || e.metaKey) {
       const k = e.key.toLowerCase();
@@ -757,7 +767,7 @@ const UI = {};
     const STEPS = [
       ["#toolrail", "Your tool rail. Top to bottom: select & pan, then the drawing tools (ink, blue pencil, marker, eraser, fill), geometry tools, and the comic tools — panels and four kinds of balloons. Hover anything for its shortcut."],
       ["#view", "The page. Red line = trim (where the printer cuts), blue dashes = safe area (keep text inside). Draw with your Slim Pen — pressure changes line width, the tail end erases. Fingers pan & pinch-zoom; your palm won't draw."],
-      ["#side-tabs", "Five tabs: TOOL options (size, pressure, color) · LAYERS (the pro pipeline: Panels→Pencils→Colors→Inks→Lettering) · GUIDES (perspective grids & page templates) · LEARN (comic-craft mini-lessons) · LIBRARY (your drawing books + free classics)."],
+      ["#side-tabs", "Five tabs: TOOL options (size, pressure, color) · LAYERS (the pro pipeline: Panels→Pencils→Colors→Inks→Lettering) · GUIDES (perspective grids & page templates) · CRAFT (comic-craft reference) · LIBRARY (your drawing books + free classics)."],
       ["#tab-tool", "Tool options. 'Pressure → size' is what makes ink lines live and breathe. Smoothing steadies shaky lines — crank it for long confident curves."],
       ["[data-panel=tab-guides]", "In GUIDES: one-click page templates (6-grid, 9-panel, 4-koma, widescreen…), rule-of-thirds overlays, and a draggable 1/2/3-point perspective grid."],
       ["#mode-tabs", "Two modes. STUDIO is where you make comics. LEARN is a full drawing curriculum — seven sections from 'lines you can trust' to designing worlds — with lessons that paint guide drawings onto practice pages and a Portfolio that keeps every page you've ever practiced."],

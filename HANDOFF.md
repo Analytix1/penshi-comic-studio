@@ -48,6 +48,13 @@ breaking its architecture. **Paste the "context block" first, then one task prom
 >    Use `await UI.confirm(msg, {okLabel, danger})` and `await UI.prompt(msg,
 >    value, {okLabel})` from main.js; both return Promises, so the calling
 >    handler must be `async`.
+> 6c. Anything that rebuilds the live page (`buildFreshPage`, `loadPage`) must
+>    call `Tools.resetTransient()`. A lasso selection or a floating asset held
+>    across a page switch still references the DISCARDED layer objects, so its
+>    edits land on art the user can no longer see.
+> 6d. Server: never return early from a POST without reading its body. Use
+>    `self.reject(obj, status)` (it drains first) or set `close_connection`.
+>    On a keep-alive connection an unread body is parsed as the next request.
 > 7. Raster layers keep an op log (`layer.ops`: strokes/shapes/fills drawn this
 >    session) used by the stroke eraser, which rebuilds pixels as
 >    `layer.baseImg` + replayed ops. ANY new code path that mutates raster

@@ -170,21 +170,26 @@ const Reference = (() => {
     }
   }
 
+  /* Asset names and folder paths are typed by the user, so they must never
+     be pasted into markup raw — a quote in a name broke the whole grid. */
+  const esc = v => String(v ?? "").replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
   async function buildLibrary() {
     const host = document.getElementById("library-content");
     let mine = "";
     try {
       const data = await (await fetch("/api/resources")).json();
       if (data.missing) {
-        mine = `<div class="hint">Folder not found: <code>${data.folder}</code> —
+        mine = `<div class="hint">Folder not found: <code>${esc(data.folder)}</code> —
           set "resourcesDir" in config.json (see config.example.json).</div>`;
       } else if (!data.resources.length) {
-        mine = `<div class="hint">Drop PDFs or images into<br><code>${data.folder}</code><br>and they appear here.</div>`;
+        mine = `<div class="hint">Drop PDFs or images into<br><code>${esc(data.folder)}</code><br>and they appear here.</div>`;
       } else {
         mine = data.resources.map(r => `
           <div class="lib-item">
             <span class="ic">${r.kind === "pdf" ? "📕" : "🖼"}</span>
-            <div class="meta"><div class="t">${r.file}</div>
+            <div class="meta"><div class="t">${esc(r.file)}</div>
               <div class="muted">${r.kind.toUpperCase()} · ${r.sizeMb} MB</div></div>
             <button onclick="window.open('/resources/${encodeURIComponent(r.file)}','_blank')">Open</button>
           </div>`).join("");
@@ -199,10 +204,10 @@ const Reference = (() => {
       const a = await (await fetch("/api/assets")).json();
       assetsHtml = a.assets.length
         ? `<div id="asset-grid">${a.assets.map(x => `
-            <div class="asset" data-id="${x.id}" data-w="${x.w}" data-h="${x.h}"
-                 title="Click to stamp '${x.name}' onto the page">
-              <img src="${x.png}" alt="${x.name}">
-              <span class="a-name">${x.name}</span>
+            <div class="asset" data-id="${esc(x.id)}" data-w="${x.w}" data-h="${x.h}"
+                 title="Click to stamp ${esc(x.name)} onto the page">
+              <img src="${esc(x.png)}" alt="">
+              <span class="a-name">${esc(x.name)}</span>
               <button class="a-del" data-id="${x.id}" title="Delete asset">✕</button>
             </div>`).join("")}</div>`
         : `<div class="hint">No assets yet. Draw something (a pair of eyes, a

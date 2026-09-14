@@ -1259,6 +1259,24 @@ const Tools = (() => {
     Engine.zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
   }
 
+  /* Drop every piece of in-flight, page-specific interaction state.
+     state.js calls this whenever the live page is rebuilt (page switch, new
+     page, project open, entering/leaving a lesson): a lasso or a floating
+     asset held across that boundary keeps pointing at the DISCARDED layer
+     objects, so its edits land on art you can no longer see. */
+  function resetTransient() {
+    lassoClear();
+    placing = null;
+    stroke.active = false;
+    shapeStart = null;
+    lastShape = null;
+    dragSel = null;
+    panGrab = null;
+    tailErase = false;
+    touches.clear();
+    if (App.page) resetScratch();
+  }
+
   function bind() {
     view.addEventListener("pointerdown", onDown);
     view.addEventListener("pointermove", onMove);
@@ -1275,7 +1293,7 @@ const Tools = (() => {
     });
   }
 
-  return { state, bind, renderScratch, deleteSelection,
+  return { state, bind, renderScratch, deleteSelection, resetTransient,
            startPlacing, cancelPlacing, scalePlacing,
            lassoSaveAsset, lassoDelete, lassoClear,
            hasLasso: () => !!lasso,

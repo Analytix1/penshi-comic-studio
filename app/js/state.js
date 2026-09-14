@@ -158,6 +158,7 @@ function buildFreshPage(presetKey) {
   App.layers = [App.layers[0], App.layers[1], App.layers[3], App.layers[2], App.layers[4]];
   App.activeLayer = 3;             // start on Inks
   App.selection = null;
+  Tools?.resetTransient?.();       // a lasso/placement from the old page would target dead layers
   App.dirty = true;
 }
 
@@ -223,6 +224,7 @@ async function loadPage(data) {
   });
   App.activeLayer = Math.min(3, App.layers.length - 1);
   App.selection = null;
+  Tools?.resetTransient?.();       // ditto: the new page gets a clean slate
   await Promise.all(waits);
   App.dirty = true;
 }
