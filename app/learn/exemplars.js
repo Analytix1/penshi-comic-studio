@@ -98,6 +98,19 @@ const Exemplars = (() => {
     for (const [x, y] of [[mx - 0.095, 2.5], [mx + 0.095, 2.5], [mx - 0.045, 5.5], [mx + 0.045, 5.5]])
       dot(ctx, x, top + unit * y, 0.03);
   }
+  /* three source boxes → one synthesis box (character / creature / world) */
+  function recombineGrid(ctx, heading, cols, outLabel, footnote) {
+    title(ctx, heading);
+    cols.forEach((c, i) => {
+      rect(ctx, 0.07 + i * 0.3, 0.17, 0.26, 0.22);
+      label(ctx, 0.075 + i * 0.3, 0.14, c, { fs: 0.092, bold: true });
+      label(ctx, 0.075 + i * 0.3, 0.355, "taking: ________", { fs: 0.082 });
+    });
+    arrow(ctx, 0.5, 0.42, 0.5, 0.5);
+    rect(ctx, 0.2, 0.52, 0.6, 0.4);
+    label(ctx, 0.2, 0.49, outLabel, { fs: 0.092, bold: true });
+    note(ctx, 0.9, footnote);
+  }
   function loomisHead(ctx, cx, cy, r, turn) {   // turn: 0 front, ±1 three-quarter
     circle(ctx, cx, cy, r);
     ellipse(ctx, cx + turn * r * 0.62, cy, r * 0.34, r * 0.78, -0.15 * turn);
@@ -636,12 +649,25 @@ const Exemplars = (() => {
       note(ctx, 0.75, "Fill a silhouette solid black. If you can't tell who it is, the design isn't done yet.");
       note(ctx, 0.82, "Mash-up rule: take the STRUCTURE from one reference, the SURFACE from another, the PROPORTION from a third.");
     },
+    /* One recombination method, three subjects — but each names the three
+       source boxes the way ITS lesson does, so the diagram matches the page. */
     mashupGrid(ctx) {
-      title(ctx, "The recombination grid — three sources, one new thing");
-      const cols = ["structure from…", "surface / texture from…", "proportion / attitude from…"];
-      cols.forEach((c, i) => { rect(ctx, 0.08 + i * 0.3, 0.16, 0.26, 0.22); label(ctx, 0.09 + i * 0.3, 0.13, c, { fs: 0.09 }); });
-      arrow(ctx, 0.5, 0.42, 0.5, 0.5);
-      rect(ctx, 0.2, 0.52, 0.6, 0.4); label(ctx, 0.22, 0.49, "the new design (yours — nothing here is invented FOR you)", { fs: 0.09 });
+      recombineGrid(ctx, "The recombination grid — three sources, one new character",
+        ["structure from…", "surface / garment from…", "attitude from…"],
+        "your character — nothing here is invented FOR you",
+        "Write one word under each box: what you are TAKING from it. Then draw the synthesis WITHOUT looking at the references.");
+    },
+    creatureGrid(ctx) {
+      recombineGrid(ctx, "The creature grid — a chassis, a surface, a role",
+        ["SKELETON donor", "SURFACE donor", "ROLE / feature donor"],
+        "your creature — every added part attaches at a real joint",
+        "Decide the role and the environment BEFORE choosing animals: role picks the eyes and teeth, environment picks the feet and surface.");
+    },
+    worldGrid(ctx) {
+      recombineGrid(ctx, "The world grid — land, buildings, palette",
+        ["a real LANDFORM", "a real ARCHITECTURE", "a real COLOR environment"],
+        "your world — the theme sentence decides all three",
+        "Land first (the forces shape it), then architecture grown from that land, then the palette that carries the theme.");
     },
     panelFlow(ctx) {
       title(ctx, "Reading flow: the eye sweeps a Z — compose to help it");
@@ -1129,6 +1155,88 @@ const Exemplars = (() => {
       });
       note(ctx, 0.86, "Hierarchy is the rule every harmony obeys: one hue leads (60–70%), one supports, the accent stays under 10%.");
       note(ctx, 0.93, "A palette that 'feels off' is usually two harmonies fighting, or three colors all claiming to be the accent.");
+    },
+    plantRhythm(ctx) {
+      title(ctx, "A plant: stems are flow lines, leaves are planes on a midrib");
+      /* the main stem as one confident curve */
+      style(ctx, { lw: S(0.024) });
+      curve(ctx, 0.3, 0.88, 0.22, 0.55, 0.34, 0.22);
+      style(ctx);
+      label(ctx, 0.08, 0.92, "main stem: ONE curve, drawn from the shoulder", { fs: 0.095 });
+      /* branches leaving at measured angles, alternating */
+      const stemAt = t => [0.3 + (0.34 - 0.3) * t + Math.sin(t * 2.1) * 0.03, 0.88 - t * 0.66];
+      [[0.18, -1, 0.95], [0.38, 1, 0.6], [0.58, -1, 0.35], [0.78, 1, 0.8]].forEach(([t, side, tilt]) => {
+        const [sx, sy] = stemAt(t);
+        const ex = sx + side * 0.13, ey = sy - 0.06;
+        curve(ctx, sx, sy, sx + side * 0.07, sy - 0.045, ex, ey);      // the branch
+        /* the leaf hangs off the branch tip: midrib in space, outline around it */
+        const mx = ex + side * 0.05, my = ey - 0.02;
+        curve(ctx, ex, ey, mx, my - 0.008, ex + side * 0.1, ey - 0.028);   // midrib
+        ellipse(ctx, mx, my - 0.004, 0.052 * tilt, 0.019, side * -0.25);
+        style(ctx, { dash: true }); line(ctx, sx, sy, sx + side * 0.055, sy); style(ctx);
+        label(ctx, sx + (side < 0 ? -0.075 : 0.015), sy + 0.028, "angle?", { fs: 0.08 });
+      });
+      /* the same leaf at three tilts, so 'plane' is unmistakable */
+      line(ctx, 0.68, 0.32, 0.84, 0.295);
+      label(ctx, 0.66, 0.355, "edge-on = a line", { fs: 0.09 });
+      ellipse(ctx, 0.77, 0.46, 0.032, 0.019, -0.2);
+      curve(ctx, 0.74, 0.475, 0.77, 0.45, 0.8, 0.452);
+      label(ctx, 0.66, 0.52, "half-turned = narrowed", { fs: 0.09 });
+      ellipse(ctx, 0.77, 0.63, 0.072, 0.03, -0.25);
+      curve(ctx, 0.7, 0.648, 0.77, 0.607, 0.84, 0.617);
+      label(ctx, 0.63, 0.7, "facing you = full shape, midrib curves", { fs: 0.09 });
+      note(ctx, 0.96, "Plants branch with rhythm: alternate, opposite or spiral. Find yours and you can draw the branches you can't see.");
+    },
+    handMitten(ctx) {
+      title(ctx, "Your own hand: a mitten first, knuckles on an ARC");
+      /* the palm as a rounded box, no fingers yet */
+      poly(ctx, [[0.12, 0.32], [0.3, 0.29], [0.33, 0.52], [0.15, 0.56]]);
+      label(ctx, 0.1, 0.62, "1 · palm = a rounded box", { fs: 0.095 });
+      label(ctx, 0.1, 0.65, "as long as the middle finger", { fs: 0.085 });
+      /* the thumb wedge on the side plane */
+      poly(ctx, [[0.12, 0.38], [0.04, 0.45], [0.06, 0.54], [0.15, 0.5]]);
+      label(ctx, 0.02, 0.6, "thumb wedge", { fs: 0.085 });
+      /* the knuckle arc + tapered finger tubes */
+      const ax = 0.55;
+      poly(ctx, [[ax - 0.09, 0.35], [ax + 0.09, 0.32], [ax + 0.12, 0.55], [ax - 0.06, 0.59]]);
+      style(ctx, { dash: true, lw: S(0.022) });
+      curve(ctx, ax - 0.09, 0.35, ax, 0.30, ax + 0.09, 0.32);
+      style(ctx);
+      label(ctx, ax - 0.12, 0.26, "the knuckles sit on an ARC, never a straight line", { fs: 0.09 });
+      const fing = [[-0.065, 0.345, 0.115], [-0.015, 0.322, 0.14], [0.035, 0.325, 0.128], [0.08, 0.338, 0.095]];
+      fing.forEach(([dx, y, len]) => {
+        const x = ax + dx;
+        line(ctx, x - 0.017, y, x - 0.013, y - len);
+        line(ctx, x + 0.017, y, x + 0.012, y - len);
+        for (let k = 1; k <= 2; k++) {
+          const yy = y - len * (k / 3);
+          line(ctx, x - 0.017 + 0.004 * k, yy, x + 0.017 - 0.004 * k, yy);
+        }
+        ellipse(ctx, x, y - len, 0.013, 0.007);
+      });
+      label(ctx, 0.44, 0.66, "2 · each finger = 3 tapered tubes from the arc", { fs: 0.095 });
+      /* three poses: the SAME mitten, three sets of tube angles */
+      label(ctx, 0.08, 0.7, "3 · the same mitten, three sets of tube angles:", { fs: 0.095 });
+      ["relaxed", "fist", "holding the pen"].forEach((n, i) => {
+        const mx = 0.2 + i * 0.28, top = 0.755, bot = 0.875;
+        poly(ctx, [[mx - 0.05, top], [mx + 0.05, top - 0.012], [mx + 0.06, bot], [mx - 0.04, bot + 0.014]]);
+        if (i === 0) {                       // fingers curl gently, pinky most
+          for (let k = 0; k < 4; k++)
+            curve(ctx, mx - 0.04 + k * 0.026, top, mx - 0.025 + k * 0.026, top - 0.055 + k * 0.006,
+                  mx - 0.055 + k * 0.026, top - 0.075 + k * 0.012);
+        } else if (i === 1) {                // knuckles on top, fingers folded under
+          for (let k = 0; k < 4; k++) ellipse(ctx, mx - 0.037 + k * 0.026, top - 0.004, 0.012, 0.008);
+          style(ctx, { dash: true }); curve(ctx, mx - 0.05, top, mx, top - 0.022, mx + 0.05, top - 0.012); style(ctx);
+          line(ctx, mx - 0.045, top + 0.03, mx + 0.05, top + 0.022);   // thumb across
+        } else {                             // two tubes pinch a barrel
+          for (let k = 0; k < 2; k++)
+            curve(ctx, mx - 0.03 + k * 0.028, top, mx + 0.01 + k * 0.028, top - 0.05,
+                  mx + 0.045, top - 0.03);
+          style(ctx, { lw: S(0.026) }); line(ctx, mx + 0.075, top - 0.075, mx - 0.02, top + 0.055); style(ctx);
+        }
+        label(ctx, mx - 0.055, 0.925, n, { fs: 0.085 });
+      });
+      note(ctx, 0.97, "Measure on your own hand: palm ≈ middle finger, thumb tip reaches the index's middle knuckle.");
     },
     chromaticGreys(ctx) {
       title(ctx, "The life of grey: every grey leans warm or cool");

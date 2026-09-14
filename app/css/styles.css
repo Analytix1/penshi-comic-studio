@@ -401,3 +401,23 @@ button.primary { background: var(--accent); color: #201a10; border-color: var(--
 .dh-row button.danger { border-color: var(--danger); color: var(--danger); }
 .ls-drill { margin: 6px 0 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .ls-drill select { font-size: 12px; }
+
+/* ===== in-app dialogs (replace window.confirm / prompt, which some
+   embedded browsers suppress — see UI.confirm in main.js) ===== */
+.dlg-backdrop {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.6);
+  display: grid; place-items: center;
+}
+.dlg-box {
+  width: min(420px, 90vw); background: var(--bg2); border: 1px solid var(--edge);
+  border-radius: 12px; padding: 18px; box-shadow: 0 14px 44px rgba(0,0,0,.55);
+}
+.dlg-box p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.5; }
+.dlg-box input[type=text] {
+  width: 100%; padding: 7px 9px; margin-bottom: 12px; background: var(--bg3);
+  color: var(--ink); border: 1px solid var(--edge); border-radius: 6px; font: inherit;
+}
+.dlg-actions { justify-content: flex-end; margin: 0; }
+.dlg-box button { padding: 6px 14px; }
+.dlg-box button.danger { border-color: var(--danger); color: var(--danger); }
+.dlg-box button.danger:hover { background: var(--danger); color: #fff; }

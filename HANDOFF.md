@@ -41,6 +41,13 @@ breaking its architecture. **Paste the "context block" first, then one task prom
 > 5. Guides/overlays never appear in `Engine.exportPNG` output.
 > 6. NO image generation features of any kind — the app enhances artists, never
 >    replaces them. NO external CDNs; everything works offline.
+> 6b. NEVER call `window.confirm`, `window.prompt` or `window.alert`. Several
+>    embedded browsers people run Penshi inside suppress them silently —
+>    confirm() returns false in ~2ms without showing anything and prompt()
+>    throws — which made every delete button and Save-on-untitled look broken.
+>    Use `await UI.confirm(msg, {okLabel, danger})` and `await UI.prompt(msg,
+>    value, {okLabel})` from main.js; both return Promises, so the calling
+>    handler must be `async`.
 > 7. Raster layers keep an op log (`layer.ops`: strokes/shapes/fills drawn this
 >    session) used by the stroke eraser, which rebuilds pixels as
 >    `layer.baseImg` + replayed ops. ANY new code path that mutates raster

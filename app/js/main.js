@@ -11,6 +11,80 @@ const UI = {};
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
 
+  /* ---------- in-app dialogs ----------
+     Never use window.confirm / window.alert / window.prompt: several
+     embedded browsers (and the app shells people run Penshi inside)
+     suppress them — confirm() returns false in a couple of milliseconds
+     without ever showing anything, and prompt() throws outright. That
+     made every delete button look broken and made Save on an untitled
+     project do nothing at all. These render into the page instead, so
+     they behave the same everywhere and work offline.
+     Both return a Promise; confirm → boolean, prompt → string or null. */
+  function dialog(build) {
+    return new Promise(resolve => {
+      const back = document.createElement("div");
+      back.className = "dlg-backdrop";
+      const box = document.createElement("div");
+      box.className = "dlg-box";
+      back.appendChild(box);
+      let done = false;
+      const finish = v => {
+        if (done) return;
+        done = true;
+        document.removeEventListener("keydown", onKey, true);
+        back.remove();
+        resolve(v);
+      };
+      const onKey = e => {
+        if (e.key !== "Escape" && e.key !== "Enter") return;
+        e.preventDefault(); e.stopImmediatePropagation();   // don't also hit the app's shortcuts
+        if (e.key === "Escape") finish(api.cancelValue);
+        else api.accept();
+      };
+      const api = { box, finish, cancelValue: false, accept: () => finish(true) };
+      build(api);
+      back.addEventListener("click", e => { if (e.target === back) finish(api.cancelValue); });
+      document.addEventListener("keydown", onKey, true);
+      document.body.appendChild(back);
+      api.focus?.();
+    });
+  }
+
+  const dlgButtons = (api, okLabel, danger) => {
+    const row = document.createElement("div");
+    row.className = "row dlg-actions";
+    const cancel = document.createElement("button");
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", () => api.finish(api.cancelValue));
+    const ok = document.createElement("button");
+    ok.textContent = okLabel;
+    ok.className = danger ? "danger" : "primary";
+    ok.addEventListener("click", () => api.accept());
+    row.append(cancel, ok);
+    api.box.appendChild(row);
+    return ok;
+  };
+
+  UI.confirm = (message, opts = {}) => dialog(api => {
+    const p = document.createElement("p");
+    p.textContent = message;                     // textContent: never parse names as HTML
+    api.box.appendChild(p);
+    const ok = dlgButtons(api, opts.okLabel || "Delete", opts.danger !== false);
+    api.focus = () => ok.focus();
+  });
+
+  UI.prompt = (message, value = "", opts = {}) => dialog(api => {
+    api.cancelValue = null;
+    const p = document.createElement("p");
+    p.textContent = message;
+    const input = document.createElement("input");
+    input.type = "text"; input.value = value;
+    api.box.append(p, input);
+    api.accept = () => api.finish(input.value.trim() || null);
+    dlgButtons(api, opts.okLabel || "OK", false);
+    api.focus = () => { input.focus(); input.select(); };
+  });
+
   /* ---------- status + telemetry ---------- */
   let flashTimer = null;
   UI.flash = msg => {
@@ -234,12 +308,12 @@ const UI = {};
     App.activeLayer++;
     App.dirty = true; UI.refreshLayers();
   });
-  $("#btn-layer-del").addEventListener("click", () => {
+  $("#btn-layer-del").addEventListener("click", async () => {
     const l = activeLayer();
     if (l.kind === "objects") return UI.flash("Panels/Lettering layers are structural — hide them instead.");
     if (App.layers.filter(x => x.kind === "raster").length <= 1)
       return UI.flash("Keep at least one raster layer.");
-    if (!confirm(`Delete layer "${l.name}"?`)) return;
+    if (!await UI.confirm(`Delete layer "${l.name}"?`)) return;
     App.layers.splice(App.activeLayer, 1);
     App.activeLayer = Math.max(0, App.activeLayer - 1);
     Undo.clear();     // snapshot closures reference the dead layer
@@ -298,9 +372,9 @@ const UI = {};
       return;
     }
     if (App.projectName === "untitled") {
-      const n = prompt("Project name:", "my-comic");
+      const n = await UI.prompt("Name this project:", "my-comic", { okLabel: "Save" });
       if (!n) return;
-      App.projectName = n.trim();
+      App.projectName = n;
     }
     try {
       const r = await apiSave();
@@ -389,10 +463,10 @@ const UI = {};
       const r = compactCurrentPageHistory();
       UI.flash(`History compacted: ${r.before} KB → ${r.after} KB on this page`);
     });
-    modal.querySelector("#set-finalize").addEventListener("click", () => {
-      if (!confirm("Finalize this page? The art keeps its exact pixels, but its " +
+    modal.querySelector("#set-finalize").addEventListener("click", async () => {
+      if (!await UI.confirm("Finalize this page? The art keeps its exact pixels, but its " +
         "strokes become permanent — no more whole-stroke erasing or lassoing them. " +
-        "This also clears undo history.")) return;
+        "This also clears undo history.", { okLabel: "Finalize", danger: false })) return;
       finalizeCurrentPage();
       UI.flash("Page finalized — history flattened into the art ✓");
     });
@@ -462,7 +536,7 @@ const UI = {};
     modal.querySelectorAll(".p-del").forEach(btn =>
       btn.addEventListener("click", async e => {
         e.stopPropagation();
-        if (!confirm(`Delete project "${btn.dataset.name}" permanently?`)) return;
+        if (!await UI.confirm(`Delete project "${btn.dataset.name}" permanently?`)) return;
         await fetch(`/api/projects/${encodeURIComponent(btn.dataset.name)}`, { method: "DELETE" });
         $("#btn-open").click();   // rebuild list
       }));
@@ -555,7 +629,7 @@ const UI = {};
       del.textContent = "✕";
       del.title = "Delete the current page";
       del.addEventListener("click", async () => {
-        if (!confirm(`Delete page ${App.pageIndex + 1}? This can't be undone.`)) return;
+        if (!await UI.confirm(`Delete page ${App.pageIndex + 1}? This can't be undone.`)) return;
         await deleteCurrentPage(); updatePageStatus();
       });
       host.appendChild(del);

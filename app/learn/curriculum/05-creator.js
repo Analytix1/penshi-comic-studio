@@ -250,7 +250,7 @@ PENSHI_CURRICULUM.push({
       why: "Terryl Whitlatch's rule: a creature is believable when its anatomy could function. A bird-cat hybrid has to have a shoulder that can both fly and pounce; if you don't decide where the wings attach relative to the front legs, readers feel the fake without knowing why.",
       refs: ["whitlatch", "goldfinger-animal", "sketchfab-skel", "commons-zootomy", "aldoori"],
       pages: [
-        { title: "The creature grid", exemplar: "mashupGrid",
+        { title: "The creature grid", exemplar: "creatureGrid",
           hints: ["Three reference animals, three boxes: SKELETON donor, SURFACE donor (skin/fur/scale/shell), and ROLE donor (predator/prey/scavenger → eyes, teeth, feet).", "Decide the environment: it dictates feet and surface."],
           steps: [
             { h: "Pick a role and an environment first", t: "Ambush predator in a swamp? Grazer on cliffs? Scavenger in a desert? The role picks the eye placement (Animal-4), the diet picks the teeth, the environment picks the feet (webbed, hooved, clawed) and the surface (scales, fur, armor). Write these decisions in the margin BEFORE choosing animals.", tool: "pencil", layer: "Pencils" },
@@ -403,7 +403,7 @@ PENSHI_CURRICULUM.push({
             { h: "A street", t: "A row of buildings of different heights along one VP, a road with a curb, street furniture (lamps as tall cylinders, a bench, a sign) placed on a floor grid. A figure at the door of each building for scale. Reference a real street on Unsplash and steal its proportions.", tool: "pencil" },
             { h: "Age and history", t: "Add time: a crack that follows the brick courses, a repaired patch in a different material, plants in the gutters, a sign painted over another sign. Every detail is a sentence about the building's past.", tool: "pencil" },
           ] },
-        { title: "Staging a scene",
+        { title: "Staging a scene", exemplar: "depthLayers",
           hints: ["Take the street. Place your character and one prop so that something HAPPENED here.", "The composition rules from Env-1: focal point on the story, values lead to it."],
           steps: [
             { h: "Props as story", t: "Choose an event (a chase just passed, a deal is being made, someone is waiting). Place three props that imply it: an overturned crate, a dropped bag, a lit window at night. No figures yet. Can a viewer guess the event?", tool: "pencil", layer: "Pencils" },
@@ -441,7 +441,7 @@ PENSHI_CURRICULUM.push({
       why: "This is the capstone of design: every chapter converges. Geology gives the land, ecology gives the plants, perspective gives the space, color psychology gives the theme, and recombination gives you something new. The world you build here is the world your comic can live in.",
       refs: ["fzd", "gurney-book", "nasa-eo", "framed-ink", "adobe-color", "unsplash"],
       pages: [
-        { title: "The world grid", exemplar: "mashupGrid",
+        { title: "The world grid", exemplar: "worldGrid",
           hints: ["Three references: a real landform (NASA EO / Unsplash), a real architectural tradition (Unsplash: 'village Morocco', 'temple Kyoto', 'stilt houses'), a real color environment (a photo whose palette carries the mood you want).", "Decide the theme in one sentence first: 'a city that grew too fast', 'a valley that forgot the war'."],
           steps: [
             { h: "Theme sentence", t: "Write it in the margin. Everything else argues for it. 'A monastery clinging to the last green ridge above a drying sea' — that sentence already picks the landform (an eroded ridge), the water (retreating shoreline), the architecture (stacked, defensive), the palette (dusty warm below, one green above).", tool: "pencil", layer: "Pencils" },

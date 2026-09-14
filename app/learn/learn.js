@@ -149,7 +149,7 @@ const Learn = (() => {
     }));
     home.querySelectorAll(".pf-del").forEach(b => b.addEventListener("click", async e => {
       e.stopPropagation();
-      if (!confirm("Delete this practice page from your Portfolio?")) return;
+      if (!await UI.confirm("Delete this practice page from your Portfolio? This can't be undone.")) return;
       await fetch(`/api/learn/attempts/${b.dataset.id}`, { method: "DELETE" });
       await loadAttempts(); renderHome();
     }));

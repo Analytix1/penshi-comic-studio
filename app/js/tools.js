@@ -769,7 +769,8 @@ const Tools = (() => {
 
   async function lassoSaveAsset() {
     if (!lasso) return;
-    const name = prompt("Asset name (e.g. 'hero eyes', 'title logo'):", "my asset");
+    const name = await UI.prompt("Asset name (e.g. 'hero eyes', 'title logo'):", "my asset",
+                                 { okLabel: "Save asset" });
     if (!name) return;
     const c = renderLassoToCanvas();
     try {

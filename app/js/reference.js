@@ -232,7 +232,7 @@ const Reference = (() => {
     host.querySelectorAll(".a-del").forEach(btn =>
       btn.addEventListener("click", async e => {
         e.stopPropagation();
-        if (!confirm("Delete this asset from your library?")) return;
+        if (!await UI.confirm("Delete this asset from your library?")) return;
         await fetch(`/api/assets/${btn.dataset.id}`, { method: "DELETE" });
         buildLibrary();
       }));

@@ -219,14 +219,14 @@ PENSHI_CURRICULUM.push({
       why: "Natural forms are where beginners give up on measurement and start guessing, because there's no obvious box to measure against. Plants teach you growth patterns and rhythm; the hand teaches you that even the most complex subject is still volumes and angles. Both set up the Gesture and Figure chapters, and the hand page is the one you'll be most surprised by when you come back to it.",
       refs: ["unsplash", "loa-hands", "drawabox-l2"],
       pages: [
-        { title: "A plant: rhythm and branching", exemplar: "obsFrame",
+        { title: "A plant: rhythm and branching", exemplar: "plantRhythm",
           hints: ["Search 'potted plant' or 'leaf branch' on Unsplash.", "Draw the flow lines of stems FIRST, then hang leaves on them.", "Leaves are planes — draw the midrib as a curve in space, then the outline around it."],
           steps: [
             { h: "Stems as flow lines", t: "Find the main stem and draw it as one confident curve, from the shoulder, ghosted first. Every branch leaves the stem at an angle — measure a few with the clock. Plants branch with rhythm, not randomness: alternate (left, right, left), opposite (pairs), or spiral. Which is yours? Once you know, you can draw the branches you can't see, and the plant will look like a species instead of a scribble.", tool: "pencil", layer: "Pencils" },
             { h: "Leaves as planes on a midrib", t: "For each leaf: draw the midrib as a curve in space (it bends and twists), then the leaf outline around it, foreshortened if the leaf faces away — a leaf seen edge-on is a line, a leaf facing you is its full shape, and most are somewhere between. Draw six leaves at six different tilts, measuring each one's width-to-length against the fullest leaf. Symmetry about the midrib is the thing to check.", tool: "pencil" },
             { h: "Overlap for depth", t: "Where leaves cross, the front one is unbroken and the back one stops at the overlap. Resolve every crossing. Then ink the study, letting nearer leaves get heavier lines and the far ones stay thin — the plant should have a front and a back.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Your own hand", exemplar: "obsFrame",
+        { title: "Your own hand", exemplar: "handMitten",
           hints: ["Use your non-drawing hand as the model. Three poses: relaxed, fist, holding the pen.", "Palm first as a flat mitten; fingers as tubes fanning from a curve.", "Measure: how many finger-widths across the palm? Where does the thumb tip reach?"],
           steps: [
             { h: "Palm as a mitten", t: "Draw the palm as a rounded box first — no fingers. Measure its proportions against your real hand: about as long as the middle finger, about four finger-widths across. The thumb's base is a separate wedge on the side of that box, and it's much bigger than people expect — nearly a third of the palm's width. Draw the mitten from the back, from the palm side, and edge-on.", tool: "pencil", layer: "Pencils" },
