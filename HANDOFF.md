@@ -190,3 +190,4 @@ serialization so reference layers reload."
 
 - `app/learn/guides-more.js` holds extra guide pages (long poses, walk/run/jump, turnarounds, anatomy close-ups, one page per species).
 - `app/learn/curriculum/08-deep-dives.js` appends those pages to existing lessons with `extend(lessonId, minutes, pages)`. Pages are appended, never inserted, so saved step progress keeps its place. Add further pages the same way.
+- Second batch: `guides-more2.js` and `curriculum/09-deep-dives-2.js` (hands, expressions, vehicles, environments). `guides-head-hand.js` exports `handLevels` and the `face` helpers on `GuideKit` for these.

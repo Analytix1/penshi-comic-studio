@@ -488,4 +488,6 @@
       ["the sole of a shoe", ctx => { for (const [f, c] of set()) draw(ctx, c, f.part.sole); }],
     ]);
   }
+  /* shared with the deep-dive pages */
+  Object.assign(GuideKit, { handLevels, face: { faceBase, faceFeatures, faceArrows, faceGrid, expr, pick, EXPR, NEUTRAL, BROWS, EYES, MOUTH } });
 })();
