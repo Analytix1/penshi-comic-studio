@@ -170,6 +170,7 @@ const Lettering = (() => {
   function commit(type, a, b) {
     preview = null;
     const layer = layerByRole("lettering");
+    if (!layer || layer.locked) { UI.flash("The Lettering layer is locked 🔒"); App.dirty = true; return; }
     const before = JSON.stringify(layer.objects);
     const obj = make(type, norm(a, b));
     layer.objects.push(obj);
@@ -181,15 +182,18 @@ const Lettering = (() => {
 
   /* ---------- hit testing ---------- */
   function hitTest(p) {
-    const layer = layerByRole("lettering");
-    if (!layer || !layer.visible) return null;
-    for (let i = layer.objects.length - 1; i >= 0; i--) {
-      const o = layer.objects[i];
-      const pad = 6 / App.view.zoom;
-      const inBox = p.x >= o.x - pad && p.x <= o.x + o.w + pad &&
-                    p.y >= o.y - pad && p.y <= o.y + o.h + pad;
-      const onTail = o.tail && Math.hypot(p.x - o.tail.x, p.y - o.tail.y) < 12 / App.view.zoom;
-      if (inBox || onTail) return { layer, obj: o };
+    const all = layersByRole("lettering");
+    const pad = 6 / App.view.zoom;
+    for (let li = all.length - 1; li >= 0; li--) {        // topmost layer first
+      const layer = all[li];
+      if (!layer.visible) continue;
+      for (let i = layer.objects.length - 1; i >= 0; i--) {
+        const o = layer.objects[i];
+        const inBox = p.x >= o.x - pad && p.x <= o.x + o.w + pad &&
+                      p.y >= o.y - pad && p.y <= o.y + o.h + pad;
+        const onTail = o.tail && Math.hypot(p.x - o.tail.x, p.y - o.tail.y) < 12 / App.view.zoom;
+        if (inBox || onTail) return { layer, obj: o };
+      }
     }
     return null;
   }

@@ -128,18 +128,51 @@
     <!-- Layers -->
     <section id="tab-layers" class="side-panel" hidden>
       <div class="row">
-        <button id="btn-layer-add" title="Add raster layer">＋ Layer</button>
-        <button id="btn-layer-del" title="Delete selected layer">🗑</button>
+        <select id="layer-add-kind" title="Which kind of layer ＋ Add creates">
+          <option value="raster">Raster</option>
+          <option value="pencil">Blue pencil</option>
+          <option value="panels">Panels</option>
+          <option value="lettering">Lettering</option>
+        </select>
+        <button id="btn-layer-add" title="Add a layer of the chosen kind above the active one">＋ Add</button>
+        <button id="btn-layer-dup" title="Duplicate the active layer">⧉</button>
+        <button id="btn-layer-del" title="Delete the active layer">🗑</button>
         <button id="btn-layer-up" title="Move layer up">▲</button>
         <button id="btn-layer-down" title="Move layer down">▼</button>
+      </div>
+      <div class="row">
+        <button id="btn-import-image" title="Bring in a photo or sketch to trace. It lands on its own Reference layer, which never exports. You can also drop an image onto the page or paste one.">Import image to trace…</button>
+        <input type="file" id="file-import" accept="image/*" hidden>
       </div>
       <label>Layer opacity <span id="lbl-layeropacity">100</span>%
         <input type="range" id="opt-layeropacity" min="0" max="100" value="100"></label>
       <ul id="layer-list"></ul>
+      <details class="learn" id="layer-filter-box">
+        <summary>Color filter — <span id="lbl-filter">none</span></summary>
+        <div class="body">
+          <label>Preset <select id="lf-preset"></select></label>
+          <label>Hue shift <span id="lbl-lf-hue">0</span>°
+            <input type="range" id="lf-hue" min="-180" max="180" value="0"></label>
+          <label>Saturation <span id="lbl-lf-sat">100</span>%
+            <input type="range" id="lf-sat" min="0" max="200" value="100"></label>
+          <label>Brightness <span id="lbl-lf-bri">100</span>%
+            <input type="range" id="lf-bri" min="20" max="200" value="100"></label>
+          <label>Contrast <span id="lbl-lf-con">100</span>%
+            <input type="range" id="lf-con" min="20" max="200" value="100"></label>
+          <label class="chk"><input type="checkbox" id="lf-tint"> Recolor to one color
+            <input type="color" id="lf-tintcolor" value="#8fb8e8"></label>
+          <div class="row"><button id="lf-reset">Remove filter</button></div>
+          <div class="hint">Applies to the active layer only and never changes its
+            pixels — turn it off any time. Filters are part of the page, so they
+            export. (For a look that does NOT export, use Guides → View check.)</div>
+        </div>
+      </details>
       <div class="hint">Standard comic workflow runs bottom-to-top:
         <b>Panels → Pencils → Inks → Colors → Lettering</b>.
         Pencil roughs on the blue layer, ink on the layer above, and your
-        blue lines vanish at export with one click of its ◉ visibility dot.</div>
+        blue lines vanish at export with one click of its ◉ visibility dot.
+        <br><b>,</b> and <b>.</b> (or PageDown / PageUp) step down and up the
+        stack; a finger double-tap does it too. Double-click a name to rename.</div>
     </section>
 
     <!-- Guides -->
@@ -157,6 +190,13 @@
       <div class="hint">Drag the <b>⊕ vanishing points</b> and the horizon line
         directly on the canvas. Guides never export — they're a drafting
         overlay, like a real light table.</div>
+      <h3>View check</h3>
+      <label>View filter
+        <select id="g-viewfilter"></select></label>
+      <div class="hint">Greyscale shows your <b>values</b> without hue getting in
+        the way — if the page turns to mud, fix the values. The color-blind
+        previews show what one reader in twelve will see. View only: never
+        saved, never exported.</div>
       <h3>Panel templates</h3>
       <div id="template-list"></div>
       <label>Gutter <span id="lbl-gutter">14</span>px
@@ -194,6 +234,16 @@
     <button id="tour-next">Next ›</button>
   </div>
 </div>
+
+<!-- View-check filters (Guides tab). Standard dichromacy approximations. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="vf-prot" color-interpolation-filters="sRGB"><feColorMatrix type="matrix"
+    values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/></filter>
+  <filter id="vf-deut" color-interpolation-filters="sRGB"><feColorMatrix type="matrix"
+    values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/></filter>
+  <filter id="vf-trit" color-interpolation-filters="sRGB"><feColorMatrix type="matrix"
+    values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/></filter>
+</defs></svg>
 
 <script src="js/state.js"></script>
 <script src="js/engine.js"></script>

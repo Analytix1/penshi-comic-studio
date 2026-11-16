@@ -31,6 +31,8 @@ const Settings = {
     autosave: false,
     autosaveMin: 3,
     exportBleed: true,          // false = crop exports to the trim line
+    showLayerName: true,        // active-layer badge at the page's top corner
+    doubleTap: "layer-up",      // what a two-quick-taps finger gesture does
   },
   data: {},
   load() {
@@ -128,14 +130,50 @@ function makeRasterLayer(name, opts = {}) {
   return { id: ++_layerSeq, kind: "raster", name, canvas: c,
            visible: true, locked: false, opacity: opts.opacity ?? 1,
            tint: opts.tint || null,   // tint: render-time recolor (blue pencils)
+           filter: null,              // non-destructive color filter (see filterCss)
+           ref: !!opts.ref,           // imported tracing reference: never exported
+           guide: !!opts.guide,       // Learn-mode guide drawing (one per level)
            ops: [],                   // stroke/shape/fill log for the stroke eraser
            baseImg: null,             // pre-ops pixels (loaded saves), as an Image
            basePng: null };           // ...and the same as a data URL, for saving
 }
 function makeObjectLayer(name, role) {
   return { id: ++_layerSeq, kind: "objects", role, name, objects: [],
-           visible: true, locked: false, opacity: 1 };
+           visible: true, locked: false, opacity: 1, filter: null };
 }
+
+/* ---------- per-layer color filters ----------
+   A filter is plain data — { hue, sat, bri, con, gray, sepia, invert } —
+   turned into a CSS filter string the canvas applies at composite time.
+   Pixels are never altered, so a filter can be changed or removed forever. */
+const FILTER_PRESETS = {
+  none:      { label: "None" },
+  grey:      { label: "Greyscale", gray: 100 },
+  sepia:     { label: "Sepia", sepia: 100 },
+  invert:    { label: "Invert", invert: 100 },
+  vivid:     { label: "Vivid", sat: 160, con: 110 },
+  muted:     { label: "Muted", sat: 50 },
+  contrast:  { label: "High contrast", con: 160 },
+  faded:     { label: "Faded (light table)", con: 55, bri: 135 },
+  dusk:      { label: "Dusk", hue: -18, sat: 80, bri: 82 },
+  night:     { label: "Night", hue: 28, sat: 60, bri: 58, con: 115 },
+};
+const FILTER_NEUTRAL = { hue: 0, sat: 100, bri: 100, con: 100, gray: 0, sepia: 0, invert: 0 };
+function filterCss(f) {
+  if (!f) return "none";
+  const v = { ...FILTER_NEUTRAL, ...f };
+  const parts = [];
+  if (v.gray) parts.push(`grayscale(${v.gray}%)`);
+  if (v.sepia) parts.push(`sepia(${v.sepia}%)`);
+  if (v.invert) parts.push(`invert(${v.invert}%)`);
+  if (v.hue) parts.push(`hue-rotate(${v.hue}deg)`);
+  if (v.sat !== 100) parts.push(`saturate(${v.sat}%)`);
+  if (v.bri !== 100) parts.push(`brightness(${v.bri}%)`);
+  if (v.con !== 100) parts.push(`contrast(${v.con}%)`);
+  return parts.length ? parts.join(" ") : "none";
+}
+/* is this a Learn guide layer? (older attempts only have the name) */
+const isGuideLayer = l => !!l && l.kind === "raster" && (l.guide || /^Guide\b/.test(l.name));
 
 /* Build a blank live page (canvas + default layer stack) */
 function buildFreshPage(presetKey) {
@@ -184,11 +222,14 @@ function serializePage(includeHistory = Settings.get("pageStrokeHistory")) {
     layers: App.layers.map(l => l.kind === "raster"
       ? { kind: "raster", name: l.name, visible: l.visible, locked: l.locked,
           opacity: l.opacity, tint: l.tint, png: snapshotRaster(l),
+          ...(l.filter ? { filter: l.filter } : {}),
+          ...(l.ref ? { ref: true } : {}), ...(l.guide ? { guide: true } : {}),
           // stroke history: the pre-ops base plus the op log lets a future
           // session keep whole-stroke editing on this art
           ...(includeHistory ? { basePng: l.basePng || null, ops: l.ops } : {}) }
       : { kind: "objects", role: l.role, name: l.name, visible: l.visible,
-          locked: l.locked, opacity: l.opacity, objects: l.objects }),
+          locked: l.locked, opacity: l.opacity, objects: l.objects,
+          ...(l.filter ? { filter: l.filter } : {}) }),
   };
 }
 
@@ -199,8 +240,10 @@ async function loadPage(data) {
   const waits = [];
   App.layers = data.layers.map(l => {
     if (l.kind === "raster") {
-      const layer = makeRasterLayer(l.name, { tint: l.tint, opacity: l.opacity });
+      const layer = makeRasterLayer(l.name, { tint: l.tint, opacity: l.opacity,
+                                              ref: l.ref, guide: l.guide });
       layer.visible = l.visible; layer.locked = l.locked;
+      layer.filter = l.filter || null;
       if (l.png) waits.push(restoreRaster(layer, l.png));
       if (Array.isArray(l.ops)) {
         // stroke history travels with the page: whole-stroke tools keep
@@ -219,7 +262,8 @@ async function loadPage(data) {
     }
     const layer = makeObjectLayer(l.name, l.role);
     Object.assign(layer, { visible: l.visible, locked: l.locked,
-                           opacity: l.opacity, objects: l.objects || [] });
+                           opacity: l.opacity, objects: l.objects || [],
+                           filter: l.filter || null });
     return layer;
   });
   App.activeLayer = Math.min(3, App.layers.length - 1);
@@ -298,7 +342,16 @@ async function deleteCurrentPage() {
 }
 
 function activeLayer() { return App.layers[App.activeLayer]; }
-function layerByRole(role) { return App.layers.find(l => l.kind === "objects" && l.role === role); }
+/* A page can hold several object layers of one role (two Lettering layers
+   for two languages, say). New objects go to the ACTIVE layer when it has
+   that role; otherwise to the topmost one. */
+function layersByRole(role) { return App.layers.filter(l => l.kind === "objects" && l.role === role); }
+function layerByRole(role) {
+  const a = activeLayer();
+  if (a && a.kind === "objects" && a.role === role) return a;
+  const all = layersByRole(role);
+  return all[all.length - 1];
+}
 
 /* ============================================================
    Undo/redo — command stack of {undo, redo} closures.

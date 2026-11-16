@@ -421,3 +421,14 @@ button.primary { background: var(--accent); color: #201a10; border-color: var(--
 .dlg-box button { padding: 6px 14px; }
 .dlg-box button.danger { border-color: var(--danger); color: var(--danger); }
 .dlg-box button.danger:hover { background: var(--danger); color: #fff; }
+
+/* ===== layers tab: add-kind picker, import, color filter ===== */
+#tab-layers .row { flex-wrap: wrap; }
+#layer-add-kind { font-size: 12px; max-width: 108px; }
+#btn-import-image { flex: 1; }
+#layer-filter-box { margin: 8px 0; }
+#layer-filter-box .body label { display: block; margin: 6px 0; font-size: 12.5px; }
+#layer-filter-box .body label.chk { display: flex; }
+#layer-filter-box input[type=range] { width: 100%; }
+#lf-tintcolor { width: 34px; height: 22px; padding: 0; border: none; background: none; }
+#stage.drop-ok { outline: 2px dashed var(--accent); outline-offset: -6px; }

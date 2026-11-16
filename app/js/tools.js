@@ -256,6 +256,8 @@ const Tools = (() => {
       ctx.save();
       ctx.globalAlpha = (brushLive ? stroke.alpha : 1) *
                         (onRaster ? layer.opacity : 1);
+      const fcss = onRaster ? filterCss(layer.filter) : "none";
+      if (fcss !== "none") ctx.filter = fcss;   // same reason: match the committed look
       if (onRaster && layer.tint) {
         if (previewTint.width !== scratch.width || previewTint.height !== scratch.height) {
           previewTint.width = scratch.width; previewTint.height = scratch.height;
@@ -748,6 +750,11 @@ const Tools = (() => {
   }
 
   function lassoClear() {
+    // A tracing reference is unlocked only while you are positioning it.
+    if (lasso && lasso.layer.ref && !lasso.layer.locked) {
+      lasso.layer.locked = true;
+      UI.refreshLayers?.();
+    }
     lasso = null; lassoDraw = null; lassoMove = null; lassoXform = null;
     lassoGhost = null;
     UI.hideLassoActions();
@@ -895,6 +902,7 @@ const Tools = (() => {
 
     if (e.pointerType === "touch") {          // touch = navigate, never draw
       touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      tapTrack(e, "down");
       return;
     }
     if (App.penOnly && e.pointerType === "mouse") return;
@@ -1040,6 +1048,16 @@ const Tools = (() => {
     }
   }
 
+  /* select specific ops on a layer programmatically (used right after an
+     image import, so the new reference arrives with its handles showing) */
+  function selectOps(layer, indices) {
+    lassoClear();
+    if (!indices.length) return;
+    lasso = { layer, indices, bbox: computeLassoBbox(layer, indices) };
+    UI.showLassoActions(lasso.bbox, indices.length);
+    App.dirty = true;
+  }
+
   /* mutate one op through the transform; may return a REPLACEMENT op
      (axis-aligned rects become 4-point polygons under rotation) */
   function transformOp(op, t, fn) {
@@ -1170,8 +1188,38 @@ const Tools = (() => {
     if (state.current === "select") selectMove(p);
   }
 
+  /* Finger double-tap = a configurable shortcut (⚙ Settings). A tap is one
+     finger, down and up within 280 ms without travelling; two taps within
+     380 ms and 44 px of each other make a double-tap. A resting palm is a
+     long contact, and a pinch is two fingers, so neither can trigger it. */
+  const tap = { downT: 0, x: 0, y: 0, moved: false, multi: false, lastT: 0, lastX: 0, lastY: 0 };
+  function tapTrack(e, phase) {
+    if (phase === "down") {
+      tap.multi = touches.size > 1;
+      tap.downT = performance.now(); tap.x = e.clientX; tap.y = e.clientY; tap.moved = false;
+      return;
+    }
+    if (phase === "move") {
+      if (Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 14) tap.moved = true;
+      return;
+    }
+    const now = performance.now();
+    const isTap = !tap.multi && !tap.moved && now - tap.downT < 280;
+    if (!isTap) { tap.lastT = 0; return; }
+    if (now - tap.lastT < 380 && Math.hypot(e.clientX - tap.lastX, e.clientY - tap.lastY) < 44) {
+      tap.lastT = 0;
+      UI.doubleTap?.();
+    } else {
+      tap.lastT = now; tap.lastX = e.clientX; tap.lastY = e.clientY;
+    }
+  }
+
   function onUp(e) {
-    if (e.pointerType === "touch") { touches.delete(e.pointerId); return; }
+    if (e.pointerType === "touch") {
+      touches.delete(e.pointerId);
+      if (e.type === "pointerup") tapTrack(e, "up");
+      return;
+    }
     if (panGrab) { panGrab = null; return; }
     if (Guides.release()) return;
     if (tailErase) { tailErase = false; return; }
@@ -1236,6 +1284,7 @@ const Tools = (() => {
   /* touch navigation: 1 finger pans, 2 fingers pinch-zoom */
   function touchNav(e) {
     if (!touches.has(e.pointerId)) return;
+    tapTrack(e, "move");
     const prev = touches.get(e.pointerId);
     if (touches.size === 1) {
       App.view.panX += e.clientX - prev.x;
@@ -1293,7 +1342,7 @@ const Tools = (() => {
     });
   }
 
-  return { state, bind, renderScratch, deleteSelection, resetTransient,
+  return { state, bind, renderScratch, deleteSelection, resetTransient, selectOps,
            startPlacing, cancelPlacing, scalePlacing,
            lassoSaveAsset, lassoDelete, lassoClear,
            hasLasso: () => !!lasso,

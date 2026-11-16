@@ -46,6 +46,7 @@ const Panels = (() => {
     const r = norm(a, b);
     if (r.w < 40 || r.h < 40) { App.dirty = true; return; }  // accidental tap
     const layer = layerByRole("panels");
+    if (!layer || layer.locked) { UI.flash("The Panels layer is locked 🔒"); App.dirty = true; return; }
     const before = JSON.stringify(layer.objects);
     layer.objects.push(r);
     commitObjectChange(layer, before);
@@ -54,12 +55,15 @@ const Panels = (() => {
 
   /* ---------- hit testing (for the select tool) ---------- */
   function hitTest(p) {
-    const layer = layerByRole("panels");
-    if (!layer || !layer.visible) return null;
-    for (let i = layer.objects.length - 1; i >= 0; i--) {
-      const o = layer.objects[i];
-      if (p.x >= o.x && p.x <= o.x + o.w && p.y >= o.y && p.y <= o.y + o.h)
-        return { layer, obj: o };
+    const all = layersByRole("panels");
+    for (let li = all.length - 1; li >= 0; li--) {        // topmost layer first
+      const layer = all[li];
+      if (!layer.visible) continue;
+      for (let i = layer.objects.length - 1; i >= 0; i--) {
+        const o = layer.objects[i];
+        if (p.x >= o.x && p.x <= o.x + o.w && p.y >= o.y && p.y <= o.y + o.h)
+          return { layer, obj: o };
+      }
     }
     return null;
   }
@@ -107,6 +111,7 @@ const Panels = (() => {
       }
     });
     const layer = layerByRole("panels");
+    if (!layer || layer.locked) return UI.flash("The Panels layer is locked 🔒");
     const before = JSON.stringify(layer.objects);
     layer.objects = objects;
     commitObjectChange(layer, before);

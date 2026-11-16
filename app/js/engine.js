@@ -59,23 +59,64 @@ const Engine = (() => {
     App.dirty = true;
   }
 
-  function tinted(layer) {
+  /* A raster layer as it should LOOK: its pixels, recolored by the tint
+     (non-photo-blue pencils) and passed through its color filter. Baked
+     once per change into a cached canvas, so compositing stays a plain
+     drawImage however many filtered layers the page has. */
+  function composited(layer) {
+    const fcss = filterCss(layer.filter);
+    if (!layer.tint && fcss === "none") return layer.canvas;
+    const key = `${layer._stamp || 0}|${layer.tint || ""}|${fcss}`;
     let e = tintCache.get(layer.id);
     if (!e) {
-      e = { canvas: document.createElement("canvas"), stamp: -1 };
+      e = { canvas: document.createElement("canvas"), key: "" };
       tintCache.set(layer.id, e);
     }
-    if (e.stamp !== layer._stamp) {
+    if (e.key !== key) {
       e.canvas.width = layer.canvas.width; e.canvas.height = layer.canvas.height;
       const tctx = e.canvas.getContext("2d");
       tctx.clearRect(0, 0, e.canvas.width, e.canvas.height);
-      tctx.drawImage(layer.canvas, 0, 0);
-      tctx.globalCompositeOperation = "source-in";
-      tctx.fillStyle = layer.tint;
-      tctx.fillRect(0, 0, e.canvas.width, e.canvas.height);
-      e.stamp = layer._stamp;
+      if (layer.tint) {
+        tctx.drawImage(layer.canvas, 0, 0);
+        tctx.globalCompositeOperation = "source-in";
+        tctx.fillStyle = layer.tint;
+        tctx.fillRect(0, 0, e.canvas.width, e.canvas.height);
+        tctx.globalCompositeOperation = "source-over";
+        if (fcss !== "none") {            // filter the tinted result in place
+          const tmp = document.createElement("canvas");
+          tmp.width = e.canvas.width; tmp.height = e.canvas.height;
+          tmp.getContext("2d").drawImage(e.canvas, 0, 0);
+          tctx.clearRect(0, 0, e.canvas.width, e.canvas.height);
+          tctx.filter = fcss; tctx.drawImage(tmp, 0, 0); tctx.filter = "none";
+        }
+      } else {
+        tctx.filter = fcss; tctx.drawImage(layer.canvas, 0, 0); tctx.filter = "none";
+      }
+      e.key = key;
     }
     return e.canvas;
+  }
+
+  /* Paint the layer stack bottom-to-top onto any context that is already in
+     page space. One routine for the live view, exports, thumbnails and the
+     eyedropper, so they can never disagree about what a page looks like.
+     skipRefs: tracing references are a drafting aid and never print. */
+  function paintLayers(c, opts = {}) {
+    for (const layer of App.layers) {
+      if (!layer.visible) continue;
+      if (opts.skipRefs && layer.ref) continue;
+      c.globalAlpha = layer.opacity;
+      if (layer.kind === "raster") {
+        c.drawImage(composited(layer), 0, 0);
+      } else {
+        const fcss = filterCss(layer.filter);
+        if (fcss !== "none") c.filter = fcss;
+        if (layer.role === "panels") Panels.render(c, layer);
+        else if (layer.role === "lettering") Lettering.render(c, layer);
+        if (fcss !== "none") c.filter = "none";
+      }
+      c.globalAlpha = 1;
+    }
   }
 
   /* ---------- main composite ---------- */
@@ -105,18 +146,7 @@ const Engine = (() => {
       ctx.fillRect(0, 0, App.page.w, App.page.h);
       ctx.restore();
 
-      for (const layer of App.layers) {
-        if (!layer.visible) continue;
-        ctx.globalAlpha = layer.opacity;
-        if (layer.kind === "raster") {
-          ctx.drawImage(layer.tint ? tinted(layer) : layer.canvas, 0, 0);
-        } else if (layer.role === "panels") {
-          Panels.render(ctx, layer);
-        } else if (layer.role === "lettering") {
-          Lettering.render(ctx, layer);
-        }
-        ctx.globalAlpha = 1;
-      }
+      paintLayers(ctx);
 
       // live stroke preview (scratch buffer from tools.js)
       Tools.renderScratch(ctx);
@@ -127,10 +157,44 @@ const Engine = (() => {
 
       ctx.restore();
 
+      if (Settings.get("showLayerName")) renderLayerBadge();
+
       document.getElementById("zoom-hud").textContent =
         Math.round(v.zoom * 100) + "%";
     }
     requestAnimationFrame(render);
+  }
+
+  /* The active layer's name, pinned to the page's top-right corner (and
+     kept on screen when that corner scrolls away). Screen space, so it is
+     never part of the art and never exports. */
+  function renderLayerBadge() {
+    const layer = App.layers[App.activeLayer];
+    if (!layer) return;
+    const kind = layer.kind === "objects" ? layer.role
+      : layer.ref ? "reference" : isGuideLayer(layer) ? "guide"
+      : layer.tint ? "tinted" : "raster";
+    const flags = (layer.locked ? " · locked" : "") + (layer.visible ? "" : " · hidden");
+    const name = layer.name, sub = kind + flags;
+    ctx.save();
+    ctx.font = '600 12.5px "Segoe UI", system-ui, sans-serif';
+    const wName = ctx.measureText(name).width;
+    ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+    const wSub = ctx.measureText(sub).width;
+    const padX = 9, gap = 8, h = 22, w = padX * 2 + wName + gap + wSub;
+    const corner = toScreen(App.page.w, 0);
+    const x = Math.max(8, Math.min(stageW - w - 8, corner.x - w));
+    const y = Math.max(8, Math.min(stageH - h - 8, corner.y - h - 6));
+    ctx.fillStyle = "rgba(30,31,36,.88)";
+    ctx.strokeStyle = layer.locked || !layer.visible ? "rgba(224,96,96,.9)" : "rgba(232,176,75,.9)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x + .5, y + .5, w, h, 6); ctx.fill(); ctx.stroke();
+    ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    ctx.font = '600 12.5px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = "#e8e6e0"; ctx.fillText(name, x + padX, y + h / 2 + 1);
+    ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = "#8b8d98"; ctx.fillText(sub, x + padX + wName + gap, y + h / 2 + 1);
+    ctx.restore();
   }
 
   function renderSelection(ctx) {
@@ -168,18 +232,7 @@ const Engine = (() => {
     octx.fillStyle = App.page.paper || "#ffffff";
     octx.fillRect(0, 0, crop.w, crop.h);
     octx.translate(-crop.x, -crop.y);
-    for (const layer of App.layers) {
-      if (!layer.visible) continue;
-      octx.globalAlpha = layer.opacity;
-      if (layer.kind === "raster") {
-        octx.drawImage(layer.tint ? tinted(layer) : layer.canvas, 0, 0);
-      } else if (layer.role === "panels") {
-        Panels.render(octx, layer);
-      } else if (layer.role === "lettering") {
-        Lettering.render(octx, layer);
-      }
-      octx.globalAlpha = 1;
-    }
+    paintLayers(octx, { skipRefs: true });
     out.toBlob(blob => {
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -199,14 +252,7 @@ const Engine = (() => {
     tctx.fillStyle = App.page.paper || "#ffffff";
     tctx.fillRect(0, 0, t.width, t.height);
     tctx.scale(s, s);
-    for (const layer of App.layers) {
-      if (!layer.visible) continue;
-      tctx.globalAlpha = layer.opacity;
-      if (layer.kind === "raster") tctx.drawImage(layer.tint ? tinted(layer) : layer.canvas, 0, 0);
-      else if (layer.role === "panels") Panels.render(tctx, layer);
-      else if (layer.role === "lettering") Lettering.render(tctx, layer);
-      tctx.globalAlpha = 1;
-    }
+    paintLayers(tctx);
     return t.toDataURL("image/jpeg", 0.72);
   }
 
@@ -221,23 +267,30 @@ const Engine = (() => {
     sctx.translate(-x, -y);
     sctx.fillStyle = App.page.paper || "#ffffff";
     sctx.fillRect(x, y, 1, 1);
-    for (const layer of App.layers) {
-      if (!layer.visible) continue;
-      sctx.globalAlpha = layer.opacity;
-      if (layer.kind === "raster") {
-        sctx.drawImage(layer.tint ? tinted(layer) : layer.canvas, 0, 0);
-      } else if (layer.role === "panels") {
-        Panels.render(sctx, layer);
-      } else if (layer.role === "lettering") {
-        Lettering.render(sctx, layer);
-      }
-      sctx.globalAlpha = 1;
-    }
+    paintLayers(sctx);
     const d = sctx.getImageData(0, 0, 1, 1).data;
     return "#" + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, "0")).join("");
   }
 
+  /* Whole-view check filters (value check, color-blind previews). Applied
+     to the canvas ELEMENT, so they cost nothing per frame and can never
+     reach an export. */
+  const VIEW_FILTERS = {
+    none: ["Normal", "none"],
+    grey: ["Greyscale — value check", "grayscale(1)"],
+    greyhc: ["Greyscale, high contrast", "grayscale(1) contrast(1.6)"],
+    invert: ["Inverted", "invert(1)"],
+    deut: ["Color-blind: deuteranopia", "url(#vf-deut)"],
+    prot: ["Color-blind: protanopia", "url(#vf-prot)"],
+    trit: ["Color-blind: tritanopia", "url(#vf-trit)"],
+  };
+  function setViewFilter(key) {
+    App.viewFilter = VIEW_FILTERS[key] ? key : "none";
+    view.style.filter = VIEW_FILTERS[App.viewFilter][1];
+    App.dirty = true;
+  }
+
   return { resize, fitPage, toPage, toScreen, zoomAt, exportPNG, sampleColor,
-           renderThumbnail,
+           renderThumbnail, setViewFilter, VIEW_FILTERS,
            start() { resize(); fitPage(); render(); } };
 })();

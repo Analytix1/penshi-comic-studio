@@ -281,44 +281,239 @@ const UI = {};
       const i = App.layers.indexOf(layer);
       const li = document.createElement("li");
       li.className = i === App.activeLayer ? "active" : "";
+      const kind = layer.kind === "objects" ? layer.role
+        : layer.ref ? "ref" : isGuideLayer(layer) ? "guide"
+        : layer.tint ? "tint" : "raster";
       li.innerHTML = `
         <span class="l-eye ${layer.visible ? "" : "l-off"}" title="Show/hide">◉</span>
         <span class="l-lock ${layer.locked ? "" : "l-off"}" title="Lock">🔒</span>
-        <span class="l-name">${layer.name}</span>
-        <span class="l-kind">${layer.kind === "objects" ? layer.role : (layer.tint ? "blue" : "raster")}</span>`;
+        <span class="l-name" title="Double-click to rename"></span>
+        <span class="l-kind">${kind}${filterCss(layer.filter) !== "none" ? " · ƒ" : ""}</span>`;
+      li.querySelector(".l-name").textContent = layer.name;   // names are user text
       li.querySelector(".l-eye").addEventListener("click", e => {
         e.stopPropagation(); layer.visible = !layer.visible;
         App.dirty = true; UI.refreshLayers();
       });
       li.querySelector(".l-lock").addEventListener("click", e => {
-        e.stopPropagation(); layer.locked = !layer.locked; UI.refreshLayers();
+        e.stopPropagation(); layer.locked = !layer.locked;
+        App.dirty = true; UI.refreshLayers();
       });
-      li.addEventListener("click", () => {
-        App.activeLayer = i;
-        $("#opt-layeropacity").value = Math.round(layer.opacity * 100);
-        $("#lbl-layeropacity").textContent = Math.round(layer.opacity * 100);
-        UI.refreshLayers();
+      li.addEventListener("click", () => UI.setActiveLayer(i));
+      li.querySelector(".l-name").addEventListener("dblclick", async e => {
+        e.stopPropagation();
+        const n = await UI.prompt("Rename layer:", layer.name, { okLabel: "Rename" });
+        if (n) { layer.name = n.slice(0, 40); App.dirty = true; UI.refreshLayers(); }
       });
       ul.appendChild(li);
     });
+    syncLayerControls();
   };
-  $("#btn-layer-add").addEventListener("click", () => {
-    const layer = makeRasterLayer("Layer " + (App.layers.length + 1));
+
+  /* opacity + filter controls always mirror the ACTIVE layer */
+  const FKEYS = ["hue", "sat", "bri", "con"];
+  function syncLayerControls() {
+    const l = activeLayer();
+    if (!l) return;
+    $("#opt-layeropacity").value = Math.round(l.opacity * 100);
+    $("#lbl-layeropacity").textContent = Math.round(l.opacity * 100);
+    const f = { ...FILTER_NEUTRAL, ...(l.filter || {}) };
+    for (const k of FKEYS) { $("#lf-" + k).value = f[k]; $("#lbl-lf-" + k).textContent = f[k]; }
+    const active = filterCss(l.filter) !== "none";
+    $("#lf-preset").value = !active ? "none" : (FILTER_PRESETS[l.filter.preset] ? l.filter.preset : "custom");
+    $("#lf-tint").checked = !!l.tint;
+    $("#lf-tint").disabled = $("#lf-tintcolor").disabled = l.kind !== "raster";
+    if (l.tint && /^#[0-9a-f]{6}$/i.test(l.tint)) $("#lf-tintcolor").value = l.tint;
+    const bits = [];
+    if (active) bits.push(FILTER_PRESETS[l.filter.preset]?.label || "custom");
+    if (l.tint) bits.push("recolored");
+    $("#lbl-filter").textContent = bits.join(" + ") || "none";
+  }
+  UI.setActiveLayer = i => {
+    if (i < 0 || i >= App.layers.length) return;
+    App.activeLayer = i;
+    App.dirty = true;                 // the layer-name badge follows
+    UI.refreshLayers();
+  };
+  /* step through the stack, skipping layers you could not draw on anyway */
+  UI.cycleLayer = dir => {
+    const n = App.layers.length;
+    for (let k = 1; k < n; k++) {
+      const i = (((App.activeLayer + dir * k) % n) + n) % n;
+      const l = App.layers[i];
+      if (l.locked || !l.visible) continue;
+      UI.setActiveLayer(i);
+      UI.flash(`Layer: ${l.name}`);
+      return;
+    }
+    UI.flash("No other unlocked, visible layer to switch to.");
+  };
+
+  const uniqueLayerName = base => {
+    const names = new Set(App.layers.map(l => l.name));
+    if (!names.has(base)) return base;
+    for (let n = 2; ; n++) if (!names.has(`${base} ${n}`)) return `${base} ${n}`;
+  };
+  function insertAboveActive(layer) {
     App.layers.splice(App.activeLayer + 1, 0, layer);
-    App.activeLayer++;
-    App.dirty = true; UI.refreshLayers();
+    App.dirty = true;
+    UI.setActiveLayer(App.activeLayer + 1);
+  }
+  $("#btn-layer-add").addEventListener("click", () => {
+    const kind = $("#layer-add-kind").value;
+    const layer =
+      kind === "pencil" ? makeRasterLayer(uniqueLayerName("Pencils"), { tint: "#8fb8e8", opacity: 0.75 })
+      : kind === "panels" ? makeObjectLayer(uniqueLayerName("Panels"), "panels")
+      : kind === "lettering" ? makeObjectLayer(uniqueLayerName("Lettering"), "lettering")
+      : makeRasterLayer(uniqueLayerName("Layer"));
+    insertAboveActive(layer);
+    UI.flash(`Added "${layer.name}" above the previous layer`);
+  });
+  $("#btn-layer-dup").addEventListener("click", () => {
+    const src = activeLayer();
+    let copy;
+    if (src.kind === "raster") {
+      copy = makeRasterLayer(uniqueLayerName(src.name + " copy"),
+                             { tint: src.tint, opacity: src.opacity, ref: src.ref });
+      copy.canvas.getContext("2d").drawImage(src.canvas, 0, 0);
+      copy.ops = JSON.parse(JSON.stringify(src.ops));     // strokes stay editable
+      copy.basePng = src.basePng;
+      if (copy.basePng) { copy.baseImg = new Image(); copy.baseImg.src = copy.basePng; }
+      copy._stamp = 1;
+    } else {
+      copy = makeObjectLayer(uniqueLayerName(src.name + " copy"), src.role);
+      copy.objects = JSON.parse(JSON.stringify(src.objects));
+      copy.opacity = src.opacity;
+    }
+    copy.filter = src.filter ? { ...src.filter } : null;
+    copy.visible = src.visible;
+    insertAboveActive(copy);
+    UI.flash(`Duplicated as "${copy.name}"`);
   });
   $("#btn-layer-del").addEventListener("click", async () => {
     const l = activeLayer();
-    if (l.kind === "objects") return UI.flash("Panels/Lettering layers are structural — hide them instead.");
-    if (App.layers.filter(x => x.kind === "raster").length <= 1)
+    if (l.kind === "objects" && layersByRole(l.role).length <= 1)
+      return UI.flash(`This is the only ${l.role} layer — hide it instead of deleting it.`);
+    if (l.kind === "raster" && App.layers.filter(x => x.kind === "raster").length <= 1)
       return UI.flash("Keep at least one raster layer.");
     if (!await UI.confirm(`Delete layer "${l.name}"?`)) return;
+    Tools.lassoClear();
     App.layers.splice(App.activeLayer, 1);
     App.activeLayer = Math.max(0, App.activeLayer - 1);
+    App.selection = null;
     Undo.clear();     // snapshot closures reference the dead layer
     App.dirty = true; UI.refreshLayers();
   });
+
+  /* ---------- per-layer color filter ---------- */
+  {
+    const sel = $("#lf-preset");
+    sel.innerHTML = Object.entries(FILTER_PRESETS)
+      .map(([k, p]) => `<option value="${k}">${p.label}</option>`).join("") +
+      `<option value="custom">Custom</option>`;
+    sel.addEventListener("change", () => {
+      const l = activeLayer();
+      if (sel.value === "custom") return syncLayerControls();
+      const { label, ...vals } = FILTER_PRESETS[sel.value];
+      l.filter = sel.value === "none" ? null : { ...vals, preset: sel.value };
+      App.dirty = true; UI.refreshLayers();
+    });
+    for (const k of FKEYS) $("#lf-" + k).addEventListener("input", e => {
+      const l = activeLayer();
+      const f = { ...FILTER_NEUTRAL, ...(l.filter || {}), [k]: +e.target.value, preset: "custom" };
+      l.filter = filterCss(f) === "none" ? null : f;
+      $("#lbl-lf-" + k).textContent = e.target.value;
+      App.dirty = true;
+    });
+    for (const k of FKEYS) $("#lf-" + k).addEventListener("change", () => UI.refreshLayers());
+    const applyTint = () => {
+      const l = activeLayer();
+      if (l.kind !== "raster") return;
+      l.tint = $("#lf-tint").checked ? $("#lf-tintcolor").value : null;
+      App.dirty = true; UI.refreshLayers();
+    };
+    $("#lf-tint").addEventListener("change", applyTint);
+    $("#lf-tintcolor").addEventListener("input", () => { if ($("#lf-tint").checked) applyTint(); });
+    $("#lf-reset").addEventListener("click", () => {
+      const l = activeLayer();
+      l.filter = null;
+      App.dirty = true; UI.refreshLayers();
+    });
+  }
+
+  /* ---------- import an image to trace ----------
+     Every import gets a layer of its own, flagged `ref`: it sits under the
+     art at half opacity, is skipped by every export, and arrives selected
+     so it can be positioned at once. Letting go of it locks the layer. */
+  async function importImageFile(file) {
+    if (!file || !/^image\//.test(file.type)) return UI.flash("That file isn't an image.");
+    let url;
+    try {
+      url = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result); r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+    } catch { return UI.flash("Couldn't read that file."); }
+    const img = new Image();
+    img.src = url;
+    try { await img.decode(); } catch { return UI.flash("Couldn't decode that image."); }
+    if (!img.naturalWidth) return UI.flash("That image is empty.");
+    // fit inside the trim area
+    const P = App.page;
+    const s = Math.min((P.w - 2 * P.bleed) / img.naturalWidth, (P.h - 2 * P.bleed) / img.naturalHeight);
+    const w = Math.round(img.naturalWidth * s), h = Math.round(img.naturalHeight * s);
+    // store it no larger than it is drawn: a 12-megapixel photo would
+    // otherwise ride along in every save
+    const c = document.createElement("canvas");
+    c.width = Math.min(img.naturalWidth, w); c.height = Math.min(img.naturalHeight, h);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    const keepAlpha = /png|gif|webp|svg/.test(file.type);
+    const src = c.toDataURL(keepAlpha ? "image/png" : "image/jpeg", 0.9);
+    const stored = new Image();
+    stored.src = src;
+    try { await stored.decode(); } catch { return UI.flash("Couldn't prepare that image."); }
+
+    const layer = makeRasterLayer(uniqueLayerName("Reference"), { ref: true, opacity: 0.5 });
+    const op = { kind: "image", src, x: Math.round((P.w - w) / 2), y: Math.round((P.h - h) / 2), w, h };
+    layer.canvas.getContext("2d").drawImage(stored, op.x, op.y, w, h);
+    layer.ops.push(op);
+    layer._stamp = 1;
+    // above the bottom Panels layer(s) — their white fill would hide it —
+    // and below everything you draw on
+    const keep = activeLayer();
+    let at = 0;
+    while (at < App.layers.length && App.layers[at].kind === "objects" &&
+           App.layers[at].role === "panels") at++;
+    App.layers.splice(at, 0, layer);
+    App.activeLayer = Math.max(0, App.layers.indexOf(keep));
+    App.dirty = true;
+    UI.refreshLayers();
+    Tools.selectOps(layer, [0]);
+    UI.flash(`"${layer.name}" added on its own layer — drag to place, squares to resize, knob to rotate, Esc when done. It never exports.`);
+  }
+  UI.importImageFile = importImageFile;
+  $("#btn-import-image").addEventListener("click", () => $("#file-import").click());
+  $("#file-import").addEventListener("change", e => {
+    importImageFile(e.target.files[0]);
+    e.target.value = "";               // picking the same file again must fire
+  });
+  {
+    const stage = $("#stage");
+    stage.addEventListener("dragover", e => {
+      if ([...(e.dataTransfer?.types || [])].includes("Files")) e.preventDefault();
+    });
+    stage.addEventListener("drop", e => {
+      const f = [...(e.dataTransfer?.files || [])].find(x => /^image\//.test(x.type));
+      if (!f) return;
+      e.preventDefault();
+      importImageFile(f);
+    });
+    window.addEventListener("paste", e => {
+      if (["TEXTAREA", "INPUT"].includes(e.target.tagName)) return;
+      const item = [...(e.clipboardData?.items || [])].find(x => /^image\//.test(x.type));
+      if (item) { e.preventDefault(); importImageFile(item.getAsFile()); }
+    });
+  }
   const moveLayer = dir => {
     const i = App.activeLayer, j = i + dir;
     if (j < 0 || j >= App.layers.length) return;
@@ -393,7 +588,49 @@ const UI = {};
     const hidden = Settings.get("hiddenTools");
     $$(".tool").forEach(b =>
       b.style.display = hidden.includes(b.dataset.tool) ? "none" : "");
+    App.dirty = true;                 // the layer-name badge may have toggled
   };
+
+  /* ---------- finger double-tap: a shortcut you choose ---------- */
+  let toolBeforeEraser = "ink";
+  const TAP_ACTIONS = {
+    "none":       ["Nothing", () => {}],
+    "layer-up":   ["Step to the next layer up", () => UI.cycleLayer(1)],
+    "layer-down": ["Step to the next layer down", () => UI.cycleLayer(-1)],
+    "undo":       ["Undo", () => { Undo.undo(); UI.flash("Undo"); }],
+    "redo":       ["Redo", () => { Undo.redo(); UI.flash("Redo"); }],
+    "eraser":     ["Swap between eraser and your last tool", () => {
+      if (Tools.state.current === "eraser") setTool(toolBeforeEraser);
+      else { toolBeforeEraser = Tools.state.current; setTool("eraser"); }
+      UI.flash("Tool: " + (TOOL_LABELS[Tools.state.current] || Tools.state.current));
+    }],
+    "fit":        ["Fit the page to the screen", () => Engine.fitPage()],
+    "grey":       ["Toggle the greyscale value check", () => UI.setViewFilter(App.viewFilter === "grey" ? "none" : "grey")],
+    "refs":       ["Show / hide reference and guide layers", () => {
+      const refs = App.layers.filter(l => l.ref || isGuideLayer(l));
+      if (!refs.length) return UI.flash("No reference or guide layers on this page.");
+      const show = !refs.some(l => l.visible);
+      refs.forEach(l => l.visible = show);
+      App.dirty = true; UI.refreshLayers();
+      UI.flash(show ? "References shown" : "References hidden");
+    }],
+    "panels":     ["Hide / show the side panels", () => { panelsHiddenByTab = !panelsHiddenByTab; UI.applySettings(); }],
+  };
+  UI.doubleTap = () => (TAP_ACTIONS[Settings.get("doubleTap")] || TAP_ACTIONS.none)[1]();
+
+  /* ---------- view-check filter (Guides tab) ---------- */
+  {
+    const sel = $("#g-viewfilter");
+    sel.innerHTML = Object.entries(Engine.VIEW_FILTERS)
+      .map(([k, [label]]) => `<option value="${k}">${label}</option>`).join("");
+    UI.setViewFilter = key => {
+      Engine.setViewFilter(key);
+      sel.value = App.viewFilter;
+      UI.flash(App.viewFilter === "none" ? "View filter off"
+        : `View: ${Engine.VIEW_FILTERS[App.viewFilter][0]} (view only — not exported)`);
+    };
+    sel.addEventListener("change", () => UI.setViewFilter(sel.value));
+  }
 
   function openSettings() {
     const c = k => Settings.get(k) ? "checked" : "";
@@ -423,6 +660,15 @@ const UI = {};
       <label class="chk"><input type="checkbox" id="set-rail" ${c("showToolRail")}> Show left tool rail</label>
       <label class="chk"><input type="checkbox" id="set-side" ${c("showSidebar")}> Show right sidebar</label>
       <div class="hint"><b>Tab</b> hides/shows both at once — distraction-free drawing.</div>
+      <label class="chk"><input type="checkbox" id="set-layername" ${c("showLayerName")}>
+        Show the active layer's name at the page's top corner</label>
+      <h3 class="set-h">Shortcuts</h3>
+      <label>Finger double-tap on the page
+        <select id="set-doubletap">${Object.entries(TAP_ACTIONS).map(([k, [lbl]]) =>
+          `<option value="${k}" ${Settings.get("doubleTap") === k ? "selected" : ""}>${lbl}</option>`).join("")}</select></label>
+      <div class="hint">Two quick taps with one finger. Fingers never draw, so this
+        is safe to use mid-drawing. On the keyboard, <b>,</b> and <b>.</b> (or
+        PageDown / PageUp) step down and up the layer stack.</div>
       <div class="muted" style="font-size:12px;margin:8px 0 4px">Tools on the rail:</div>
       <div class="set-tools">${Object.entries(TOOL_LABELS).map(([k, lbl]) => `
         <label class="chk"><input type="checkbox" class="set-tool" data-tool="${k}"
@@ -447,6 +693,9 @@ const UI = {};
     bind("#set-savehist", "saveStrokeHistory");
     bind("#set-rail", "showToolRail");
     bind("#set-side", "showSidebar");
+    bind("#set-layername", "showLayerName");
+    modal.querySelector("#set-doubletap").addEventListener("change",
+      e => Settings.set("doubleTap", e.target.value));
     bind("#set-autosave", "autosave");
     bind("#set-bleed", "exportBleed");
     modal.querySelector("#set-autosavemin").addEventListener("change", e =>
@@ -743,6 +992,8 @@ const UI = {};
       return;
     }
     if (e.key === "Escape") { Tools.cancelPlacing(); Tools.lassoClear(); return; }
+    if (e.key === "." || e.key === "PageUp") { UI.cycleLayer(1); e.preventDefault(); return; }
+    if (e.key === "," || e.key === "PageDown") { UI.cycleLayer(-1); e.preventDefault(); return; }
     const tool = KEYMAP[e.key.toLowerCase()];
     if (tool) return setTool(tool);
     if (e.key === "Delete" || e.key === "Backspace") {
