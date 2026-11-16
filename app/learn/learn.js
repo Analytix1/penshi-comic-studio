@@ -415,7 +415,7 @@ const Learn = (() => {
     const pg = curPage();
     if (active.step < pg.steps.length - 1) {
       active.step++;
-    } else if (active.page < active.l.pages.length - 1) {
+    } else if (active.page < Math.min(active.l.pages.length, App.pages.length) - 1) {   // an older attempt may have fewer pages
       await saveAttempt(true);
       active.page++; active.step = 0;
       await switchPage(active.page);

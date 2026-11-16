@@ -185,3 +185,8 @@ serialization so reference layers reload."
 - The lesson runner (`learn.js`) makes one locked `guide: true` layer per level, each in its own tint. A step may set `level: n` (1-based); otherwise levels are revealed evenly across the page's steps. The lesson panel has a toggle per level.
 - Layers: several layers of one kind are allowed; `ref` layers (imported tracing images) never export; `filter` is a non-destructive per-layer colour filter.
 - Not done yet: the step text in sections 4–5 was not rewritten around the new levels; `speciesLineup` is registered but not used by a lesson.
+
+## Deep-dive pages
+
+- `app/learn/guides-more.js` holds extra guide pages (long poses, walk/run/jump, turnarounds, anatomy close-ups, one page per species).
+- `app/learn/curriculum/08-deep-dives.js` appends those pages to existing lessons with `extend(lessonId, minutes, pages)`. Pages are appended, never inserted, so saved step progress keeps its place. Add further pages the same way.
