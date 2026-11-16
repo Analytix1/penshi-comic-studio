@@ -248,10 +248,13 @@ course that runs on the same canvas and tools you make comics with:
   pose site in the next window, and the page clears itself when the timer hits zero.
   Every pose is captured; when the drill ends they're laid out on a contact-sheet
   page that's saved to your Portfolio. `P` pauses, `N` skips ahead.
-- **Lessons draw on the page.** Each practice page gets a locked, blue **Guide**
-  layer with construction diagrams to work over — they stay on the page for good
-  and save with your work. Steps switch you to the right tool and layer, and even
-  turn on the perspective grid when a lesson needs it.
+- **Lessons draw on the page, one construction step at a time.** Each practice page
+  gets locked **Guide** layers to trace and work over: gesture, then mannequin, then
+  landmarks, then contour, each on its own layer in its own colour. The guides are
+  built from real 3-D geometry (figures, heads, hands, animals, vehicles, buildings
+  in true perspective), appear as you move through the steps, and can be toggled
+  individually from the lesson panel. They save with your work. Steps also switch
+  you to the right tool and layer, and turn on the perspective grid when needed.
 - **Study from real sources.** Every lesson cites its references — Drawabox, Proko,
   Loomis and Bridgman (public domain), Line of Action, Posemaniacs, museum
   collections, NASA landform imagery and more — with a free / freemium / paid badge.
@@ -264,6 +267,19 @@ course that runs on the same canvas and tools you make comics with:
 Color lessons use the **color wheel in the Tool tab** — a hue ring with separate
 Saturation and Value scales and harmony modes (complementary, analogous, triadic,
 split-complementary, tetradic, monochromatic) that works everywhere in the app.
+
+## Layers, tracing and filters
+
+- **Several layers of any kind.** Add more raster, blue-pencil, panel or lettering
+  layers from the Layers tab; duplicate one, or double-click its name to rename it.
+- **Import an image to trace.** Import, drop or paste a picture and it lands on its
+  own locked reference layer, which is never included in an export.
+- **Cycle layers** with `.` / `,` (or PageUp / PageDown), or with a finger double-tap.
+  Settings lets you choose what the double-tap does, and whether the active layer's
+  name is shown at the top corner of the page.
+- **Colour filters.** Each layer has non-destructive hue, saturation, brightness,
+  contrast and recolour controls. Guides → View check previews the whole page in
+  greyscale or simulated colour-blindness without changing the export.
 
 ## The workflow it teaches
 

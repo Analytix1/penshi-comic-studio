@@ -35,8 +35,8 @@ PENSHI_CURRICULUM.push({
         { title: "Balloons on the thumbnails", exemplar: "balloonOrder",
           hints: ["Speech balloon tool: drag, type, then drag the tail to the speaker's mouth.", "Reading order: left-to-right, top-to-bottom — the first speaker's balloon is higher-left.", "Under 25 words per balloon."],
           steps: [
-            { h: "Place balloons first", t: "On your six-panel thumbnail page, add the dialogue with the Speech Balloon tool before drawing any finished art. Position each so it doesn't cover a face and reads in the right order. Drag every tail to the speaker's mouth.", tool: "balloon" },
-            { h: "Captions and thoughts", t: "A Caption for narration ('LATER…') in the panel corner; a Thought balloon for interior voice. Notice the different shapes mean different things to the reader without a single word of explanation.", tool: "caption" },
+            { h: "Place balloons first", level: 2, t: "On your six-panel thumbnail page, add the dialogue with the Speech Balloon tool before drawing any finished art. Position each so it doesn't cover a face and reads in the right order. Drag every tail to the speaker's mouth.", tool: "balloon" },
+            { h: "Captions and thoughts", level: 2, t: "A Caption for narration ('LATER…') in the panel corner; a Thought balloon for interior voice. Notice the different shapes mean different things to the reader without a single word of explanation.", tool: "caption" },
             { h: "SFX as art", t: "A sound effect with the Burst tool — big, integrated into the composition, its shape matching the sound (jagged for a crash, round for a boom). SFX are part of the drawing, not stuck on top.", tool: "burst" },
             { h: "Edit for length", t: "Count words in each balloon. Over 25? Split it into two linked balloons or cut. Comics dialogue is compressed — every word costs panel space.", tool: "select" },
           ] },

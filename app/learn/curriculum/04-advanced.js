@@ -57,9 +57,9 @@ PENSHI_CURRICULUM.push({
       pages: [
         { title: "The hand block", exemplar: "handBlock",
           steps: [
-            { h: "Palm box", t: "Copy the guide: the palm is a box, slightly cupped, about as long as it is wide (a little longer). Draw it at four angles: flat toward you, edge-on, from the back, tilted. The box tells you where the fingers and thumb attach — the fingers from the far edge, the thumb from a side plane.", tool: "pencil", layer: "Pencils" },
-            { h: "The thumb wedge", t: "The thumb's base is a wedge (the thenar mass) on the side of the palm box, angled about 45° out. The thumb itself is two tube segments from the wedge's tip. It can swing across the palm — draw the wedge in three positions: out, forward, tucked.", tool: "pencil" },
-            { h: "Fingers fan from an arc", t: "The knuckles lie on an arc, not a straight line. Each finger is three tapered tubes; the middle finger is longest, the index and ring about equal, the pinky shortest and set lower. Draw the four fingers straight, then all curled together — they curl on a shared arc.", tool: "pencil" },
+            { h: "Palm box", level: 1, t: "Copy the guide: the palm is a box, slightly cupped, about as long as it is wide (a little longer). Draw it at four angles: flat toward you, edge-on, from the back, tilted. The box tells you where the fingers and thumb attach — the fingers from the far edge, the thumb from a side plane.", tool: "pencil", layer: "Pencils" },
+            { h: "The thumb wedge", level: 1, t: "The thumb's base is a wedge (the thenar mass) on the side of the palm box, angled about 45° out. The thumb itself is two tube segments from the wedge's tip. It can swing across the palm — draw the wedge in three positions: out, forward, tucked.", tool: "pencil" },
+            { h: "Fingers fan from an arc", level: 2, t: "The knuckles lie on an arc, not a straight line. Each finger is three tapered tubes; the middle finger is longest, the index and ring about equal, the pinky shortest and set lower. Draw the four fingers straight, then all curled together — they curl on a shared arc.", tool: "pencil" },
             { h: "Proportions", t: "Measure on your own hand: the palm ≈ the middle finger. Each finger's segments shorten toward the tip (roughly 3 : 2 : 1.5). The thumb reaches the middle knuckle of the index finger. Draw a hand from memory and check these.", tool: "pencil" },
           ] },
         { title: "Hands in use", exemplar: "handPoses",
@@ -218,7 +218,7 @@ PENSHI_CURRICULUM.push({
         { title: "Mirroring and stacking", exemplar: "mirrorStack",
           hints: ["Symmetric objects (a car, a chair, a face) are mirrored across a center plane.", "Find the center plane's diagonals in perspective, then reflect points across it.", "Stack: a box on a box on a box shares VPs and the vertical."],
           steps: [
-            { h: "Mirror across a center line", t: "Draw a two-point box and a shape on its left face (a window). To mirror it onto the right side of the same face: find the face center with diagonals, then measure the window's distance from the center along the receding edge and duplicate it on the other side using a diagonal transfer. The mirrored window is smaller — correctly.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
+            { h: "Mirror across a center line", level: 2, t: "Draw a two-point box and a shape on its left face (a window). To mirror it onto the right side of the same face: find the face center with diagonals, then measure the window's distance from the center along the receding edge and duplicate it on the other side using a diagonal transfer. The mirrored window is smaller — correctly.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
             { h: "A symmetric object", t: "Construct a simple chair in two-point: a seat box, four leg tubes at the corners, a back plane. The left legs mirror the right across the seat's center line. This is the method for cars, robots, buildings, thrones.", tool: "pencil" },
             { h: "Stack a tower", t: "Boxes on boxes, each smaller, all on one vertical axis, all sharing VPs. Add a cylinder (a tank) on top using the ellipse-in-a-square method. Ink the tower with heavier lines at the base — weight sits low.", tool: "ink", layer: "Inks" },
           ] },
@@ -247,15 +247,15 @@ PENSHI_CURRICULUM.push({
       pages: [
         { title: "Ellipses at any angle", exemplar: "ellipseAxis",
           steps: [
-            { h: "Minor axis = the axle", t: "A wheel is an ellipse whose MINOR axis points along the axle. Draw an axle line aimed at a VP; at its end draw an ellipse whose minor axis lies on the axle. Draw a second wheel further along the same axle: same rule, smaller, slightly different degree. That's a car's wheelbase — get this and the car works.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
+            { h: "Minor axis = the axle", level: 2, t: "A wheel is an ellipse whose MINOR axis points along the axle. Draw an axle line aimed at a VP; at its end draw an ellipse whose minor axis lies on the axle. Draw a second wheel further along the same axle: same rule, smaller, slightly different degree. That's a car's wheelbase — get this and the car works.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
             { h: "Ellipse in a perspective square", t: "For a horizontal circle (a table, a manhole, a fountain), draw the perspective square first, diagonals for center, then fit the ellipse to the four midpoints. Three at different depths. Then a VERTICAL square on a wall for an arch or a clock.", tool: "pencil" },
             { h: "Cylinders on their side", t: "A barrel lying on the ground: an axle aimed at a VP, an ellipse at each end whose minor axes are on the axle, connected by lines. Draw a pile of three barrels. Then a pipe bending 90° (two cylinders meeting with a curved seam).", tool: "pencil" },
           ] },
         { title: "Figures dropped into a scene", exemplar: "figuresInScene",
           hints: ["Grid on. Build a simple street in two-point.", "Place figures at 4 depths using the height-transfer method — eyes on the horizon if standing and your height.", "Then one figure sitting, one on a step, one far away."],
           steps: [
-            { h: "The horizon does the work", t: "For standing figures of your own height, their EYES touch the horizon wherever they stand. Draw four figures at four depths; sizes come out automatically. A child's eyes sit below the horizon; someone on a box, above it.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
-            { h: "Transfer a height off the ground", t: "A figure sitting on a wall: draw a standing figure at that depth first (eyes on the horizon), then 'cut off' the height of the wall using the height-transfer lines, and build the sitting figure at that scale. Never guess a distant figure's size — transfer it.", tool: "pencil" },
+            { h: "The horizon does the work", level: 2, t: "For standing figures of your own height, their EYES touch the horizon wherever they stand. Draw four figures at four depths; sizes come out automatically. A child's eyes sit below the horizon; someone on a box, above it.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
+            { h: "Transfer a height off the ground", level: 3, t: "A figure sitting on a wall: draw a standing figure at that depth first (eyes on the horizon), then 'cut off' the height of the wall using the height-transfer lines, and build the sitting figure at that scale. Never guess a distant figure's size — transfer it.", tool: "pencil" },
             { h: "Mannequins, not stick figures", t: "Build two of the figures as full mannequins whose boxes obey the scene's VPs (the ribcage box converges to the same VPs as the buildings). Ink the scene. This page proves you can put anyone anywhere.", tool: "ink", layer: "Inks" },
           ] },
       ],

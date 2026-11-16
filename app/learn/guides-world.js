@@ -390,7 +390,7 @@
     const room = () => [G3.path([[-5, 0, -4], [5, 0, -4], [5, 0, 4], [-5, 0, 4]], { close: true, lw: 0.8 }), G3.path([[-5, 0, -4], [-5, 5.5, -4], [5, 5.5, -4], [5, 0, -4]], { lw: 0.8 }),
                         G3.path([[-5, 5.5, -4], [-5, 5.5, 4], [-5, 0, 4]], { lw: 0.8 }), G3.path([[-5, 1.6, -2.4], [-5, 4.4, -2.4], [-5, 4.4, 0.6], [-5, 1.6, 0.6]], { close: true, lw: 1.3 })];
     const things = () => [...Rigs.figure({ root: [0.4, 0, 0.2], pelvis: [20, 0, 0], chest: [20, 0, 0] }).solids.map(s => ({ ...s, rings: null, decals: null })),
-                          B([3.0, 1.2, -1.6], [2.4, 0.2, 1.4]), ...[[2, -2.1], [4, -2.1], [2, -1.1], [4, -1.1]].map(([x, z]) => B([x, 0.55, z], [0.16, 1.1, 0.16]))];
+                          B([3.0, 3.0, -1.6], [3.4, 0.25, 2.2]), ...[[1.5, -2.5], [4.5, -2.5], [1.5, -0.7], [4.5, -0.7]].map(([x, z]) => B([x, 1.44, z], [0.22, 2.88, 0.22]))];
     const sample = it => it.type === "mesh" ? it.verts
       : it.type === "cyl" ? [0, 1, 2, 3, 4, 5, 6, 7].flatMap(i => { const a = i * 0.785; return [[it.a, it.ra], [it.b, it.rb]].map(([p, r]) => add(p, [Math.cos(a) * r, 0, Math.sin(a) * r])); })
       : Array.from({ length: 26 }, (_, i) => { const a = i * 2.399, b = Math.acos(1 - 2 * (i + 0.5) / 26); return add(it.c, G3.ap(it.R, [it.r[0] * Math.sin(b) * Math.cos(a), it.r[1] * Math.cos(b), it.r[2] * Math.sin(b) * Math.sin(a)])); });
@@ -403,7 +403,7 @@
         const c = cr();
         draw(ctx, c, [...room(), ...things()]);
         const a = frac(c, [-5, 3.4, -0.9]), b = frac(c, [-2.2, 1.6, -0.2]);
-        K.arrow(ctx, a[0], a[1], b[0], b[1]); K.label(ctx, a[0] - 0.02, a[1] - 0.05, "KEY — the window", { fs: 0.115, bold: true });
+        K.arrow(ctx, a[0], a[1], b[0], b[1]); K.label(ctx, a[0] + 0.015, a[1] - 0.03, "KEY — the window", { fs: 0.115, bold: true });
         K.note(ctx, 0.82, "Level 1: the room, a figure, a table. Decide the key light before anything is shaded — here it is the window.");
         K.note(ctx, 0.86, "Level 2: every plane takes a value by how squarely it faces the window, and every form throws a shadow AWAY from it.");
         K.note(ctx, 0.9, "The cast shadows are what pin the figure and the table to the floor. All of them point the same way.");
@@ -456,7 +456,7 @@
                                 G3.ell([x + 0.9 * s, 2.2 * s, z + 0.3 * s], [0.8 * s, 0.7 * s, 0.8 * s], I), G3.ell([x - 0.8 * s, 2.3 * s, z - 0.2 * s], [0.75 * s, 0.65 * s, 0.7 * s], I)];
     const bank = k => Rigs.smooth(Array.from({ length: 9 }, (_, i) => { const z = 6 - i * 4.2; return [Math.sin(z * 0.28) * 3.2 + k * (0.9 + (6 - z) * 0.03), 0, z]; }), 6);
     const trees = () => [...broad(-4.6, 3, 1), ...conifer(4.2, 1.5, 1), ...conifer(5.6, -1, 1), ...broad(-6.5, -8, 1), ...conifer(-3.6, -12, 1), ...conifer(6.5, -16, 1), ...broad(3, -22, 1), ...conifer(-7, -24, 1)];
-    const cwp = () => cam(0.5, 0.42, 0.05, { yaw: 0, pitch: 12, dist: 16, target: [0, 1.8, 4] });
+    const cwp = () => cam(0.5, 0.5, 0.068, { yaw: 0, pitch: 12, dist: 16, target: [0, 1.8, 4] });
     reg("waterPlants", [
       ["flow lines", ctx => {
         K.title(ctx, "Water and plants: flow first, then masses that shrink with distance");
