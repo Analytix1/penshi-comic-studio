@@ -24,7 +24,7 @@ PENSHI_CURRICULUM.push({
             { h: "Skull and spine", t: "The cranium ball, the cheekbone arch, the jaw angle, the mastoid behind the ear. The spine: a double-S curve (neck forward, upper back backward, lower back forward) — never straight. Draw the spine curve from the side.", tool: "pencil" },
             { h: "Landmarks from reference", t: "Line of Action figure tool, 5-minute poses. Draw the gesture and mannequin, then mark every landmark you can identify from the photo. Six poses. The landmarks will shift with the pose but their DISTANCES from each other on the same bone never change.", tool: "pencil" },
           ] },
-        { title: "The simplified skeleton",
+        { title: "The simplified skeleton", exemplar: "simpleSkeleton",
           hints: ["Ribcage: an egg with the front cut flat. Pelvis: a butterfly/bucket. Spine: the S. Limbs: single bones (upper) and paired bones (lower — radius/ulna, tibia/fibula).", "Draw the simplified skeleton in three poses inside the mannequin."],
           steps: [
             { h: "The torso skeleton", t: "Draw the ribcage egg (open at the bottom-front where the thoracic arch is), the spine S connecting it to the pelvis bucket, the shoulder girdle (clavicles in front, shoulder blades behind) sitting ON the ribcage like a yoke — it moves independently, which is why shoulders shrug.", tool: "pencil", layer: "Pencils" },
@@ -46,7 +46,7 @@ PENSHI_CURRICULUM.push({
             { h: "Abdominals, obliques, back", t: "Abdominals: a block from the ribcage to the pelvis with horizontal divisions (they COMPRESS when bending forward, STRETCH when arching). Obliques: the masses on the sides of the waist that twist the torso. Back: the two long columns beside the spine (erectors) and the wide lats from the armpit sweeping down. Draw a torso twisting — one oblique compressed, one stretched.", tool: "pencil" },
             { h: "Glutes, quadriceps, hamstrings, calves", t: "Glutes: the big masses behind the pelvis — they straighten the hip (bulge when standing from a squat). Quadriceps: the teardrop on the front of the thigh, ending in the kneecap tendon — bulges when the knee straightens. Hamstrings behind. Calf: high inside, lower outside, ending in the Achilles tendon. Draw a leg standing and a leg crouching.", tool: "pencil" },
           ] },
-        { title: "Movement studies",
+        { title: "Movement studies", exemplar: "flexExtend",
           hints: ["Posemaniacs muscle mode: rotate a pose and watch which masses bulge.", "Six pairs: same limb, two positions. Draw the mass that's shortened bulging and the stretched one flattened."],
           steps: [
             { h: "Flex and extend", t: "Pick a joint. Draw it in both extreme positions from Posemaniacs' muscle view. The muscle that SHORTENED is bulged and rounder; the one that lengthened is flat and long. Six joints: elbow, knee, shoulder (arm up/down), hip, spine (arch/curl), neck.", tool: "pencil", layer: "Pencils" },
@@ -91,7 +91,7 @@ PENSHI_CURRICULUM.push({
             { h: "Attitude from a third", t: "The face, the expression, the hands, the props — from the third reference and from your own head. What does this person do with their hands when nervous? Give them one prop that tells their story (a doctor's worn satchel, a guard's untied boot).", tool: "pencil" },
             { h: "Synthesis pass", t: "Now draw the character clean, from scratch, without looking at any reference — only at your three boxes. This is where it becomes yours: the parts blend because your hand blends them. Ink it and run the silhouette test.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Model sheet and variations",
+        { title: "Model sheet and variations", exemplar: "modelSheet",
           hints: ["Turnaround: front, three-quarter, side, back — same proportions (Head-2 and Body-2 methods).", "Expression sheet: 4 expressions (Head-4).", "Color: one harmony from the Color chapters, one accent."],
           steps: [
             { h: "Turnaround", t: "Draw the character front, three-quarter, side and back on one page, heads aligned on the same ruler lines. This is the model sheet every studio makes so the character stays consistent across a hundred panels. Costume details must match across views — check them.", tool: "pencil", layer: "Pencils" },
@@ -120,7 +120,7 @@ PENSHI_CURRICULUM.push({
             { h: "Skull and neck", t: "The skull: a cranium ball + a muzzle box, joined at the eyes. The neck is a tube from the skull to the top of the ribcage, with the throat line lower than the spine line. Draw the head from the side and three-quarter.", tool: "pencil" },
             { h: "Reference: six dogs", t: "Line of Action's animal tool (filter to dogs) or Unsplash 'dog standing side'. 3-minute constructions: three masses, spine, four legs with joints labeled. Different breeds change the proportions, never the joints. Ink one.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Skeleton check",
+        { title: "Skeleton check", exemplar: "limbHomology",
           hints: ["Open a dog skeleton on Sketchfab (search 'dog skeleton') or Wikimedia Zootomy.", "Rotate it. Find every joint you labeled. Draw the skeleton simplified over your mannequin."],
           steps: [
             { h: "Rotate a real skeleton", t: "Sketchfab has rotatable scans. Find the scapula lying on the ribs, the elbow, the tiny wrist, the long metacarpals, the knee up near the pelvis, the hock. Draw the simplified skeleton from the side.", tool: "pencil", layer: "Pencils" },
@@ -162,7 +162,7 @@ PENSHI_CURRICULUM.push({
             { h: "Feathers as groups", t: "Never individual feathers first. The wing has rows: primaries (the long hand feathers), secondaries (forearm), coverts (small ones over the base). The body has masses: breast, back, tail fan. Draw a flying bird as feather GROUPS, then add a few individual feathers only at the wingtips and tail.", tool: "pencil" },
             { h: "Three birds, three shapes", t: "Unsplash: a sparrow (round, short), a heron (all neck and legs), a hawk (broad wings, hooked beak). Construct all three. The egg + ball + Z-wing plan holds for every one; only the proportions change. Ink the heron.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Reptiles and fish",
+        { title: "Reptiles and fish", exemplar: "reptileFish",
           hints: ["Lizard/crocodile: sprawling legs out to the sides, the body low, the tail a continuation of the spine.", "Snake: a spine and ribs and nothing else — a tube that bends in S-curves.", "Fish: a spindle, fins as planes, the tail a fan."],
           steps: [
             { h: "The sprawl", t: "A lizard: a long low ribcage, a spine that continues into a tail as long as the body, and legs that go OUT sideways from the body before bending down (the elbow and knee point outward). Draw it from above (the classic view — legs splayed, tail curving) and from the side. A crocodile is a lizard with a boxier skull and a taller tail.", tool: "pencil", layer: "Pencils" },
@@ -177,14 +177,14 @@ PENSHI_CURRICULUM.push({
       why: "Invertebrates are the exoskeleton plan: hard shells with joints, which makes them pure geometry — ideal for construction drawing and the basis of countless comic creatures. Skulls are where you learn to see 'species' in bone: eye size, jaw length, tooth type tell you what an animal does.",
       refs: ["drawabox-l5", "commons-zootomy", "sketchfab-skel", "unsplash", "whitlatch"],
       pages: [
-        { title: "Exoskeletons",
+        { title: "Exoskeletons", exemplar: "insectPlan",
           hints: ["Beetle: head, thorax, abdomen — three volumes. Six legs from the thorax, each with a hip, a thigh, a shin, and a foot chain.", "Spider: two segments (cephalothorax + abdomen), eight legs.", "Snail/octopus: soft body, but the shell is a spiral cone; tentacles are tapered tubes with a rhythm."],
           steps: [
             { h: "The beetle", t: "Three volumes in a row: a small head (ball with mandibles), a thorax (box — all six legs attach HERE, never the abdomen), and a big abdomen (egg) under wing cases. Each leg: coxa (hip) → femur → tibia → tarsus (a chain of small segments). Draw from above and from the side, legs bent like a folding chair.", tool: "pencil", layer: "Pencils" },
             { h: "The spider", t: "Two volumes: a fused head-thorax (a shield) and a round abdomen. Eight legs from the shield, each seven segments, arranged like a cage around the body. Draw it from above — the leg rhythm (two pairs forward, two back) is the whole drawing.", tool: "pencil" },
             { h: "Spirals and tentacles", t: "A snail shell is a cone rolled into a spiral — draw the cone first, then coil it, contour lines wrapping. An octopus: a soft bag body and eight tapered tubes; draw the tubes with a rhythm (Gesture chapter) and suckers as contour ellipses. Both are pure form drawing.", tool: "pencil" },
           ] },
-        { title: "Comparative skulls",
+        { title: "Comparative skulls", exemplar: "skullCompare",
           hints: ["Wikimedia Zootomy or Sketchfab: skulls of a dog, a horse, a cat, a bird, a human.", "For each: cranium size vs jaw length, eye socket size and position (front = predator, side = prey), tooth type."],
           steps: [
             { h: "Five skulls, one method", t: "Each skull: a cranium ball + a jaw box, joined at the eye socket. Draw all five from the side. Note the ratio of ball to box: human (big ball, tiny box), dog (equal), horse (tiny ball, huge box), cat (round ball, short box), bird (ball with a beak cone).", tool: "pencil", layer: "Pencils" },
@@ -199,14 +199,14 @@ PENSHI_CURRICULUM.push({
       why: "A correct animal standing still is a diagram; an animal mid-stride, ears back, is a character. Ken Hultgren's Disney-era method — gesture first, construction second, then caricature — is how animated animals were designed, and it's the method for comics too.",
       refs: ["hultgren", "loa-animals", "force", "unsplash", "pexels"],
       pages: [
-        { title: "Gaits",
+        { title: "Gaits", exemplar: "gaits",
           hints: ["Pexels video: search 'dog running slow motion' — pause frames.", "Walk: diagonal pairs move together. Trot: opposite diagonals. Gallop: front pair, then hind pair, with a suspended moment.", "Draw 4 frames of each, gesture only."],
           steps: [
             { h: "The walk", t: "Four-beat: each foot lands separately, always three on the ground. Draw four frames of a dog walking as gesture + mannequin, paying attention to the spine's slight wave and the head bob. Reference a paused video.", tool: "pencil", layer: "Pencils" },
             { h: "The gallop", t: "The horse's gallop has a moment when all four feet are off the ground with the legs gathered under the body — and a moment fully stretched. Draw both frames; the spine flexes and extends like a bow. This is the frame comics use for any running animal.", tool: "pencil" },
             { h: "Flight and swim", t: "A bird's wingbeat: down-stroke (wings forward and down, body rises) and up-stroke (wings folded partly, tips up). A fish's swim: the S-curve traveling down the body. Two frames each.", tool: "pencil" },
           ] },
-        { title: "Animal expression and caricature",
+        { title: "Animal expression and caricature", exemplar: "animalAttitude",
           hints: ["Hultgren: push the dominant shape. A bulldog is all square jaw; a greyhound is all curve.", "Ears, tail and posture are the animal's face: ears back = fear/anger, tail up = alert, crouch = threat or play."],
           steps: [
             { h: "Body language", t: "Draw the same dog in five states: alert (ears up, tail up, weight forward), afraid (ears back, tail tucked, low), aggressive (crouched, forward, hackles), playful (front down, rear up), relaxed (sprawled). No faces needed — the body says it all.", tool: "pencil", layer: "Pencils" },
@@ -228,7 +228,7 @@ PENSHI_CURRICULUM.push({
             { h: "Plates and scutes", t: "Crocodile backs and turtle shells are big plates with a ridge (keel) down each, laid in rows that widen over the back and narrow toward the tail. They are boxes on a surface, so each plate gets a lit top and a shadow side. Draw a crocodile's back from above and from the side.", tool: "pencil" },
             { h: "Smooth and wet", t: "Frogs and salamanders have no texture at all. Their form is described by contour lines and ONE sharp specular highlight per form, because wet skin is a mirror. Draw the guide's frog body with four contour ellipses and a single small highlight where the light hits most directly. Adding more highlights makes it look like plastic.", tool: "pencil" },
           ] },
-        { title: "Lizard, snake, frog",
+        { title: "Lizard, snake, frog", exemplar: "lizardSnakeFrog",
           hints: ["iNaturalist: search 'bearded dragon', 'corn snake', 'tree frog'. Pick photos with the whole animal visible.", "Construction first: the sprawling limb plan for the lizard, one long tapered tube for the snake, a fat bean with folded Z-legs for the frog.", "Texture LAST and only where it earns its place."],
           steps: [
             { h: "Lizard: the sprawl", t: "A lizard's legs come out sideways and then bend down (a sprawl), unlike a mammal's legs under the body. Construct: head wedge, a long flattened ribcage tube, pelvis, tail tube tapering to nothing, and four legs that go OUT then DOWN with the elbow and knee pointing sideways. Draw it from above (the classic view) and from the side.", tool: "pencil", layer: "Pencils" },
@@ -267,14 +267,14 @@ PENSHI_CURRICULUM.push({
       why: "A creature in a comic needs to be drawn from any angle, at a consistent size against the characters, with a silhouette that's instantly recognizable in a dark panel. The creature sheet is the professional deliverable — and the discipline that turns a cool sketch into a usable design.",
       refs: ["whitlatch", "fzd", "aldoori", "hultgren"],
       pages: [
-        { title: "Scale and silhouette",
+        { title: "Scale and silhouette", exemplar: "creatureScale",
           hints: ["Draw your Section 5 character next to the creature — same ground line, same horizon.", "Silhouette test in solid black (Character Design-1).", "Push the dominant shape: is the creature round, square or triangular? Commit."],
           steps: [
             { h: "Scale against a human", t: "Draw your character (from the Character Design chapter) standing beside the creature on the same ground line. Their eyes on the same horizon if standing. Is the creature the size you imagined? Adjust — scale is a design decision that changes the creature's threat, speed and diet.", tool: "pencil", layer: "Pencils" },
             { h: "Silhouette", t: "Fill the creature solid black. Is it readable? Does the dominant shape family match its role (triangular predator, round grazer)? Adjust the outline — add a crest, lengthen the tail, thicken the neck — until it reads at thumbnail size.", tool: "marker" },
             { h: "Head study", t: "The creature's head at three angles, built like a skull (ball + jaw box + eye sockets placed for its role). Include an expression — creatures need faces that act.", tool: "pencil" },
           ] },
-        { title: "The creature sheet",
+        { title: "The creature sheet", exemplar: "sheetLayout",
           hints: ["Turnaround (side, front, three-quarter), scale figure, a texture patch, a color harmony.", "Texture patch: a square showing the surface at full detail — scales, fur direction, plating."],
           steps: [
             { h: "Turnaround", t: "Side, front and three-quarter views, aligned on ground and horizon lines. Use the boxes-and-tubes construction from the Animal chapters; the creature must turn like a real object because it IS a real object in your world.", tool: "pencil", layer: "Pencils" },
@@ -317,7 +317,7 @@ PENSHI_CURRICULUM.push({
             { h: "Mirror the details", t: "Headlights, mirrors and doors on the far side mirror the near side across the car's center plane (use the diagonal method from Advanced Perspective). Draw them smaller and foreshortened. This symmetry is what makes a car look manufactured.", tool: "pencil" },
             { h: "Ink and material", t: "Ink with a hard horizon reflection across the body (a car is a mirror), dark tires with a thin bright rim, and heavy line under the chassis where it shadows the ground.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Motorcycle and a big vehicle",
+        { title: "Motorcycle and a big vehicle", exemplar: "bikeTruck",
           hints: ["Motorcycle: two wheels on one line, an engine box between, a frame of tubes connecting them, a rider-shaped seat — the mechanism is exposed, so joints and housings show.", "Truck/bus/tank: a big box on more wheels; treads are a belt of small boxes around two wheels."],
           steps: [
             { h: "The motorcycle", t: "Two ellipses on the same ground line in perspective, a fork (two tubes) from the front wheel up to the handlebars, a triangle frame to the rear wheel, an engine box hung inside the triangle. It's a machine with nothing hidden — draw every joint from a Sketchfab model.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
@@ -339,7 +339,7 @@ PENSHI_CURRICULUM.push({
             { h: "Firearms as boxes and tubes", t: "A rifle: a box receiver, a tube barrel, a stock shaped to the shoulder, a grip angled for a hand, a trigger guard. A pistol: the same minus the stock. Draw both as primitives from a museum photo (The Met has historic firearms) and note the grip angle — around 110° to the barrel.", tool: "pencil" },
             { h: "The bow", t: "A curved spring (a bent cylinder) with a string; drawn, it's a triangle of tension with the arrow at the apex. Draw it relaxed and drawn, with the archer's hands placed correctly (bow hand pushed out, string hand at the cheek).", tool: "pencil" },
           ] },
-        { title: "Tools, props and an invented weapon",
+        { title: "Tools, props and an invented weapon", exemplar: "toolsProps",
           hints: ["Everyday tools are weapons' cousins: hammer = haft + head, drill = grip + motor box + tube.", "Invent: combine a real grip, a real mechanism and a real material."],
           steps: [
             { h: "Five everyday tools", t: "Hammer, wrench, drill, kitchen knife, umbrella. Each as primitives with the grip measured to a hand, from photos (Unsplash). These are the props that fill a panel and make a world lived-in.", tool: "pencil", layer: "Pencils" },
@@ -381,7 +381,7 @@ PENSHI_CURRICULUM.push({
             { h: "Deserts and coasts", t: "Dunes: a gentle windward slope, a steep lee slope, crest curved by the wind — the wind direction is readable from the shape. Coasts: cliffs where hard rock resists, beaches where sand collects in bays, arches and stacks where the sea cuts through. Draw a dune field and a headland with an arch, from photos.", tool: "pencil" },
             { h: "Rock and strata", t: "Sedimentary rock is layered (horizontal lines — or tilted if the land was folded); the layers show in every cliff. Draw a cliff face with strata, an overhang where a hard layer protects a soft one, and rubble at the base (rocks fall — always draw the debris).", tool: "pencil" },
           ] },
-        { title: "Water and vegetation",
+        { title: "Water and vegetation", exemplar: "waterPlants",
           hints: ["Water is a mirror (calm) or a texture (moving). Reflections are the scene upside-down, darker, broken by ripples.", "Trees: trunk (tapering cylinder), main branches (tapering, thinning by rule), foliage as MASSES, not leaves."],
           steps: [
             { h: "Still and moving water", t: "A lake: reflect the far shore upside-down, slightly darker, with horizontal ripple breaks. A river: perspective lines of flow, whitewater where it drops. A wave: a rolling cylinder that breaks — the curl is a tube. Draw one of each.", tool: "pencil", layer: "Pencils" },
@@ -396,7 +396,7 @@ PENSHI_CURRICULUM.push({
       why: "A setting with people in it is a stage; the objects in it are props that tell the audience what happened here before the panel started. A cracked wall, a chair knocked over, a market with one empty stall — environment design is storytelling by arrangement.",
       refs: ["fzd", "framed-ink", "loa-env", "scott-robertson", "unsplash"],
       pages: [
-        { title: "Architecture in perspective",
+        { title: "Architecture in perspective", exemplar: "archStyles",
           hints: ["Grid on, 2-point. Buildings are boxes with the Advanced Perspective methods: equal windows, mirrored details, a figure for scale.", "Style is proportion + material + ornament: draw the same box as a cabin, a temple and an office."],
           steps: [
             { h: "One box, three styles", t: "Draw a two-point box three times. Make it a log cabin (horizontal cylinders, a pitched roof wedge, one small window), a temple (columns as cylinders on a stepped base, a pediment triangle), an office (a glass grid — equal-spaced windows via the diagonal trick). Same box; style is what you attach.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
@@ -425,7 +425,7 @@ PENSHI_CURRICULUM.push({
             { h: "Fill: the bounce", t: "Shadows are not black. Light bouncing off the floor and walls fills them, dimmer and tinted the color of whatever it bounced off (warm wood floor: warm fill). On the Colors layer, paint the shadow side of the figure and furniture with a fill value two steps darker than the halftone and shifted toward the room's color. Keep every fill darker than every lit surface or the scene flattens.", tool: "marker", layer: "Colors" },
             { h: "Rim: the optional third light", t: "A second, weaker source from behind (a lamp in the back corner, a doorway) puts a bright edge on the figure's far side and separates it from the wall. Add one. Rule: a rim light must never be brighter than the key, or the reader stops knowing where the light comes from.", tool: "marker" },
           ] },
-        { title: "The same room, three times of day",
+        { title: "The same room, three times of day", exemplar: "timeOfDay",
           hints: ["Page tab ＋ twice, or divide the page into three panels.", "Noon: key from above, short shadows, cool skylight fill. Dusk: key from the side, long warm shadows, purple fill. Night: key from a lamp INSIDE the room, everything else drops into a deep cool fill.", "Chromatic greys (Acolor-4) for everything that isn't the key."],
           steps: [
             { h: "Noon", t: "Redraw the room with the key coming steeply through the window: short, hard-edged shadows directly under things, the floor a bright patch, the fill cool (sky bounce). Values are high-contrast and simple. This is the honest, flat, daytime look: nothing hidden.", tool: "marker", layer: "Colors" },
@@ -449,7 +449,7 @@ PENSHI_CURRICULUM.push({
             { h: "Then the built world", t: "Architecture grows from the land: stone where there's cliff, wood where there's forest, stilts where there's water. Adapt the architectural reference to THIS terrain. Draw the settlement in perspective on the terrain with the Advanced Perspective methods; figures for scale.", tool: "pencil" },
             { h: "Color as theme", t: "From the color reference and the Advanced Color chapter: pick a harmony that IS the theme (drying sea = desaturated warm with one cool accent of remaining water). Flat the wide view. Chromatic greys for most of it; saturation only where the theme lives.", tool: "marker", layer: "Colors" },
           ] },
-        { title: "Two angles and a story beat",
+        { title: "Two angles and a story beat", exemplar: "establishIntimate",
           hints: ["Same world: one establishing shot (wide, low horizon) and one intimate shot (close, high horizon, a figure).", "The intimate shot shows a story beat: something is happening in this world."],
           steps: [
             { h: "The establishing shot", t: "The wide view, resolved: three depth layers, atmospheric perspective, focal point on the settlement. Ink and color it. This is the panel that opens a chapter.", tool: "ink", layer: "Inks" },

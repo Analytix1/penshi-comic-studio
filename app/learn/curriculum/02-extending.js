@@ -220,7 +220,7 @@ PENSHI_CURRICULUM.push({
             { h: "Motion: off-balance on purpose", t: "A running figure is falling forward and catching itself. Draw three poses where the plumb line lands AHEAD of the feet — that reads as motion. Behind the feet reads as recoiling, being hit, stopping short. Leaning into a wind, pulling a rope: the plumb line falls away from the force. Balance is the tool; imbalance is the story.", tool: "pencil" },
             { h: "Timed: 45 seconds, plumb line included", t: "Drill on, 45 seconds. Line of action, bean, then the plumb line and the feet — nothing else. The point is to place the feet where the plumb line demands. Twelve poses. On the contact sheet, count how many figures stand up.", tool: "pencil", drill: { seconds: 45, poses: 12 } },
           ] },
-        { title: "Rhythm through the limbs",
+        { title: "Rhythm through the limbs", exemplar: "limbRhythm",
           hints: ["Line of Action, 2-minute timer, 10 poses.", "Trace the rhythm: a curve that flows from the shoulder, down the arm, into the hand — then out the fingertip.", "Limbs are tapered tubes hung on the rhythm line."],
           steps: [
             { h: "Two-minute gestures", t: "Longer timer now: line of action, bean, then limbs as flowing rhythm lines (not tubes yet). The arm's rhythm continues the torso's twist; the leg's rhythm runs from the hip through the knee into the foot in one curve, reversing once. Ten poses, drill on. Look for the rhythm that crosses the body — shoulder to opposite hip — in every twisting pose.", tool: "pencil", layer: "Pencils", drill: { seconds: 120, poses: 10 } },

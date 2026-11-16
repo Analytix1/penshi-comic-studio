@@ -1269,13 +1269,35 @@ const Exemplars = (() => {
   const COLORFUL = new Set(["colorWheel12", "hsvBars", "harmonies", "temperature",
                             "flatsSteps", "harmoniesAdvanced", "chromaticGreys"]);
 
-  function paint(ctx, key, page) {
-    const fn = D[key];
+  /* ---------- leveled guides ----------
+     A guide can be ONE drawing (the functions in D above) or a stack of
+     LEVELS — envelope, then volumes, then planes — registered from the
+     guides-*.js files. Each level is painted onto its own locked layer, so
+     a lesson can reveal the construction one stage at a time and the
+     student can switch any stage on or off. A registered key replaces a
+     same-named entry in D. */
+  const LEVELED = {};
+  function register(key, def) {
+    LEVELED[key] = typeof def === "function" ? { levels: [{ name: "", draw: def }] } : def;
+    if (LEVELED[key].color) COLORFUL.add(key);
+  }
+  const levels = key => LEVELED[key] ? LEVELED[key].levels.map(l => l.name) : (D[key] ? [""] : []);
+  /* a guide may ask for specific layer colours (shading pages want one family of blues) */
+  const tints = key => (LEVELED[key] && LEVELED[key].tints) || null;
+
+  function paint(ctx, key, page, level = 0) {
+    const fn = LEVELED[key] ? (LEVELED[key].levels[level] || {}).draw : (level === 0 ? D[key] : null);
     if (!fn) return false;
     P = page;
     ctx.save(); style(ctx); fn(ctx); ctx.restore();
     return true;
   }
 
-  return { paint, has: k => !!D[k], isColorful: k => COLORFUL.has(k), keys: () => Object.keys(D) };
+  /* drawing helpers for the guides-*.js files (all in page fractions) */
+  const kit = { X, Y, S, V, style, line, poly, ellipse, arc, circle, rect, dot, label, curve, arrow,
+                title, note, page: () => P };
+
+  return { paint, register, levels, tints, kit,
+           has: k => !!(D[k] || LEVELED[k]), isColorful: k => COLORFUL.has(k),
+           keys: () => [...new Set([...Object.keys(D), ...Object.keys(LEVELED)])] };
 })();

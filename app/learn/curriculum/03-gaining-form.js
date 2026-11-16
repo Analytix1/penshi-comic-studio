@@ -27,7 +27,7 @@ PENSHI_CURRICULUM.push({
             { h: "Place the features on the lines", t: "Eyes on the eye line, one eye-width apart, one eye-width from each edge of the face (the head is five eyes wide). Nose base on the nose line, as wide as the gap between the eyes. Mouth a third of the way from nose to chin, its corners under the pupils. Ears from brow line to nose line, inside the side planes. Draw them SIMPLY — almonds, a wedge, a line. Detail comes later; placement comes now.", tool: "pencil" },
             { h: "Ink over the construction", t: "On the Inks layer, commit only the finished head — outline, features, hair mass sitting ON the ball (hair has volume; it doesn't start at the skull's surface) — letting the construction stay blue underneath. Then hide the Pencils layer and judge it. If the eyes look too low, you've drawn every previous face with them too high.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Five heads, then one from memory",
+        { title: "Five heads, then one from memory", exemplar: "headRow",
           hints: ["Repeat the full construction five times in a row, smaller, faster.", "Then one from memory, no guide. Check it against the thirds afterward."],
           steps: [
             { h: "Five in a row", t: "Ball, slice, axes, jaw, thirds, features — five times across the page, each in under four minutes. Speed is the point: the construction must become a sequence your hand knows. Vary the ball size and the jaw length so the five are five people.", tool: "pencil", layer: "Pencils" },
@@ -64,7 +64,7 @@ PENSHI_CURRICULUM.push({
       why: "The eye symbol (an almond with a circle) is why drawn faces look flat. The real eye is a ball inside a socket, wrapped by lids that have thickness and cast a shadow. Same for the nose (a wedge with a ball), the mouth (on a curved cylinder), the ear (a bowl). Forms turn; symbols don't — and the moment a character glances sideways, the symbols break while the forms simply rotate.",
       refs: ["loomis-head", "proko-head", "loa-faces", "handy"],
       pages: [
-        { title: "Eye and brow",
+        { title: "Eye and brow", exemplar: "eyeForm",
           hints: ["Draw each feature large — a quarter page each.", "The eyeball is a sphere. The lids wrap it. The iris is a disc on the sphere's surface.", "Draw the eye front, three-quarter and profile."],
           steps: [
             { h: "The eyeball in the socket", t: "Draw a sphere. The eye socket is a bony hollow around it; the brow ridge overhangs it, which is why the upper part of the eye is usually in shadow. The upper lid wraps over the top of the sphere (it's thicker and casts a shadow on the eyeball), the lower lid tucks under and is thinner. The visible 'almond' is just where the lids part, and its shape is a consequence of the sphere underneath, not a shape in itself.", tool: "pencil", layer: "Pencils" },
@@ -72,7 +72,7 @@ PENSHI_CURRICULUM.push({
             { h: "Brows are on the ridge", t: "The eyebrow follows the brow ridge — a curve OVER the socket, not a line above the eye, and it wraps around the corner of the forehead onto the side plane. In three-quarter view the far brow foreshortens and its outer end disappears behind the forehead. Draw the brow-and-eye unit at three angles, and note the tear duct at the inner corner: it's what makes an eye look like it belongs to a face.", tool: "pencil" },
             { h: "A pair of eyes", t: "Two eyes on a three-quarter head, both constructed. The far eye is narrower, sits slightly lower on the page (the eye line curves), and its outer corner may be hidden by the bridge of the nose. Both irises point the same way. This pair is the test: most flat faces have two identical front-view eyes stuck on a turned head.", tool: "pencil" },
           ] },
-        { title: "Nose, mouth, ear",
+        { title: "Nose, mouth, ear", exemplar: "featureForms",
           hints: ["Nose: a wedge from the brow, with a ball on the end and two wings.", "Mouth: lips wrap a cylinder (the teeth). The top lip is usually thinner and angles inward.", "Ear: a bowl with a rim (helix), an inner ridge, and a lobe."],
           steps: [
             { h: "The nose as a wedge", t: "From the brow, a wedge comes forward and down; at its end sits a ball (the tip) with a wing on each side (the nostrils). Draw it as a block first — front, three-quarter, profile — with its four planes: top (the bridge, lit), two sides (halftone), and bottom (the underside, in shadow, with the nostrils in it). Only then soften it. The underside of the wedge is what you see when the head looks up, and the bridge is what catches the highlight.", tool: "pencil", layer: "Pencils" },
@@ -97,7 +97,7 @@ PENSHI_CURRICULUM.push({
             { h: "Push them", t: "Redraw each expression at 2× intensity — bigger brow movement, wider mouth, squashed or stretched skull (joy stretches the face wide, anger compresses it, surprise stretches it tall). Comics live at this level. Then draw one at half intensity, the subtle version for a quiet panel — a character hiding the feeling.", tool: "pencil" },
             { h: "Turn one", t: "Draw your best expression on a three-quarter head. The near cheek pushes up more; the far brow foreshortens; the mouth's far corner is hidden by the cheek in a wide smile. Ink it. Then ink the neutral face next to it — the pair is the acting range of your character.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Mixed and in-between",
+        { title: "Mixed and in-between", exemplar: "expressionMix",
           hints: ["Real faces mix expressions: nervous laughter, angry tears, polite disgust.", "Take the brows from one expression and the mouth from another."],
           steps: [
             { h: "Mix two", t: "Brows of fear with the mouth of joy: nervous laughter. Brows of anger with the mouth of sadness: bitterness. Brows of surprise with a neutral mouth: attention. Draw four mixes, naming each. This is where characters stop being masks and start being people.", tool: "pencil", layer: "Pencils" },
@@ -148,7 +148,7 @@ PENSHI_CURRICULUM.push({
             { h: "Assemble and rotate", t: "Build the full mannequin: head ball, neck cylinder (angled forward, not vertical), ribcage box, pelvis box, limb tubes, mitten hands, wedge feet. Now draw it from the side and from a high three-quarter view (looking down). The boxes tell you what you'd see — the top of the ribcage, the top of the pelvis, the shoulders foreshortened; blobs would just be blobs.", tool: "pencil" },
             { h: "From below", t: "The hardest angle: a low three-quarter view looking up. You see the undersides of the ribcage box and the jaw, the pelvis box's front face large, the feet biggest of all. Construct it slowly. This is the heroic low angle comics use constantly and almost nobody draws without a mannequin.", tool: "pencil" },
           ] },
-        { title: "Gesture to mannequin",
+        { title: "Gesture to mannequin", exemplar: "gestureToMannequin",
           hints: ["Posemaniacs or Line of Action, 5-minute timer.", "Line of action → bean → boxes → tubes. In that order, every time.", "Six poses. Then ink the best one."],
           steps: [
             { h: "Gesture first, always", t: "Open a timed pose tool. For each pose: 20 seconds of line of action and bean, then build the boxes on the bean (the ribcage box on the top egg, the pelvis box on the bottom one, keeping their tilt), then tubes on the rhythm lines. The gesture is the life; the mannequin is the solidity. Never skip the first for the second, and never let the second stiffen the first.", tool: "pencil", layer: "Pencils" },
@@ -172,7 +172,7 @@ PENSHI_CURRICULUM.push({
             { h: "The adult and the elder", t: "Adult at 7½ heads as in Body-1. Then the elder: about 7 heads because the spine has compressed and curved — the head comes forward, the shoulders round, the knees bend slightly, the chest sinks and the belly comes forward, the hands and joints enlarge while the limbs thin. Age in the elder is posture and mass, not just height. Draw the elder with the same skeleton as the adult but every curve increased.", tool: "pencil" },
             { h: "Line them up", t: "Redraw all five in a row at true relative heights (the guide shows them: a toddler is about half an adult), feet on one line. This is a family or a cast. Ink the row. If the teen and the adult look the same, the teen's shoulders are too wide.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Four builds, one system",
+        { title: "Four builds, one system", exemplar: "bodyBuilds",
           hints: ["Keep the head-unit system fixed (7½). Change only width and where the mass sits.", "Heavy, lean, muscular, stocky. Then mix two."],
           steps: [
             { h: "Heavy", t: "Same skeleton, mass added: the ribcage box gets a soft cylinder around it, the belly is a sphere that hangs from the ribcage and sits on the pelvis, the limbs are tubes with a wider middle, the neck merges into the shoulders. The landmarks don't move; the surface moves out from them. Weight sits LOW on most bodies. Draw it front and side.", tool: "pencil", layer: "Pencils" },
@@ -217,7 +217,7 @@ PENSHI_CURRICULUM.push({
             { h: "Move the pose, move the pins", t: "Raise one arm: the shoulder pin rises, folds now stretch from the raised shoulder DOWN across the ribs toward the opposite hip, and the armpit becomes a pin. Bend the knee: a pin appears at the knee with zigzags behind it and stretch across the front. Twist the torso: spiral folds around the waist. Draw all three changes on three mannequins.", tool: "pencil" },
             { h: "Sitting", t: "A seated figure: pins at the hips and knees, the trouser cloth stretched tight across the thigh (smooth, showing the form) and bunched at the hip and behind the knee (zigzag). The shirt bunches at the belt. Sitting figures are half of all comic panels; draw two.", tool: "pencil" },
           ] },
-        { title: "Smooth where stretched",
+        { title: "Smooth where stretched", exemplar: "tightLoose",
           hints: ["Stretched cloth shows the FORM underneath — few folds.", "Loose cloth hides the form — many folds.", "Draw the same torso in a tight shirt and a loose one."],
           steps: [
             { h: "Tight versus loose", t: "Draw a mannequin torso twice. Dress the first in a tight T-shirt: the cloth reads as the ribcage box with a few stretch lines at the armpits and across the chest. Dress the second in a baggy sweatshirt: the cloth reads as its OWN form (a bigger, softer box) with drop and inert folds, and the body underneath is only hinted at the shoulders and where the belt pins it. Both are correct; they're different garments.", tool: "pencil", layer: "Pencils" },
@@ -232,14 +232,14 @@ PENSHI_CURRICULUM.push({
       why: "Every garment type has its own structure: a hood is a tube that crumples at the neck; a cape is two drop-fold systems from the shoulders; a coat is a stiff box that hangs; trousers are two tubes pinned at the waist and knees. Learning each type once means you can dress anyone, in any pose, from any era — because you're drawing the garment's structure, not copying a photo of it.",
       refs: ["hogarth-drapery", "loa-clothed", "unsplash", "sinix"],
       pages: [
-        { title: "Shirt, trousers, jacket",
+        { title: "Shirt, trousers, jacket", exemplar: "garments",
           hints: ["Pose a mannequin first (Posemaniacs, 5 min).", "Each garment is its own layer of form OVER the mannequin — draw its silhouette before its folds.", "Seams follow contour lines."],
           steps: [
             { h: "Shirt or T-shirt", t: "Silhouette first: the shirt's shape is the ribcage box plus ease (slack), so it's a slightly bigger, softer box that hangs from the shoulders. Collar is a band around the neck cylinder. Sleeves are tubes wider than the arm tubes, with a seam at the shoulder that follows the deltoid's contour. Then folds: drop from shoulders, zigzag at the bent elbow, bunching at the waist. Seams follow contour lines — the side seam runs down the ribcage's side plane.", tool: "pencil", layer: "Pencils" },
             { h: "Trousers", t: "Two tubes pinned at the waist and (if bent) the knees. The crotch is a tension point where diagonals from both hips meet. Straight legs: pipe folds from the waist, breaking once at the shoe. A bent knee: zigzags behind, stretch across the front, the cloth revealing the kneecap. Cuffs pile up (inert) on the shoe. Pockets and seams sit on the tube's contour lines.", tool: "pencil" },
             { h: "Jacket or coat", t: "A stiffer, boxier form over the shirt: the coat has its own shoulders (padding makes them square), lapels (a plane folding outward from the chest, with a roll line), and a hem that hangs straight from the shoulders' width. Few folds — thick cloth. An open coat swings as two drop-fold panels from the shoulders and reveals the shirt's folds inside. Ink the whole figure.", tool: "ink", layer: "Inks" },
           ] },
-        { title: "Hoods, capes, and everything else",
+        { title: "Hoods, capes, and everything else", exemplar: "hoodCape",
           hints: ["A hood up: a bowl around the ball of the head, tube down the neck.", "A hood down: a crumpled inert pile behind the neck.", "A cape: two drop systems from the shoulder pins; in wind, a diaper between them."],
           steps: [
             { h: "The hood", t: "Up: a bowl following the head's ball with the face inside it in shadow, joining a tube at the neck with spiral folds where it crumples. The opening's edge is an ellipse around the face. Down: an inert pile at the back of the neck, its opening now a diaper fold between the shoulders. Draw both on a three-quarter head.", tool: "pencil", layer: "Pencils" },
@@ -292,7 +292,7 @@ PENSHI_CURRICULUM.push({
             { h: "Triadic", t: "Harmony → Triadic: three hues evenly spaced (the primaries are a triad). Balanced but lively — the classic superhero palette (red, yellow, blue). Swatch a triad, then desaturate two of the three so the third leads. A triad at full saturation is a circus; a triad with one leader and two supporters is a costume.", tool: "marker" },
             { h: "Apply one to the mug", t: "Draw a simple mug on a table and color it three times: monochromatic, complementary, analogous. Same drawing, three moods. Write one word under each describing the feeling. Then squint: the values should be the same in all three, because harmony changes hue, not value.", tool: "marker" },
           ] },
-        { title: "Harmony as story",
+        { title: "Harmony as story", exemplar: "harmonyStory",
           hints: ["Three thumbnails of the same scene: morning, argument, aftermath.", "One harmony each. The SHIFT between them is the story."],
           steps: [
             { h: "Three moods, one scene", t: "Thumbnail a kitchen (a box room from Persp-2 is fine) three times. Morning: analogous warm. The argument: complementary, the accent on the person speaking. Aftermath: monochromatic cool. Flat color only, no rendering. Put them in a row.", tool: "marker", layer: "Colors" },

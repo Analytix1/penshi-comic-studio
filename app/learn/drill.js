@@ -58,15 +58,14 @@ const Drill = (() => {
   }
 
   /* ---------- the drawing layers ---------- */
-  const drawLayers = () => App.layers.filter(l => l.kind === "raster" && !l.locked && l.name !== "Guide");
+  const drawLayers = () => App.layers.filter(l => l.kind === "raster" && !l.locked && !isGuideLayer(l) && !l.ref);
 
   function capture() {
     // hide the Guide layer so the thumbnail is the pose alone
-    const g = App.layers.find(l => l.name === "Guide");
-    const was = g ? g.visible : true;
-    if (g) g.visible = false;
+    const gs = App.layers.filter(isGuideLayer), was = gs.map(g => g.visible);
+    gs.forEach(g => { g.visible = false; });
     const url = Engine.renderThumbnail(320);
-    if (g) g.visible = was;
+    gs.forEach((g, i) => { g.visible = was[i]; });
     return url;
   }
 

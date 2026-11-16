@@ -177,3 +177,11 @@ serialization so reference layers reload."
 - Flood fill has fixed tolerance 48; could be a slider.
 - The old first-run tour flag lives in localStorage under `penshi-toured`
   (migrated from `inkwell-toured`; see the migration block atop state.js).
+
+## Leveled 3-D guides (Learn mode)
+
+- `app/learn/geo3d.js` (G3) is a small 3-D construction kit; `app/learn/rigs.js` holds posable models (figure, head, hand, foot, quadrupeds, bird, reptiles, skeleton, muscles). Guide pages are real geometry through a real camera, never images.
+- Guide pages live in `app/learn/guides-*.js` and register with `Exemplars.register(key, { levels: [{ name, draw }], tints?, color? })`. A registered key overrides a same-named drawing in `exemplars.js`.
+- The lesson runner (`learn.js`) makes one locked `guide: true` layer per level, each in its own tint. A step may set `level: n` (1-based); otherwise levels are revealed evenly across the page's steps. The lesson panel has a toggle per level.
+- Layers: several layers of one kind are allowed; `ref` layers (imported tracing images) never export; `filter` is a non-destructive per-layer colour filter.
+- Not done yet: the step text in sections 4–5 was not rewritten around the new levels; `speciesLineup` is registered but not used by a lesson.

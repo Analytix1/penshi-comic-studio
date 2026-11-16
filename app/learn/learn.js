@@ -230,18 +230,48 @@ const Learn = (() => {
     (pg.hints || []).forEach((h, i) => { y = wrapText(ctx, `${i + 1}.  ${h}`, P.w * 0.08, y, P.w * 0.84, P.dpi * 0.17) + P.dpi * 0.06; });
   }
 
+  const LEVEL_TINTS = [GUIDE_TINT, "#b0563a", "#2f8f5b", "#7a4bb8"];
+  const guideLayers = () => App.layers.filter(isGuideLayer);
+  /* which guide levels a step shows: its own `level` (1-based), or, when the
+     page does not say, the levels are revealed evenly across its steps */
+  function stepLevel(pg, idx, count) {
+    const st = pg.steps[idx];
+    if (st && st.level) return Math.min(count, st.level);
+    return Math.max(1, Math.ceil((idx + 1) / pg.steps.length * count));
+  }
+  function showLevels(n) {
+    guideLayers().forEach((g, i) => { g.visible = i < n; });
+    App.dirty = true; UI.refreshLayers();
+  }
+
+  /* the follow-along line under the current step of a leveled page */
+  function levelNote(pg, idx) {
+    const gl = guideLayers();
+    if (gl.length < 2) return "";
+    const n = stepLevel(pg, idx, gl.length), g = gl[n - 1];
+    return `<p class="ls-levelnote"><i style="background:${g.tint || "#888"}"></i>Guide ${n} of ${gl.length}:
+      <b>${g.name.replace(/^Guide \d+ · /, "")}</b>. Trace it on your own layer, then draw it again beside the guide without tracing.</p>`;
+  }
+
   function buildAttemptPages(lesson) {
     App.pages = [];
     lesson.pages.forEach(pg => {
       buildFreshPage(PAGE_PRESET);
+      /* one locked guide layer per construction level, each in its own
+         colour, stacked in order above the paper */
       const colorful = pg.exemplar && Exemplars.isColorful(pg.exemplar);
-      const g = makeRasterLayer("Guide", { tint: colorful ? null : GUIDE_TINT, opacity: 0.85 });
-      g.locked = true;
-      App.layers.splice(1, 0, g);
-      const ctx = g.canvas.getContext("2d");
-      if (pg.exemplar) Exemplars.paint(ctx, pg.exemplar, App.page);
-      else paintHints(ctx, pg);
-      g._stamp = 1;
+      const names = pg.exemplar ? Exemplars.levels(pg.exemplar) : [""];
+      const tints = (pg.exemplar && Exemplars.tints(pg.exemplar)) || LEVEL_TINTS;
+      names.forEach((name, i) => {
+        const g = makeRasterLayer(names.length > 1 ? `Guide ${i + 1} · ${name}` : "Guide",
+          { tint: colorful ? null : tints[i % tints.length], opacity: 0.85, guide: true });
+        g.locked = true;
+        App.layers.splice(1 + i, 0, g);
+        const ctx = g.canvas.getContext("2d");
+        if (pg.exemplar) Exemplars.paint(ctx, pg.exemplar, App.page, i);
+        else paintHints(ctx, pg);
+        g._stamp = 1;
+      });
       App.pages.push(serializePage(true));
     });
     App.pageIndex = 0;
@@ -310,7 +340,7 @@ const Learn = (() => {
     // the poses go on Inks as image ops (so they survive rebuilds and can be
     // lasso-moved like anything else)
     await addPage();
-    const g = makeRasterLayer("Guide", { tint: GUIDE_TINT, opacity: 0.85 });
+    const g = makeRasterLayer("Guide", { tint: GUIDE_TINT, opacity: 0.85, guide: true });
     g.locked = true;
     App.layers.splice(1, 0, g);
     const P = App.page, gctx = g.canvas.getContext("2d");
@@ -357,6 +387,8 @@ const Learn = (() => {
       if (i >= 0) App.activeLayer = i;
       UI.refreshLayers();
     }
+    const gl = guideLayers();
+    if (gl.length > 1) showLevels(stepLevel(curPage(), active.step, gl.length));
     if (st.tool) UI.setTool(st.tool);
     if (st.guide) {
       Object.assign(App.guides, st.guide);
@@ -421,8 +453,8 @@ const Learn = (() => {
     if (!host || App.mode !== "learn") return;
     if (!active) {
       host.innerHTML = `<div class="hint" style="margin-top:0">Pick a lesson from the curriculum
-        to open it here. Lessons paint guide drawings onto a locked <b>Guide</b> layer of a fresh
-        practice page; your work is saved to the Portfolio as you go.</div>
+        to open it here. Lessons paint guide drawings onto locked <b>Guide</b> layers of a fresh
+        practice page — one layer per construction step, each in its own colour; your work is saved to the Portfolio as you go.</div>
         <div class="row"><button id="ls-home">Open curriculum</button></div>`;
       $("#ls-home").addEventListener("click", showHome);
       return;
@@ -444,6 +476,7 @@ const Learn = (() => {
         <li class="${isStepDone(active.page, i) ? "done" : ""} ${i === active.step ? "cur" : ""}" data-i="${i}">
           <label class="ls-check"><input type="checkbox" data-chk="${i}" ${isStepDone(active.page, i) ? "checked" : ""}></label>
           <div class="ls-body"><b>${st.h}</b>${i === active.step ? `<p>${st.t}</p>
+            ${levelNote(pg, i)}
             ${st.drill ? `<div class="ls-drill">
               <select id="ls-drill-sec" title="Seconds per pose">${[15, 30, 45, 60, 90, 120].map(s =>
                 `<option value="${s}" ${s === (st.drill.seconds || 30) ? "selected" : ""}>${s} s</option>`).join("")}</select>
@@ -464,16 +497,20 @@ const Learn = (() => {
       ${lastPage ? `<details class="learn"><summary>Reflect</summary><div class="body"><ul>${active.l.reflect.map(r => `<li>${r}</li>`).join("")}</ul></div></details>` : ""}
       <div class="row" style="margin-top:10px">
         <button id="ls-save">Save to Portfolio</button>
-        <button id="ls-guide" title="Show/hide the blue guide drawing">Guide layer</button>
+      </div>
+      <div class="ls-levels" title="Show or hide each guide drawing. Every level is its own locked layer.">
+        <span class="muted">Guides</span>
+        ${guideLayers().map((g, i) => `<button class="ls-level ${g.visible ? "on" : ""}" data-level="${i}">
+          <i style="background:${g.tint || "#888"}"></i>${g.name.replace(/^Guide( \d+ · )?/, "") || "guide"}</button>`).join("")}
       </div>`;
     $("#ls-back").addEventListener("click", () => closeLesson(true));
     $("#ls-prev").addEventListener("click", prev);
     $("#ls-next").addEventListener("click", next);
     $("#ls-save").addEventListener("click", () => saveAttempt(false));
-    $("#ls-guide").addEventListener("click", () => {
-      const g = App.layers.find(l => l.name === "Guide");
-      if (g) { g.visible = !g.visible; App.dirty = true; UI.refreshLayers(); }
-    });
+    host.querySelectorAll("[data-level]").forEach(b => b.addEventListener("click", () => {
+      const g = guideLayers()[+b.dataset.level];
+      if (g) { g.visible = !g.visible; App.dirty = true; UI.refreshLayers(); renderLessonPanel(); }
+    }));
     const go = $("#ls-drill-go");
     if (go) go.addEventListener("click", e => {
       e.stopPropagation();

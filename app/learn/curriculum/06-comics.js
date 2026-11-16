@@ -32,7 +32,7 @@ PENSHI_CURRICULUM.push({
       why: "Lettering is the part readers notice only when it's wrong: tails pointing at the wrong person, balloons read out of order, a wall of text. Comics pros place balloons BEFORE finishing the art so words and pictures never fight.",
       refs: ["mccloud", "chelsea"],
       pages: [
-        { title: "Balloons on the thumbnails",
+        { title: "Balloons on the thumbnails", exemplar: "balloonOrder",
           hints: ["Speech balloon tool: drag, type, then drag the tail to the speaker's mouth.", "Reading order: left-to-right, top-to-bottom — the first speaker's balloon is higher-left.", "Under 25 words per balloon."],
           steps: [
             { h: "Place balloons first", t: "On your six-panel thumbnail page, add the dialogue with the Speech Balloon tool before drawing any finished art. Position each so it doesn't cover a face and reads in the right order. Drag every tail to the speaker's mouth.", tool: "balloon" },
@@ -56,7 +56,7 @@ PENSHI_CURRICULUM.push({
             { h: "Broken: dry brush", t: "Move fast with low pressure and let the line skip: grit, speed lines, rough texture, the dust on a road. Draw the fourth row. Broken lines are seasoning, not the meal; used everywhere they turn the page into noise.", tool: "ink" },
             { h: "Corners and joins", t: "Draw a box with each family. Where two lines meet, uniform lines just touch; nib lines swell into the corner; brush lines overshoot slightly and taper past it (the 'flick'). A sloppy join reads as hesitation. Practice twenty corners with the brush taper until the flick is deliberate.", tool: "ink" },
           ] },
-        { title: "One drawing, three voices",
+        { title: "One drawing, three voices", exemplar: "inkHeads",
           hints: ["Pencil a simple head-and-shoulders on the Pencils layer (or reuse Head-2).", "Ink it three times on the Inks layer, using the page tabs or three areas: all uniform, all nib, all brush.", "Hide the Pencils layer and compare."],
           steps: [
             { h: "Pencil it once", t: "A three-quarter head with a collar, loosely constructed, a little bigger than a hand. This is the pencil an inker receives. Duplicate it by drawing it three times across the page (or add two pages), because you will ink it three ways.", tool: "pencil", layer: "Pencils" },

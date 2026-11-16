@@ -40,7 +40,7 @@ PENSHI_CURRICULUM.push({
             { h: "Cross-contours go round", t: "Add contour ellipses to each tube. Sideways: thin ellipses. Toward you: nearly circles. That change in ellipse degree is what tells the eye the tube turned. This is the ellipse drill from Foundations paying off.", tool: "pencil" },
             { h: "Near end bigger", t: "The hand at the end of an arm reaching toward you is BIGGER than the head behind it. Draw it that way even though your brain screams. Then check a reference (Posemaniacs, rotate a pose until an arm points at the camera) — the reference agrees with the construction, not with your brain.", tool: "pencil" },
           ] },
-        { title: "Foreshortened figures from reference",
+        { title: "Foreshortened figures from reference", exemplar: "foreshortFigures",
           hints: ["Posemaniacs: rotate any pose until a limb points at the camera. Or Line of Action 360° views.", "Six 10-minute studies. Construction only — no outline until the tubes and overlaps are right.", "Say out loud for every limb: which segment is nearest?"],
           steps: [
             { h: "Reaching poses", t: "Three poses where an arm or leg comes toward the viewer. Build them as tubes with explicit overlap and round cross-contours. Compare each to the reference by measuring: how big is the near hand relative to the head? Match it.", tool: "pencil", layer: "Pencils" },
@@ -62,7 +62,7 @@ PENSHI_CURRICULUM.push({
             { h: "Fingers fan from an arc", t: "The knuckles lie on an arc, not a straight line. Each finger is three tapered tubes; the middle finger is longest, the index and ring about equal, the pinky shortest and set lower. Draw the four fingers straight, then all curled together — they curl on a shared arc.", tool: "pencil" },
             { h: "Proportions", t: "Measure on your own hand: the palm ≈ the middle finger. Each finger's segments shorten toward the tip (roughly 3 : 2 : 1.5). The thumb reaches the middle knuckle of the index finger. Draw a hand from memory and check these.", tool: "pencil" },
           ] },
-        { title: "Hands in use",
+        { title: "Hands in use", exemplar: "handPoses",
           hints: ["Line of Action hands tool, 2-minute timer, 12 hands.", "Every hand: palm box → thumb wedge → finger arc → tubes.", "Then the 'holding' set: a cup, a phone, a sword grip, a fist."],
           steps: [
             { h: "Twelve timed hands", t: "Line of Action's hands-and-feet tool, 2-minute timer. Box, wedge, arc, tubes, done. Don't render — construct. After twelve, look for your pattern of error (thumb too short? fingers on a straight line?).", tool: "pencil", layer: "Pencils" },
@@ -85,7 +85,7 @@ PENSHI_CURRICULUM.push({
             { h: "The palm box, tipped", t: "Rotate Fig-3's palm box so its far edge is nearer the viewer than the wrist (a hand reaching out). The box's near face is a squashed rectangle; the fingers grow from its far edge, so they come TOWARD you, overlapping the palm. Draw the box tipped 30°, 60° and 90° (fingers straight at the reader).", tool: "pencil" },
             { h: "Knuckles on an arc in perspective", t: "The knuckle arc from Fig-3 is a curve in space. When the fist comes at you, that arc becomes an ellipse you're looking into: the middle knuckle nearest and biggest, the outer two smaller and set back. Draw a fist aimed at the reader from the guide's diagram, four knuckle discs on an ellipse, then the thumb crossing in front.", tool: "pencil" },
           ] },
-        { title: "Reaching, grabbing, blocking",
+        { title: "Reaching, grabbing, blocking", exemplar: "handReach",
           hints: ["Handy app or Posemaniacs hands: rotate a pose until the fingers point at the camera.", "Nearest segment first. Then the next. Only draw an outline where nothing is in front of it.", "Ink the three best with heavy line on every overlap."],
           steps: [
             { h: "Reaching toward the reader", t: "From a rotated 3-D hand reference, draw an open hand reaching out of the panel: palm box tipped, fingers as disc stacks fanning toward you, the thumb wedge nearest of all if the palm faces down. Every place one form covers another gets a firm overlap line; nothing else gets an outline. Draw three from three references.", tool: "pencil", layer: "Pencils" },
@@ -107,7 +107,7 @@ PENSHI_CURRICULUM.push({
             { h: "The arch and the ankle", t: "The inner edge of the foot lifts in an arch; the outer edge lies flat. The inner ankle bone is higher than the outer. Draw both feet from the front and mark these — it's what makes a pair of feet look like a left and a right.", tool: "pencil" },
             { h: "Shoes are feet plus thickness", t: "A shoe is the foot wedge with a sole plate under it and a thicker skin. Draw a foot, then the same foot in a sneaker and in a boot. The boot is a tube added at the ankle.", tool: "pencil" },
           ] },
-        { title: "Walk, run, jump",
+        { title: "Walk, run, jump", exemplar: "walkRunJump",
           hints: ["FORCE book (Library): the rhythm of weight transfer.", "Walking: one foot always down. Running: both feet off the ground at one point. Jumping: the whole figure is one arc.", "Posemaniacs has animation-style poses — use them."],
           steps: [
             { h: "The walk cycle", t: "Draw four positions of a walk: contact (front heel down, back toe down), passing (weight over one foot, other leg swinging), contact, passing. The pelvis rises over the planted leg and the shoulders counter-rotate the hips. The plumb line stays over the support.", tool: "pencil", layer: "Pencils" },
@@ -150,7 +150,7 @@ PENSHI_CURRICULUM.push({
             { h: "Accented analogous", t: "Three neighbors plus the complement of the middle one as a spark. The most used palette in film and animation posters — cohesive with one point of fire. Swatch it: three teals and one orange.", tool: "marker" },
             { h: "Compare on one scene", t: "Draw a simple scene (a figure in a doorway) and color it three times: complementary, split-complementary, accented analogous. Which is calm? Which is tense? Which makes the figure pop? Label them.", tool: "marker" },
           ] },
-        { title: "Diagnosing a bad palette",
+        { title: "Diagnosing a bad palette", exemplar: "paletteDiagnosis",
           hints: ["Take an old colored drawing of yours (Portfolio) or a screenshot of any image with colors you dislike.", "Sample its colors with Alt+click and plot them on the wheel.", "Is there a harmony? A dominant? An accent — or five accents?"],
           steps: [
             { h: "Plot the colors", t: "Alt+click sample the four or five main colors from the image and, for each, look at where the Tool tab wheel puts it. Sketch the wheel in the margin and dot the positions. Do they form any harmony? Random scatter usually means the palette 'feels off' and nobody knows why.", tool: "marker", layer: "Colors" },
@@ -165,7 +165,7 @@ PENSHI_CURRICULUM.push({
       why: "Readers respond to color before they read a word. Comics colorists control emotion page by page: a warm palette for safety, a sickly green for dread, a single red object in a grey scene. But associations are cultural and contextual — red is danger AND love AND luck — so the tool is contrast and consistency, not a dictionary.",
       refs: ["gurney-book", "framed-ink", "marco-bucci", "gurney-blog"],
       pages: [
-        { title: "Mood boards",
+        { title: "Mood boards", exemplar: "moodBoards",
           hints: ["Six small rectangles. Each is a 'scene' colored for one mood: safe, dread, romance, action, mystery, grief.", "No drawing needed — just three to five color areas per rectangle: sky/background, ground, figure, accent.", "Note WHY each color choice — temperature? saturation? value?"],
           steps: [
             { h: "Safe and dread", t: "Safe: warm, mid-saturation, mid-to-high value, analogous. Dread: cool or sickly (yellow-green), low saturation except one wrong note, low value, high contrast. Paint both rectangles as abstract color fields. The associations here are physical — warmth, daylight versus cold, dimness.", tool: "marker", layer: "Colors" },
@@ -173,7 +173,7 @@ PENSHI_CURRICULUM.push({
             { h: "Mystery and grief", t: "Mystery: desaturated cool with deep blacks and one warm light source (a lamp, a window). Grief: near-monochrome, low saturation, muted warm greys — color drained out. Paint both.", tool: "marker" },
             { h: "One scene, two moods", t: "Draw one simple panel (a figure at a window). Color it 'safe' and 'dread' with the same drawing. Everything a colorist does is in that pair.", tool: "marker" },
           ] },
-        { title: "Color as a story device",
+        { title: "Color as a story device", exemplar: "colorStory",
           hints: ["Comics tricks: a color motif for a character; a palette shift at a story turn; a single saturated object in a desaturated scene.", "Design a 4-panel sequence's palette: panels 1–3 one harmony, panel 4 a shift."],
           steps: [
             { h: "Character motif", t: "Give a character a signature color that appears in every scene they're in — on their clothes, in the light around them, in a prop. Sketch three tiny panels with the character in different settings; the motif persists. Readers will feel the character's presence before recognizing them.", tool: "marker", layer: "Colors" },
@@ -215,7 +215,7 @@ PENSHI_CURRICULUM.push({
             { h: "Windows down a wall", t: "Use the same trick on a long wall to place six identical windows, spacing tightening as they recede. Each window's top and bottom aim at the wall's VP; each side is vertical.", tool: "pencil" },
             { h: "Transfer a height", t: "To give a distant object the same height as a near one: draw a line from the near object's top toward the VP and a line from its base toward the VP. Anything between those lines at any depth is 'the same height'. Place three figures of equal height at different depths this way.", tool: "pencil" },
           ] },
-        { title: "Mirroring and stacking",
+        { title: "Mirroring and stacking", exemplar: "mirrorStack",
           hints: ["Symmetric objects (a car, a chair, a face) are mirrored across a center plane.", "Find the center plane's diagonals in perspective, then reflect points across it.", "Stack: a box on a box on a box shares VPs and the vertical."],
           steps: [
             { h: "Mirror across a center line", t: "Draw a two-point box and a shape on its left face (a window). To mirror it onto the right side of the same face: find the face center with diagonals, then measure the window's distance from the center along the receding edge and duplicate it on the other side using a diagonal transfer. The mirrored window is smaller — correctly.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
@@ -251,7 +251,7 @@ PENSHI_CURRICULUM.push({
             { h: "Ellipse in a perspective square", t: "For a horizontal circle (a table, a manhole, a fountain), draw the perspective square first, diagonals for center, then fit the ellipse to the four midpoints. Three at different depths. Then a VERTICAL square on a wall for an arch or a clock.", tool: "pencil" },
             { h: "Cylinders on their side", t: "A barrel lying on the ground: an axle aimed at a VP, an ellipse at each end whose minor axes are on the axle, connected by lines. Draw a pile of three barrels. Then a pipe bending 90° (two cylinders meeting with a curved seam).", tool: "pencil" },
           ] },
-        { title: "Figures dropped into a scene",
+        { title: "Figures dropped into a scene", exemplar: "figuresInScene",
           hints: ["Grid on. Build a simple street in two-point.", "Place figures at 4 depths using the height-transfer method — eyes on the horizon if standing and your height.", "Then one figure sitting, one on a step, one far away."],
           steps: [
             { h: "The horizon does the work", t: "For standing figures of your own height, their EYES touch the horizon wherever they stand. Draw four figures at four depths; sizes come out automatically. A child's eyes sit below the horizon; someone on a box, above it.", guide: { persp: true, vps: 2 }, tool: "pencil", layer: "Pencils" },
