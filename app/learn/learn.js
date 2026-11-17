@@ -318,7 +318,7 @@ const Learn = (() => {
     await loadPage(App.pages[App.pageIndex]);
     App.projectName = attemptId;
     Undo.clear();
-    active = { ...found, attemptId, page: App.pageIndex, step: 0 };
+    active = { ...found, attemptId, page: App.pageIndex, step: 0, mixBefore: Tools.state.mix };
     lp(id).lastAt = Date.now(); saveProgress();
     home.hidden = true;
     UI.refreshLayers(); UI.refreshPageTabs(); Engine.fitPage(); App.dirty = true;
@@ -330,6 +330,7 @@ const Learn = (() => {
     if (!active) return;
     if (Drill.isActive()) await Drill.finish();   // lands the contact sheet before we leave
     if (save) await saveAttempt(true);
+    UI.setMix?.(active.mixBefore || "off");   // a lesson's colour-mixing choice ends with the lesson
     active = null;
     if (goHome && App.mode === "learn") { showHome(); renderLessonPanel(); }
   }
@@ -414,6 +415,7 @@ const Learn = (() => {
     const gl = guideLayers();
     if (gl.length > 1) showLevels(stepLevel(curPage(), active.step, gl.length));
     if (st.tool) UI.setTool(st.tool);
+    if (st.mix) UI.setMix?.(st.mix);
     if (st.guide) {
       const was = App.guides.persp;
       Object.assign(App.guides, st.guide);
@@ -439,7 +441,16 @@ const Learn = (() => {
   }
   const isStepDone = (page, idx) => !!progress.lessons[active.l.id]?.steps.includes(stepKey(page, idx));
 
-  async function next() {
+  /* Turning a page saves and loads, which takes a moment. A second Next or
+     Back during that time would act on the half-turned state (and could
+     skip a page or step past the last one), so it is ignored. */
+  let turning = false;
+  const once = fn => async () => {
+    if (turning || !active) return;
+    turning = true;
+    try { await fn(); } finally { turning = false; }
+  };
+  const next = once(async () => {
     setStepDone(active.page, active.step, true);
     const pg = curPage();
     if (active.step < pg.steps.length - 1) {
@@ -456,8 +467,8 @@ const Learn = (() => {
       return;
     }
     applyStep(); renderLessonPanel();
-  }
-  async function prev() {
+  });
+  const prev = once(async () => {
     if (active.step > 0) active.step--;
     else if (active.page > 0) {
       await saveAttempt(true);
@@ -466,7 +477,7 @@ const Learn = (() => {
       Engine.fitPage();
     } else return;
     applyStep(); renderLessonPanel();
-  }
+  });
 
   /* someone clicked a page tab directly */
   function onPagesRefreshed() {
@@ -504,8 +515,8 @@ const Learn = (() => {
       <ol class="ls-steps">${pg.steps.map((st, i) => `
         <li class="${isStepDone(active.page, i) ? "done" : ""} ${i === active.step ? "cur" : ""}" data-i="${i}">
           <label class="ls-check"><input type="checkbox" data-chk="${i}" ${isStepDone(active.page, i) ? "checked" : ""}></label>
-          <div class="ls-body"><b>${st.h}</b>${i === active.step ? `<p>${st.t}</p>
-            ${levelNote(pg, i)}
+          <div class="ls-body"><span class="ls-pin ${markersOn ? "" : "off"}">${i + 1}</span><b>${st.h}</b>${i === active.step ? `<p>${st.t}</p>
+            ${levelNote(pg, i)}${markerNote(pg, i)}
             ${st.drill ? `<div class="ls-drill">
               <select id="ls-drill-sec" title="Seconds per pose">${[15, 30, 45, 60, 90, 120].map(s =>
                 `<option value="${s}" ${s === (st.drill.seconds || 30) ? "selected" : ""}>${s} s</option>`).join("")}</select>
@@ -531,11 +542,14 @@ const Learn = (() => {
         <span class="muted">Guides</span>
         ${guideLayers().map((g, i) => `<button class="ls-level ${g.visible ? "on" : ""}" data-level="${i}">
           <i style="background:${g.tint || "#888"}"></i>${g.name.replace(/^Guide( \d+ · )?/, "") || "guide"}</button>`).join("")}
+        <button class="ls-level ${markersOn ? "on" : ""}" id="ls-markers" title="Numbered pins on the page showing where each step starts">
+          <span class="ls-pin">1</span>step markers</button>
       </div>`;
     $("#ls-back").addEventListener("click", () => closeLesson(true));
     $("#ls-prev").addEventListener("click", prev);
     $("#ls-next").addEventListener("click", next);
     $("#ls-save").addEventListener("click", () => saveAttempt(false));
+    $("#ls-markers").addEventListener("click", () => setMarkers(!markersOn));
     host.querySelectorAll("[data-level]").forEach(b => b.addEventListener("click", () => {
       const g = guideLayers()[+b.dataset.level];
       if (g) { g.visible = !g.visible; App.dirty = true; UI.refreshLayers(); renderLessonPanel(); }
@@ -554,6 +568,199 @@ const Learn = (() => {
     }));
   }
 
+
+  /* ============================================================
+     Step markers
+     Each step shows where to start: a numbered pin at the top-left of
+     every separate drawing its guide level adds, with a dashed box round
+     it (2a, 2b … in reading order when there are several). The drawings
+     are found by painting that level off-screen with its text switched
+     off and grouping the inked cells of a coarse grid; nothing is stored
+     with the page, so practice pages saved before markers existed get
+     them too. A step that sends you off on your own ("Hide the guides…",
+     or `mark: "own"` on the step) gets one pin in the free half of a wide
+     practice page instead.
+     ============================================================ */
+  const MARK_KEY = "penshi-step-markers";
+  let markersOn = true;
+  try { markersOn = localStorage.getItem(MARK_KEY) !== "0"; } catch {}
+  const partsCache = new Map();
+  const MAX_LETTERED = 12;                 // more parts than this: one "start here" pin
+  const isOwnWork = st => st.mark === "own" || /\bhide the guides?\b/i.test(st.t || "");
+  const isWide = () => !!App.page && App.page.presetKey === PAGE_PRESET;
+  /* the area a page's guides were painted into: the left half of a wide
+     practice page, the whole page on older letter-size ones */
+  const guideArea = () => isWide() ? guidePage() : App.page;
+
+  /* paint some of a guide's levels off-screen with text switched off, and
+     count inked pixels on a coarse grid */
+  function inkGrid(key, levels, P) {
+    const c = document.createElement("canvas"); c.width = P.w; c.height = P.h;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    const proto = CanvasRenderingContext2D.prototype, fillText = proto.fillText, strokeText = proto.strokeText;
+    proto.fillText = proto.strokeText = function () {};          // labels and notes are not drawing
+    try { for (const L of levels) Exemplars.paint(x, key, P, L); }
+    catch { /* a guide that fails to paint simply gets no markers */ }
+    finally { proto.fillText = fillText; proto.strokeText = strokeText; }
+    const d = x.getImageData(0, 0, P.w, P.h).data;
+    const cell = Math.max(4, Math.round(P.dpi * 0.06)), gw = Math.ceil(P.w / cell), gh = Math.ceil(P.h / cell);
+    const ink = new Uint16Array(gw * gh);
+    for (let y = 0; y < P.h; y++) {
+      const row = y * P.w * 4, gy = (y / cell | 0) * gw;
+      for (let xx = 0; xx < P.w; xx++) if (d[row + xx * 4 + 3] > 24) ink[gy + (xx / cell | 0)]++;
+    }
+    return { ink, gw, gh, cell };
+  }
+  /* the separate drawings on a grid, as pixel boxes in reading order */
+  function clusterBoxes({ ink, gw, gh, cell }, P) {
+    /* neighbours within two cells belong to the same drawing, so the strokes
+       of one figure join up while separate frames stay apart */
+    const R = 2, lab = new Int32Array(gw * gh).fill(-1), parts = [];
+    for (let s = 0; s < gw * gh; s++) {
+      if (!ink[s] || lab[s] >= 0) continue;
+      const stack = [s], b = { x0: 1e9, y0: 1e9, x1: -1, y1: -1, n: 0 };
+      lab[s] = parts.length;
+      while (stack.length) {
+        const q = stack.pop(), qx = q % gw, qy = q / gw | 0;
+        b.n++;
+        if (qx < b.x0) b.x0 = qx; if (qx > b.x1) b.x1 = qx;
+        if (qy < b.y0) b.y0 = qy; if (qy > b.y1) b.y1 = qy;
+        for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+          const nx = qx + dx, ny = qy + dy;
+          if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+          const t = ny * gw + nx;
+          if (ink[t] && lab[t] < 0) { lab[t] = parts.length; stack.push(t); }
+        }
+      }
+      parts.push(b);
+    }
+    /* in pixels; drop specks (a stray tick or dot is not a drawing) */
+    const minSide = P.dpi * 0.2;
+    let boxes = parts.map(b => ({ x0: b.x0 * cell, y0: b.y0 * cell, x1: (b.x1 + 1) * cell, y1: (b.y1 + 1) * cell, n: b.n }))
+      .filter(b => b.n >= 4 && (b.x1 - b.x0 >= minSide || b.y1 - b.y0 >= minSide));
+    /* a drawing inside another one's box (a figure inside its frame) is part of it */
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (let i = 0; i < boxes.length && !merged; i++) for (let j = i + 1; j < boxes.length && !merged; j++) {
+        const a = boxes[i], b = boxes[j];
+        if (a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1) {
+          boxes[i] = { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), n: a.n + b.n };
+          boxes.splice(j, 1); merged = true;
+        }
+      }
+    }
+    return readingOrder(boxes);
+  }
+  /* rows (boxes whose middles share a band), each row left to right */
+  function readingOrder(boxes) {
+    boxes = boxes.slice().sort((a, b) => a.y0 - b.y0);
+    const rows = [];
+    for (const b of boxes) {
+      const mid = (b.y0 + b.y1) / 2, row = rows.find(r => mid >= r.y0 && mid <= r.y1);
+      if (row) { row.items.push(b); row.y0 = Math.min(row.y0, b.y0); row.y1 = Math.max(row.y1, b.y1); }
+      else rows.push({ y0: b.y0, y1: b.y1, items: [b] });
+    }
+    return rows.flatMap(r => r.items.sort((a, b) => a.x0 - b.x0));
+  }
+  /* The parts one level adds. The guide's REGIONS (its separate drawings
+     with every level painted: frames, figures, rows of swatches) set what
+     counts as one part; a level's part in a region is the box round the ink
+     that level adds there. So a level that adds a row of small shapes inside
+     one frame is one part, not seven. */
+  function levelParts(key, level, P) {
+    const ck = `${key}|${level}|${P.w}x${P.h}`;
+    if (partsCache.has(ck)) return partsCache.get(ck);
+    const rk = `${key}|regions|${P.w}x${P.h}`;
+    if (!partsCache.has(rk)) {
+      const n = Exemplars.levels(key).length || 1;
+      partsCache.set(rk, clusterBoxes(inkGrid(key, [...Array(n).keys()], P), P));
+    }
+    const regions = partsCache.get(rk), g = inkGrid(key, [level], P), { ink, gw, cell } = g;
+    const minSide = P.dpi * 0.1, out = [];
+    for (const r of regions) {
+      const cx0 = r.x0 / cell, cy0 = r.y0 / cell, cx1 = r.x1 / cell, cy1 = r.y1 / cell;
+      const b = { x0: 1e9, y0: 1e9, x1: -1, y1: -1, n: 0 };
+      for (let cy = cy0; cy < cy1; cy++) for (let cx = cx0; cx < cx1; cx++) if (ink[cy * gw + cx]) {
+        b.n++;
+        if (cx < b.x0) b.x0 = cx; if (cx > b.x1) b.x1 = cx;
+        if (cy < b.y0) b.y0 = cy; if (cy > b.y1) b.y1 = cy;
+      }
+      const box = { x0: b.x0 * cell, y0: b.y0 * cell, x1: (b.x1 + 1) * cell, y1: (b.y1 + 1) * cell, n: b.n };
+      if (b.n >= 4 && (box.x1 - box.x0 >= minSide || box.y1 - box.y0 >= minSide)) out.push(box);
+    }
+    const parts = out.length ? out : clusterBoxes(g, P);
+    partsCache.set(ck, parts);
+    return parts;
+  }
+
+  /* what to mark for a step: { own: true } or { parts: [...] }, or null */
+  function stepMarks(pg, idx) {
+    const st = pg && pg.steps[idx];
+    if (!st || !App.page) return null;
+    if (isOwnWork(st) || !pg.exemplar) return isWide() ? { own: true } : null;
+    const n = Exemplars.levels(pg.exemplar).length || 1;
+    /* a level that only adds words has no drawing: fall back to the one below */
+    for (let L = stepLevel(pg, idx, n); L >= 1; L--) {
+      const parts = levelParts(pg.exemplar, L - 1, guideArea());
+      if (parts.length) return { parts };
+    }
+    return isWide() ? { own: true } : null;
+  }
+  const partLabel = (num, i, count) => count === 1 ? String(num) : num + String.fromCharCode(97 + i);
+
+  /* one line under the current step in the panel */
+  function markerNote(pg, idx) {
+    if (!markersOn) return "";
+    const m = stepMarks(pg, idx), num = idx + 1;
+    if (!m) return "";
+    const pinTag = `<span class="ls-pin">${num}</span>`;
+    if (m.own) return `<p class="ls-marknote">${pinTag}On the page: the pin in <b>your space</b>, on the right.</p>`;
+    const k = m.parts.length;
+    if (k === 1) return `<p class="ls-marknote">${pinTag}On the page: start at pin ${num}, inside its dashed box.</p>`;
+    if (k > MAX_LETTERED) return `<p class="ls-marknote">${pinTag}On the page: ${k} drawings in dashed boxes; start at pin ${num}, then work across and down.</p>`;
+    return `<p class="ls-marknote">${pinTag}On the page: ${k} parts, pins ${partLabel(num, 0, k)}–${partLabel(num, k - 1, k)}, in reading order.</p>`;
+  }
+
+  /* drawn by the engine inside the page transform; sizes stay constant on screen */
+  function renderMarkers(ctx) {
+    if (!markersOn || !active || App.mode !== "learn" || !App.page) return;
+    const pg = curPage(), m = stepMarks(pg, active.step);
+    if (!m) return;
+    const z = App.view.zoom, num = active.step + 1, P = App.page;
+    const pin = (x, y, text) => {
+      ctx.font = `600 ${12 / z}px "Segoe UI", system-ui, sans-serif`;
+      const r = 10 / z, tw = ctx.measureText(text).width, w = Math.max(2 * r, tw + 12 / z);
+      ctx.beginPath(); ctx.roundRect(x - r, y - r, w, 2 * r, r);
+      ctx.fillStyle = "#e8b04b"; ctx.fill();
+      ctx.lineWidth = 1.5 / z; ctx.strokeStyle = "#201a10"; ctx.stroke();
+      ctx.fillStyle = "#201a10"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(text, x - r + w / 2, y + 0.5 / z);
+    };
+    const box = (b, pad) => {
+      ctx.setLineDash([6 / z, 4 / z]); ctx.lineWidth = 1.5 / z; ctx.strokeStyle = "rgba(232,176,75,0.95)";
+      ctx.strokeRect(b.x0 - pad, b.y0 - pad, b.x1 - b.x0 + 2 * pad, b.y1 - b.y0 + 2 * pad);
+      ctx.setLineDash([]);
+    };
+    ctx.save();
+    if (m.own) {
+      const x0 = guidePage().w + P.dpi * 0.2, y0 = P.h * 0.06 + P.dpi * 0.45;
+      box({ x0, y0, x1: P.w - P.safe, y1: P.h - P.safe }, 0);
+      pin(x0, y0, `${num} · draw here`);
+    } else {
+      const pad = 5 / z, k = m.parts.length;
+      m.parts.forEach(b => box(b, pad));
+      if (k > MAX_LETTERED) pin(m.parts[0].x0 - pad, m.parts[0].y0 - pad, `${num} · start here`);
+      else m.parts.forEach((b, i) => pin(b.x0 - pad, b.y0 - pad, partLabel(num, i, k)));
+    }
+    ctx.restore();
+  }
+  function setMarkers(on) {
+    markersOn = on;
+    try { localStorage.setItem(MARK_KEY, on ? "1" : "0"); } catch {}
+    App.dirty = true; renderLessonPanel();
+  }
+
   /* ============================================================ */
   function init() {
     home = $("#learn-home");
@@ -563,7 +770,8 @@ const Learn = (() => {
     UI.onPagesRefreshed = onPagesRefreshed;
   }
 
-  return { init, enter, exit, startLesson, saveAttempt, startDrill,
+  return { init, enter, exit, startLesson, saveAttempt, startDrill, renderMarkers,
+           markerParts: levelParts,       // (guide key, level index, page) → parts; for checks
            isActive: () => App.mode === "learn", hasLesson: () => !!active,
            lessonCount: () => allLessons().length };
 })();

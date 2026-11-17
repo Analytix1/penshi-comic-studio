@@ -164,13 +164,15 @@ comic-studio/
    └─ js/
       ├─ state.js     document model, layers, undo/redo, save/load
       ├─ engine.js    compositor, zoom/pan, PNG export
-      ├─ tools.js     pointer pipeline, brushes, fill, shapes, select
+      ├─ tools.js     pointer pipeline, brushes (incl. the oil brush), fill, shapes, select
+      ├─ mix.js       colour mixing: light (adds) and pigment (a small paint model)
       ├─ panels.js    panel objects + page templates
       ├─ lettering.js balloons, thoughts, captions, SFX bursts
       ├─ guides.js    print guides, composition overlays, perspective grid
       ├─ reference.js Craft tab (comics reference) + Library tab
       ├─ colorwheel.js HSV wheel with harmony modes (Tool tab)
-      └─ main.js      UI wiring, shortcuts, tour, boot
+      ├─ main.js      UI wiring, shortcuts, tour, boot
+      └─ fullscreen.js full-screen mode with floating tool and panel widgets
    └─ learn/          Learn mode — its own folder
       ├─ learn.js     mode switch, curriculum home, Portfolio, lesson runner
       ├─ drill.js     timed gesture drill (countdown, auto-clear, contact sheet)
@@ -192,6 +194,7 @@ never enter version control.
 | B | Ink pen | V | Select/move |
 | P | Pencil (blue) | H | Pan (or hold Space) |
 | M | Marker | K | Panel tool |
+| O | Oil brush | F | Full screen |
 | E | Eraser | T | Speech balloon |
 | G | Fill | [ / ] | Brush smaller/bigger |
 | S | Stroke eraser (removes whole strokes) | Ctrl+C/X/V | Copy / cut / paste selected object |
@@ -211,6 +214,24 @@ never enter version control.
 
 Page formats: 8 presets (US comic, manga B5, webtoon, square, Golden Age, digest,
 US Letter, A4) plus fully custom width × height at 150 or 300 dpi.
+
+## Painting: the oil brush and colour mixing
+
+- **Oil brush** (`O`). A row of bristles that each carry their own colour. **Paint load**
+  is how far a stroke goes before it runs dry and breaks into streaks (100% never runs
+  out; lift and press again to reload). **Wetness** is how much it picks up and drags
+  the colours it passes over, so wet colours smear into each other.
+- **Colour mixing** (Tool tab) decides what happens where a new stroke crosses paint:
+  - **Off** — the new colour covers, as before.
+  - **Light** — colours add like coloured lamps: red + green = yellow, all three = white.
+    Best on a dark ground.
+  - **Pigment** — colours mix like paint: blue + yellow = green, opposites go grey.
+    A stroke never fully covers here; at full opacity it mixes about half and half.
+
+  The pen, pencil and marker mix when you lift the pen; the oil brush mixes as it goes.
+  Every stroke is stored and replays exactly, so undo, the stroke eraser and the lasso
+  keep working on mixed paint. Real paints vary by brand and pigment; the Pigment mode
+  is a model of how paint behaves, not a match for any particular tube.
 
 ## Volumes, assets & lasso
 
@@ -233,7 +254,7 @@ US Letter, A4) plus fully custom width × height at 150 or 300 dpi.
 Click **Learn** in the top bar (next to **Studio**) to open a full, self-paced drawing
 course that runs on the same canvas and tools you make comics with:
 
-- **7 sections · 20 chapters · 75 lessons · ~500 steps (about 33,000 words of
+- **7 sections · 20 chapters · 78 lessons · over 700 steps (about 33,000 words of
   instruction).** Foundations (thinking in 3-D forms, observation) → Extending
   (perspective, shading, gesture) → Gaining Form (heads, bodies incl. age & body
   types, fabric, color) → Advanced Topics (figure incl. hands, feet and
@@ -254,7 +275,15 @@ course that runs on the same canvas and tools you make comics with:
   built from real 3-D geometry (figures, heads, hands, animals, vehicles, buildings
   in true perspective), appear as you move through the steps, and can be toggled
   individually from the lesson panel. They save with your work. Steps also switch
-  you to the right tool and layer, and turn on the perspective grid when needed.
+  you to the right tool, layer and colour-mixing mode, and turn on the perspective
+  grid when needed. Practice pages are two letter pages wide: the guide on the left,
+  free space to draw in on the right.
+- **Step markers show where to start.** Each step puts a numbered pin on the page at
+  the drawing it is about, with a dashed box round it; when a step covers several
+  drawings they are lettered in reading order (2a, 2b, 2c…). Steps that send you off
+  to work on your own put the pin in the free half of the page. The same numbers sit
+  beside the steps in the lesson panel, and **step markers** in the panel's guide
+  bar turns them off.
 - **Study from real sources.** Every lesson cites its references — Drawabox, Proko,
   Loomis and Bridgman (public domain), Line of Action, Posemaniacs, museum
   collections, NASA landform imagery and more — with a free / freemium / paid badge.
@@ -263,6 +292,11 @@ course that runs on the same canvas and tools you make comics with:
 - **Progress and Portfolio.** Every step you tick is remembered; every practice
   page is saved to a **Portfolio** with a thumbnail and date, kept apart from your
   comic projects, so you can scroll back through months of work and see the change.
+
+The colour chapter ends with **Mixing and blending: light, paint and edges** — light
+against paint, a mixing chart, strings between colours, hard/soft/lost/broken edges,
+and glazing, scumbling and optical mixing — practised with the oil brush and the
+Colour mixing modes.
 
 Color lessons use the **color wheel in the Tool tab** — a hue ring with separate
 Saturation and Value scales and harmony modes (complementary, analogous, triadic,

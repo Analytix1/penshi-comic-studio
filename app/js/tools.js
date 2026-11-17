@@ -21,6 +21,8 @@ const Tools = (() => {
     pressureSize: true, pressureOpacity: false,
     color: "#1a1a1a",
     gutter: 14,
+    mix: "off",              // how a new stroke combines with paint under it: "off" | "light" | "pigment"
+    oilLoad: 0.7, oilWet: 0.5, // oil brush: how far the paint lasts, how much it smears what it crosses
     // what the Slim Pen's flip-end eraser does: "eraser" | "strokeeraser"
     tailMode: localStorage.getItem("penshi-tail-mode") || "eraser",
   };
@@ -31,6 +33,7 @@ const Tools = (() => {
     pencil: { minW: 0.45, alphaP: true,  spacing: 0.30, baseAlpha: 0.55 },
     marker: { minW: 0.85, alphaP: false, spacing: 0.22, baseAlpha: 0.45 },
     eraser: { minW: 0.60, alphaP: false, spacing: 0.18 },
+    oil:    { minW: 0.50, alphaP: false, spacing: 0.20 },  // bristles; painted by oilTo(), not stamped
   };
 
   /* ---------- scratch buffer ---------- */
@@ -93,6 +96,156 @@ const Tools = (() => {
     return w;
   }
 
+
+  /* ============================================================
+     Oil brush
+     A row of bristles, each carrying its own colour. Every bristle
+     drags a line; as the paint runs out the weaker bristles stop
+     and the stroke breaks into dry streaks. Bristles pick up the
+     colour they pass over, so wet colours smear into each other.
+     It paints straight onto the layer (it has to read what is
+     under it), and everything random comes from a seed stored with
+     the stroke, so a replay from the op log paints the same thing.
+     ============================================================ */
+  const rng = seed => () => { let t = seed += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const css = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+  function oilStart(cfg) {
+    const rnd = rng(cfg.seed | 0);
+    const n = Math.max(5, Math.min(28, Math.round(cfg.size / 2.2)));
+    const base = Mix.rgb(cfg.color);
+    const bristles = Array.from({ length: n }, (_, j) => {
+      const shade = 1 + (rnd() - 0.5) * 0.26;        // each bristle a touch lighter or darker: the streaks
+      const own = base.map(v => Math.min(255, v * shade));
+      return { off: (j / (n - 1)) * 2 - 1 + (rnd() - 0.5) * (1.2 / n), w: 0.6 + rnd() * 0.7, hold: 0.5 + rnd() * 0.5,
+               own, col: own.slice(), pick: 0, x: 0, y: 0 };
+    });
+    return { rnd, bristles, n, dist: 0, since: 1e9, nx: 0, ny: 1, has: false, last: null };
+  }
+  /* paint from the last point to p = {x, y, k}; returns false if p was too close to act on */
+  function oilTo(lctx, o, p, cfg) {
+    const brush = BRUSHES.oil;
+    if (!o.last) { o.last = p; return true; }
+    const a = o.last, dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy);
+    if (d < 0.6) return false;
+    let nx = -dy / d, ny = dx / d;
+    const w = Math.min(cfg.size * 2 + 4, Math.max(1.5, widthFor(p.k, brush, cfg)));
+    if (!o.has) {
+      for (const b of o.bristles) { b.x = a.x + nx * b.off * w / 2; b.y = a.y + ny * b.off * w / 2; }
+      o.has = true;
+    } else {
+      /* a flat brush keeps its sides when you scrub back and forth: never let
+         the row of bristles flip over, or every bristle would cross the stroke */
+      if (o.nx * nx + o.ny * ny < 0) { nx = -nx; ny = -ny; }
+      nx = o.nx * 0.45 + nx * 0.55; ny = o.ny * 0.45 + ny * 0.55;   // ease the turn
+      const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+    }
+    o.nx = nx; o.ny = ny; o.last = p;
+    /* how much paint is left on the brush. A full load (100%) never runs out;
+       below that the brush runs dry after roughly 3 + 40·load brush-widths,
+       breaking into streaks from about halfway */
+    o.dist += d;
+    const left = cfg.load >= 0.99 ? 1 : Math.max(0, 1 - o.dist / (cfg.size * (3 + cfg.load * 40)));
+    const strength = left * (0.55 + 0.45 * p.k);
+    /* paint a bristle picks up is laid down again within a brush-width or two */
+    const fade = Math.exp(-d / Math.max(4, w * 1.5));
+    /* read what is under the brush, every third of a brush-width */
+    let img = null, ox = 0, oy = 0, iw = 0;
+    o.since += d;
+    if (cfg.wet > 0 && o.since >= Math.max(2, w * 0.3)) {
+      o.since = 0;
+      const r = Math.ceil(w / 2) + 2; ox = Math.floor(p.x) - r; oy = Math.floor(p.y) - r; iw = 2 * r + 1;
+      /* pixel reads ignore the context's transform; an off-page render of a
+         lasso selection translates it, so read where the paint really is */
+      const T = lctx.getTransform();
+      img = lctx.getImageData(ox + Math.round(T.e), oy + Math.round(T.f), iw, iw).data;
+    }
+    const mode = cfg.mix || "off", opacity = cfg.opacity ?? 1;
+    /* opaque paint: round ends close every joint. Thinned paint (opacity
+       below 100%): square ends, so the ends of neighbouring segments don't
+       overlap and darken into a row of beads */
+    lctx.lineCap = opacity < 1 ? "butt" : "round";
+    lctx.globalAlpha = opacity;
+    for (const b of o.bristles) {
+      const x = p.x + nx * b.off * w / 2, y = p.y + ny * b.off * w / 2;
+      if (img) {
+        const i = ((Math.floor(y) - oy) * iw + (Math.floor(x) - ox)) * 4, ua = img[i + 3];
+        if (ua > 10) {
+          b.col = Mix.mix(mode, b.col, [img[i], img[i + 1], img[i + 2]], cfg.wet * 0.55 * ua / 255);
+          b.pick = Math.max(b.pick, cfg.wet * ua / 255);
+        }
+      }
+      b.pick *= fade;
+      /* fresh paint keeps feeding the bristle while there is any left */
+      const feed = Math.min(1, 0.22 * left * d / Math.max(2, w * 0.3));
+      if (feed > 0) for (let c = 0; c < 3; c++) b.col[c] += (b.own[c] - b.col[c]) * feed;
+      /* a bristle draws while it carries paint: its own load, or wet paint it
+         has picked up. Weak bristles (low hold) give out first: dry streaks.
+         With nothing on it, it stops — a dry brush leaves no mark on bare canvas. */
+      const amount = Math.max(strength, b.pick);
+      /* running low shows as thinner bristles, not fainter ones (fainter
+         segments would bead where their ends overlap) */
+      if (amount > 0.06 + (1 - b.hold) * 0.9 + (o.rnd() - 0.5) * 0.1) {
+        lctx.strokeStyle = css(b.col);
+        lctx.lineWidth = Math.max(0.8, (w / o.n) * 1.75 * b.w * (0.45 + 0.55 * Math.min(1, amount * 1.5)));
+        lctx.beginPath(); lctx.moveTo(b.x, b.y); lctx.lineTo(x, y); lctx.stroke();
+      }
+      b.x = x; b.y = y;
+    }
+    lctx.globalAlpha = 1;
+    return true;
+  }
+  /* a tap with no travel: one round dab */
+  function oilDab(lctx, p, cfg) {
+    lctx.save(); lctx.globalAlpha = cfg.opacity ?? 1; lctx.fillStyle = cfg.color;
+    lctx.beginPath(); lctx.arc(p.x, p.y, Math.max(1, widthFor(p.k, BRUSHES.oil, cfg) / 2), 0, Math.PI * 2); lctx.fill(); lctx.restore();
+  }
+  function oilReplay(lctx, op) {
+    const o = oilStart(op.cfg);
+    lctx.save();
+    for (const p of op.points) oilTo(lctx, o, p, op.cfg);
+    lctx.restore();
+    if (!o.has) oilDab(lctx, op.points[0], op.cfg);
+  }
+
+  /* the page box a stroke can have touched */
+  function strokeBox(points, size) {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const p of points) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
+    const m = size * 2 + 6;
+    return { x0: x0 - m, y0: y0 - m, x1: x1 + m, y1: y1 + m };
+  }
+  /* Committing a stroke: it is stamped again from its LOGGED points onto a
+     software canvas and landed on the layer from there — the same steps a
+     replay from the op log takes, so a rebuilt layer is pixel-identical to
+     what was painted. Two reasons for the software canvas:
+       · the live preview canvas is drawn by the graphics card, and copying a
+         graphics-card canvas onto a layer quietly moves the LAYER onto the
+         graphics card too, which smooths edges a little differently from then
+         on (strokes painted before and after the move would no longer replay
+         the same — and the oil brush and colour mixing read those pixels);
+       · mixing reads the stroke's pixels back, which is cheap in software. */
+  const stampCanvas = document.createElement("canvas");
+  let stampCtx = null;
+  const isMixed = op => op.cfg.mix === "light" || op.cfg.mix === "pigment";
+  function commitStroke(lctx, op) {
+    if (!stampCtx) stampCtx = stampCanvas.getContext("2d", { willReadFrequently: true });
+    if (stampCanvas.width !== App.page.w || stampCanvas.height !== App.page.h) {
+      stampCanvas.width = App.page.w; stampCanvas.height = App.page.h;
+    }
+    const b = strokeBox(op.points, op.cfg.size);   // holds every stamp of the stroke
+    const x0 = Math.max(0, Math.floor(b.x0)), y0 = Math.max(0, Math.floor(b.y0));
+    const x1 = Math.min(stampCanvas.width, Math.ceil(b.x1)), y1 = Math.min(stampCanvas.height, Math.ceil(b.y1));
+    if (x1 <= x0 || y1 <= y0) return;               // entirely off the page
+    replayStamps(stampCtx, op, BRUSHES[op.tool]);
+    if (isMixed(op)) Mix.composite(lctx, stampCtx, op.alpha, op.cfg.mix, { x0, y0, x1, y1 });
+    else {
+      lctx.save(); lctx.globalAlpha = op.alpha;
+      lctx.drawImage(stampCanvas, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+      lctx.restore();
+    }
+    stampCtx.clearRect(x0, y0, x1 - x0, y1 - y0);
+  }
+
   function beginStroke(e, toolName, sizeOverride) {
     const layer = activeLayer();
     if (layer.kind !== "raster") {
@@ -108,6 +261,12 @@ const Tools = (() => {
     stroke.cfg = { size: sizeOverride || state.size, color: state.color,
                    pressureSize: state.pressureSize,
                    pressureOpacity: state.pressureOpacity };
+    if (state.mix !== "off" && !stroke.erase) stroke.cfg.mix = state.mix;
+    stroke.oil = null;
+    if (toolName === "oil") {
+      Object.assign(stroke.cfg, { seed: (Math.random() * 2 ** 31) | 0, load: state.oilLoad, wet: state.oilWet, opacity: state.opacity });
+      stroke.oil = oilStart(stroke.cfg);
+    }
     const brush = BRUSHES[toolName];
     stroke.alpha = (brush.baseAlpha ?? 1) * state.opacity;
     resetScratch();
@@ -116,11 +275,15 @@ const Tools = (() => {
     stroke.last = p;
     stroke.points = [{ x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10,
                        k: Math.round(p.pressure * 100) / 100 }];
-    if (stroke.erase) {
-      // erase live, directly on the layer (destination-out)
-      const lctx = layer.canvas.getContext("2d");
+    if (stroke.oil) {
+      oilTo(layer.canvas.getContext("2d"), stroke.oil, stroke.points[0], stroke.cfg);   // just plants the brush
+    } else if (stroke.erase) {
+      // erase live, directly on the layer (destination-out), along the LOGGED
+      // points — exactly what a replay erases, so a rebuild matches the page
+      const lctx = layer.canvas.getContext("2d"), q = stroke.points[0];
+      stroke.lastLogged = { x: q.x, y: q.y, w: widthFor(q.k, brush, stroke.cfg) };
       lctx.save(); lctx.globalCompositeOperation = "destination-out";
-      stampSegment(lctx, p, p, brush, p.pressure, stroke.cfg);
+      stampSegment(lctx, stroke.lastLogged, stroke.lastLogged, brush, q.k, stroke.cfg);
       lctx.restore();
       layer._stamp = (layer._stamp || 0) + 1;
     } else {
@@ -136,10 +299,11 @@ const Tools = (() => {
     // return an empty list, so always fall back to the event itself
     const coalesced = e.getCoalescedEvents?.();
     const events = coalesced && coalesced.length ? coalesced : [e];
-    const lctx = stroke.erase ? stroke.layer.canvas.getContext("2d") : sctx;
+    const lctx = (stroke.erase || stroke.oil) ? stroke.layer.canvas.getContext("2d") : sctx;
     if (stroke.erase) {
       lctx.save(); lctx.globalCompositeOperation = "destination-out";
     }
+    if (stroke.oil) lctx.save();
     for (const ev of events) {
       const raw = pointFrom(ev);
       // exponential smoothing — steadies wobble, "stabilizer" in art apps
@@ -149,28 +313,45 @@ const Tools = (() => {
         y: stroke.last.y * s + raw.y * (1 - s),
         pressure: raw.pressure,
       };
+      const logged = { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10,
+                       k: Math.round(p.pressure * 100) / 100 };
+      if (stroke.oil) {
+        /* paint from the LOGGED point, so a replay retraces it exactly;
+           a sample too close to act on is not logged at all */
+        stroke.last = p;
+        if (!oilTo(lctx, stroke.oil, logged, stroke.cfg)) continue;
+        stroke.points.push(logged);
+        continue;
+      }
+      if (stroke.erase) {                       // as in beginStroke: follow the log
+        stroke.last = p;
+        const cur = { x: logged.x, y: logged.y };
+        cur.w = stampSegment(lctx, stroke.lastLogged, cur, brush, logged.k, stroke.cfg);
+        stroke.lastLogged = cur;
+        stroke.points.push(logged);
+        continue;
+      }
       p.w = stampSegment(lctx, stroke.last, p, brush, p.pressure, stroke.cfg);
       stroke.last = p;
-      stroke.points.push({ x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10,
-                           k: Math.round(p.pressure * 100) / 100 });
+      stroke.points.push(logged);
     }
-    if (stroke.erase) { lctx.restore(); stroke.layer._stamp = (stroke.layer._stamp || 0) + 1; }
+    if (stroke.erase || stroke.oil) { lctx.restore(); stroke.layer._stamp = (stroke.layer._stamp || 0) + 1; }
     App.dirty = true;
   }
 
   function endStroke() {
     if (!stroke.active) return;
-    if (!stroke.erase) {
-      const lctx = stroke.layer.canvas.getContext("2d");
-      lctx.save();
-      lctx.globalAlpha = stroke.alpha;
-      lctx.drawImage(scratch, 0, 0);
-      lctx.restore();
-      resetScratch();
-    }
-    stroke.layer._stamp = (stroke.layer._stamp || 0) + 1;
     const op = { kind: "stroke", tool: stroke.tool, erase: stroke.erase,
                  alpha: stroke.alpha, cfg: stroke.cfg, points: stroke.points };
+    if (stroke.oil) {
+      if (!stroke.oil.has) oilDab(stroke.layer.canvas.getContext("2d"), stroke.points[0], stroke.cfg);
+      stroke.oil = null;
+    } else if (!stroke.erase) {
+      const lctx = stroke.layer.canvas.getContext("2d");
+      resetScratch();                 // the live preview is done with
+      commitStroke(lctx, op);         // exactly what a replay will paint
+    }
+    stroke.layer._stamp = (stroke.layer._stamp || 0) + 1;
     if (stroke.erase) {
       // an eraser pass may sever logged strokes into pieces — restructure
       // the log so each visual fragment becomes its own stroke, then
@@ -209,7 +390,13 @@ const Tools = (() => {
 
     const out = [];
     for (const op of layer.ops) {
-      if (op === eraseOp || op.kind !== "stroke" || op.erase) { out.push(op); continue; }
+      /* Strokes that read the paint under them stay whole: an oil stroke's
+         piece replayed alone would start with a fresh load of paint and
+         different bristles, and a colour-mixed stroke's pieces would mix with
+         each other where they meet — either way the replay would no longer
+         match the page. The eraser op that follows still removes the same
+         pixels on replay; the stroke eraser removes such a stroke whole. */
+      if (op === eraseOp || op.kind !== "stroke" || op.erase || op.tool === "oil" || op.cfg.mix) { out.push(op); continue; }
       const oR = op.cfg.size / 2;
       if (!op.points.some(q => q.x >= ex0 - oR && q.x <= ex1 + oR &&
                                 q.y >= ey0 - oR && q.y <= ey1 + oR)) {
@@ -524,17 +711,14 @@ const Tools = (() => {
   function replayOp(lctx, op) {
     if (op.kind === "stroke") {
       const brush = BRUSHES[op.tool];
-      if (op.erase) {
+      if (op.tool === "oil") {
+        oilReplay(lctx, op);
+      } else if (op.erase) {
         lctx.save(); lctx.globalCompositeOperation = "destination-out";
         replayStamps(lctx, op, brush);
         lctx.restore();
       } else {
-        resetScratch();
-        replayStamps(sctx, op, brush);
-        lctx.save(); lctx.globalAlpha = op.alpha;
-        lctx.drawImage(scratch, 0, 0);
-        lctx.restore();
-        resetScratch();
+        commitStroke(lctx, op);
       }
     } else if (op.kind === "shape") {
       drawShapeOp(lctx, op);
@@ -897,6 +1081,7 @@ const Tools = (() => {
   let spacePan = false;   // main.js sets this while Space is held
 
   function onDown(e) {
+    if (isPageLoading()) return;          // a page is still decoding its layers (see loadPage)
     try { view.setPointerCapture(e.pointerId); }
     catch { /* pen already out of range, or synthetic event */ }
 
@@ -954,7 +1139,7 @@ const Tools = (() => {
     }
 
     switch (tool) {
-      case "ink": case "pencil": case "marker": case "eraser":
+      case "ink": case "pencil": case "marker": case "oil": case "eraser":
         beginStroke(e, tool, sizeOverride); break;
       case "fill":
         floodFill(p.x, p.y); break;
@@ -1271,10 +1456,14 @@ const Tools = (() => {
       resetScratch(); lastShape = null; App.dirty = true; return;
     }
     const before = snapshotRaster(layer);
-    layer.canvas.getContext("2d").drawImage(scratch, 0, 0);
+    const op = lastShape; lastShape = null;
+    /* draw the shape straight onto the layer, as a replay does (copying the
+       preview canvas would move the layer onto the graphics card — see
+       commitStroke) */
+    const lctx = layer.canvas.getContext("2d");
+    lctx.save(); drawShapeOp(lctx, op); lctx.restore();
     layer._stamp = (layer._stamp || 0) + 1;
     resetScratch();
-    const op = lastShape; lastShape = null;
     layer.ops.push(op);
     commitRasterChange(layer, before, { add: op });
     UI.noteColor(op.color);

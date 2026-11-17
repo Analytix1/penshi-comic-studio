@@ -487,3 +487,10 @@ body.fs #fs-bar { display: flex; align-items: center; gap: 4px; padding: 3px 6px
 body.fs #fs-bar .fs-handle { border-bottom: none; border-right: 1px solid var(--edge); align-self: stretch; }
 #fs-bar button { padding: 3px 8px; font-size: 12.5px; }
 #fs-bar button[data-do=tools]:not(.on), #fs-bar button[data-do=side]:not(.on) { color: var(--muted); border-style: dashed; }
+
+/* lesson step markers: the same pin on the page and in the step list */
+.ls-pin { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; margin-right: 6px;
+  border-radius: 9px; background: var(--accent); color: #201a10; font-size: 10.5px; font-weight: 700; vertical-align: 1px; }
+.ls-pin.off { background: var(--bg3); color: var(--muted); }
+.ls-level .ls-pin { margin-right: 2px; min-width: 14px; height: 14px; font-size: 9px; }
+.ls-marknote { font-size: 11.5px !important; opacity: 0.9; }

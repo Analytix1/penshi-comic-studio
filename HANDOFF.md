@@ -198,3 +198,19 @@ serialization so reference layers reload."
 ## Full screen (js/fullscreen.js)
 - `F` or the top-bar button toggles `body.fs`: top bar and status bar hide, `#toolrail` and `#sidebar` become fixed floating widgets with an injected `.fs-handle` (drag, collapse, hide; tools also cycle column/grid/row). `#fs-bar` holds Undo/Redo/Save/Fit/Exit and re-shows hidden widgets. State lives in `Settings` key `fsWidgets`; `UI.applySettings` asks `UI.fsVisible(which)` first.
 - `Shift+Tab` and the `◧ Tools` button toggle only the left tool rail (`showToolRail`).
+
+## Oil brush and colour mixing (js/mix.js, js/tools.js)
+- `Mix.pigment` is a small Kubelka–Munk model: RGB → 12 reflectance bands (fixed basis curves) → K/S mixed → back to RGB, weighted by lightness. `Mix.light` averages in linear light; `Mix.composite` lands a stroke on a layer in Light (canvas "lighter") or Pigment (per-pixel, cached) mode.
+- Stroke `cfg.mix` ("light" | "pigment") is set at stroke start and stored with the op. Oil strokes carry `cfg.seed/load/wet/opacity`; all their randomness comes from the seed.
+- **Replay is exact by design.** Every brush stroke is committed by re-stamping its LOGGED points (`commitStroke`) through one software canvas (`stampCanvas`), and the eraser erases along its logged points — the same steps `replayOp` takes. Raster layers are created `willReadFrequently` (software). Never `drawImage` a plain (graphics-card) canvas onto a layer: Chrome then moves the layer onto the graphics card, which antialiases differently, and later replays stop matching. Shapes are drawn straight onto the layer for the same reason.
+- Oil and mixed strokes are never split by the pixel eraser (a piece would repaint differently); ordinary strokes still are, which can shift a sliver of antialiasing at the cut edge on a later rebuild (long-standing, harmless).
+- Lesson steps may set `mix:`; the lesson restores the student's own setting when it closes.
+
+## Lesson step markers (learn.js)
+- `stepMarks(page, step)` → `{ parts }` or `{ own }`. Parts: the guide is painted off-screen with text switched off; the separate drawings of ALL levels together are its regions; a level's part in each region is the box round that level's ink there. Cached per guide/level/page size; nothing is saved with the page. `Learn.markerParts(key, level, page)` exposes it for checks.
+- A step whose text says "hide the guide(s)", or that has `mark: "own"`, gets one pin in the free half of a wide page. More than 12 parts: one "start here" pin plus outlines.
+- New lesson pages need no marker data; to steer markers, keep separate drawings visibly apart (or frame things that belong together).
+
+## Page-load race (state.js)
+- `loadPage` makes blank layers at once and fills them as images decode. While a load is in progress `syncCurrentPage` does nothing and the drawing tools ignore the pen (`isPageLoading()`); otherwise a second Next/page-tab click mid-load saved the blank layers over the page. Lesson Next/Back also ignore clicks while a page turn is in progress.
+

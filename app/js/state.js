@@ -134,6 +134,12 @@ let _layerSeq = 0;
 function makeRasterLayer(name, opts = {}) {
   const c = document.createElement("canvas");
   c.width = App.page.w; c.height = App.page.h;
+  /* Layers are read back all the time (an undo snapshot before and after every
+     stroke; the oil brush and colour mixing read what is under them). Ask for a
+     software canvas from the start: the browser would move it there after the
+     first few read-backs anyway, and strokes drawn before that move would
+     rasterise slightly differently from their replays afterwards. */
+  c.getContext("2d", { willReadFrequently: true });
   return { id: ++_layerSeq, kind: "raster", name, canvas: c,
            visible: true, locked: false, opacity: opts.opacity ?? 1,
            tint: opts.tint || null,   // tint: render-time recolor (blue pencils)
@@ -240,7 +246,20 @@ function serializePage(includeHistory = Settings.get("pageStrokeHistory")) {
   };
 }
 
+/* A page's raster layers are made blank at once and filled as their saved
+   images decode. Until that finishes the layers are NOT the page: saving
+   them then (a second click on Next or on a page tab mid-load, an autosave)
+   would overwrite the page with blank layers. So while any load is in
+   progress, syncCurrentPage leaves App.pages alone (it already holds that
+   page) and the drawing tools ignore the pen. */
+let pageLoads = 0;
+const isPageLoading = () => pageLoads > 0;
+
 async function loadPage(data) {
+  pageLoads++;
+  try { await loadPageNow(data); } finally { pageLoads--; }
+}
+async function loadPageNow(data) {
   App.page = data.page;
   ensurePresetFor(App.page);
   Object.assign(App.guides, data.guides || {});
@@ -280,7 +299,10 @@ async function loadPage(data) {
   App.dirty = true;
 }
 
-function syncCurrentPage() { App.pages[App.pageIndex] = serializePage(); }
+function syncCurrentPage() {
+  if (isPageLoading()) return;            // see loadPage: the layers are still blank
+  App.pages[App.pageIndex] = serializePage();
+}
 
 /* "Final version": bake the current page's stroke history into flat pixels.
    The art doesn't change — strokes just stop being individually editable,

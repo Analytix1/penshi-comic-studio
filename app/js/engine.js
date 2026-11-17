@@ -153,6 +153,7 @@ const Engine = (() => {
 
       // non-printing overlays
       Guides.render(ctx);
+      if (typeof Learn !== "undefined") Learn.renderMarkers(ctx);   // lesson step pins
       renderSelection(ctx);
 
       ctx.restore();

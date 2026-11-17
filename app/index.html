@@ -68,6 +68,7 @@
     <button class="tool active" data-tool="ink"    title="Ink pen — pressure controls width (B)">🖋</button>
     <button class="tool" data-tool="pencil" title="Pencil — non-photo blue roughs (P)">✏️</button>
     <button class="tool" data-tool="marker" title="Marker — soft translucent tone (M)">🖍</button>
+    <button class="tool" data-tool="oil"    title="Oil brush — bristles, paint that runs out, wet colours smear (O)">🖌</button>
     <button class="tool" data-tool="eraser" title="Eraser (E) — Slim Pen tail also erases">◻</button>
     <button class="tool" data-tool="strokeeraser" title="Stroke eraser (S) — tap or swipe a stroke to remove ALL of it">⌫</button>
     <button class="tool" data-tool="fill"   title="Fill / paint bucket (G)">🪣</button>
@@ -118,6 +119,19 @@
         <input type="range" id="opt-opacity" min="5" max="100" value="100"></label>
       <label>Smoothing <span id="lbl-smooth">40</span>%
         <input type="range" id="opt-smooth" min="0" max="90" value="40"></label>
+      <div id="oil-opts" hidden>
+        <label>Paint load <span id="lbl-oil-load">70</span>%
+          <input type="range" id="opt-oil-load" min="5" max="100" value="70"></label>
+        <label>Wetness <span id="lbl-oil-wet">50</span>%
+          <input type="range" id="opt-oil-wet" min="0" max="100" value="50"></label>
+      </div>
+      <label>Colour mixing
+        <select id="opt-mix" style="width:100%">
+          <option value="off">Off — the new colour covers</option>
+          <option value="light">Light — colours add, like lamps</option>
+          <option value="pigment">Pigment — colours mix, like paint</option>
+        </select></label>
+      <div id="mix-hint" class="muted" style="font-size:12px;margin:-2px 0 8px"></div>
       <label class="chk"><input type="checkbox" id="opt-pressure-size" checked>
         Pressure → size</label>
       <label class="chk"><input type="checkbox" id="opt-pressure-opacity">
@@ -250,6 +264,7 @@
 
 <script src="js/state.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/mix.js"></script>
 <script src="js/tools.js"></script>
 <script src="js/panels.js"></script>
 <script src="js/lettering.js"></script>
@@ -269,6 +284,7 @@
 <script src="learn/guides-more2.js"></script>
 <script src="learn/guides-more3.js"></script>
 <script src="learn/guides-more4.js"></script>
+<script src="learn/guides-color.js"></script>
 <script src="learn/resources.js"></script>
 <script src="learn/curriculum/01-foundations.js"></script>
 <script src="learn/curriculum/02-extending.js"></script>
@@ -281,6 +297,7 @@
 <script src="learn/curriculum/09-deep-dives-2.js"></script>
 <script src="learn/curriculum/10-deep-dives-3.js"></script>
 <script src="learn/curriculum/11-deep-dives-4.js"></script>
+<script src="learn/curriculum/12-color-mixing.js"></script>
 <script src="learn/drill.js"></script>
 <script src="learn/learn.js"></script>
 <script src="js/main.js"></script>

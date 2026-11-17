@@ -118,6 +118,7 @@ const UI = {};
     ink: "Your finish line. Pressure drives width — light for distant/delicate, heavy for shadow-side and foreground. Vary weight within one stroke.",
     pencil: "Draws in non-photo blue on whatever layer you're on (the Pencils layer tints itself). Rough loose — you'll ink over it, not erase it.",
     marker: "Translucent tone for greys and spotting blacks. Strokes don't self-overlap mid-stroke, so tone stays even.",
+    oil: "A bristle brush. Paint load is how far a stroke goes before it runs dry and breaks into streaks; lift and press again to reload. Wetness is how much it drags the colours it crosses. Set Colour mixing to Pigment and the smears mix like paint. Work on the Colors layer.",
     eraser: "Erases pixels on the active layer. The Slim Pen 2's tail does this too when the top-bar Tail toggle is set to ◻.",
     strokeeraser: "Tap (or swipe across) a stroke to remove the WHOLE stroke — shapes too. Works on any visible unlocked layer, topmost first. Set the top-bar Tail toggle to ⌫ to put this on the Slim Pen's flip-end. Works on logged strokes — turn on 'stroke history in saved files' in ⚙ Settings to keep old art stroke-editable too.",
     fill: "Click to flood-fill a region on the active raster layer. Close your ink gaps first or it leaks.",
@@ -132,14 +133,14 @@ const UI = {};
   };
   const TOOL_LABELS = {
     select: "Select / Move", lasso: "Lasso select", pan: "Pan", ink: "Ink pen", pencil: "Pencil",
-    marker: "Marker", eraser: "Eraser", strokeeraser: "Stroke eraser",
+    marker: "Marker", oil: "Oil brush", eraser: "Eraser", strokeeraser: "Stroke eraser",
     fill: "Fill", line: "Line",
     rect: "Rectangle", ellipse: "Ellipse", panel: "Panel", balloon: "Speech balloon",
     thought: "Thought balloon", caption: "Caption", burst: "SFX burst",
   };
   const TOOL_DEFAULTS = {   // per-tool size/opacity presets
     ink: { size: 6, opacity: 100 }, pencil: { size: 5, opacity: 80 },
-    marker: { size: 34, opacity: 60 }, eraser: { size: 26, opacity: 100 },
+    marker: { size: 34, opacity: 60 }, oil: { size: 40, opacity: 100 }, eraser: { size: 26, opacity: 100 },
     line: { size: 4 }, rect: { size: 4 }, ellipse: { size: 4 }, fill: {},
   };
 
@@ -155,6 +156,7 @@ const UI = {};
     }
     $("#view").style.cursor =
       name === "pan" ? "grab" : name === "select" ? "default" : "crosshair";
+    $("#oil-opts").hidden = name !== "oil";
   }
   $$(".tool").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
   UI.setTool = setTool;   // Draw School lessons switch tools for the learner
@@ -174,6 +176,19 @@ const UI = {};
     Tools.state.smoothing = +e.target.value / 100;
     $("#lbl-smooth").textContent = e.target.value;
   });
+  /* colour mixing and the oil brush's two dials */
+  const MIX_HINTS = {
+    off: "",
+    light: "Overlaps add like light: red + green = yellow, all three = white. Paint on a dark patch to see it. Applies to the pen, pencil and marker; the mix appears when you lift the pen.",
+    pigment: "Overlaps mix like paint: blue + yellow = green, opposites go grey. A stroke never fully covers here — at full opacity it mixes about half and half; lower the opacity for a gentler tint. The pen, pencil and marker mix when you lift the pen; the oil brush mixes as it goes.",
+  };
+  UI.setMix = mode => {
+    if (!(mode in MIX_HINTS)) return;
+    Tools.state.mix = mode; $("#opt-mix").value = mode; $("#mix-hint").textContent = MIX_HINTS[mode];
+  };
+  $("#opt-mix").addEventListener("change", e => UI.setMix(e.target.value));
+  $("#opt-oil-load").addEventListener("input", e => { Tools.state.oilLoad = +e.target.value / 100; $("#lbl-oil-load").textContent = e.target.value; });
+  $("#opt-oil-wet").addEventListener("input", e => { Tools.state.oilWet = +e.target.value / 100; $("#lbl-oil-wet").textContent = e.target.value; });
   $("#opt-pressure-size").addEventListener("change", e => Tools.state.pressureSize = e.target.checked);
   $("#opt-pressure-opacity").addEventListener("change", e => Tools.state.pressureOpacity = e.target.checked);
   $("#opt-color").addEventListener("input", e => {
@@ -970,7 +985,7 @@ const UI = {};
 
   /* ---------- keyboard ---------- */
   const KEYMAP = { v: "select", l: "lasso", h: "pan", b: "ink", p: "pencil", m: "marker",
-                   e: "eraser", s: "strokeeraser", g: "fill", k: "panel", t: "balloon" };
+                   e: "eraser", s: "strokeeraser", g: "fill", k: "panel", t: "balloon", o: "oil" };
   window.addEventListener("keydown", e => {
     // SELECT matters too: with the Tail/harmony/VP dropdowns focused, plain
     // letters were still switching tools underneath you.
