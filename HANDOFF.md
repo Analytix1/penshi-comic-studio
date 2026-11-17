@@ -194,3 +194,7 @@ serialization so reference layers reload."
 - Third batch: `guides-more3.js` and `curriculum/10-deep-dives-3.js` (composition env-1 +4, worldbuilding env-4 +3, weapons obj-3 +4). `Exemplars.paint` takes a 0-based level.
 - Fourth batch: `guides-more4.js` and `curriculum/11-deep-dives-4.js` (machines obj-1 +3, creature cr-1 +2 and cr-2 +2 on real animals only; new lessons `obj-4` Objects in motion and `env-5` Depth on layers, added with `addLesson` at the end of their chapters).
 - Learn pages are now `tabloid-wide` (17×11"): the guide is painted on the left 8.5" (`guidePage()` in `learn.js`), the right half is free drawing space. A lesson page may list `layers: [...]` to get extra named drawing layers above Pencils. Older saved practice pages keep their letter size.
+
+## Full screen (js/fullscreen.js)
+- `F` or the top-bar button toggles `body.fs`: top bar and status bar hide, `#toolrail` and `#sidebar` become fixed floating widgets with an injected `.fs-handle` (drag, collapse, hide; tools also cycle column/grid/row). `#fs-bar` holds Undo/Redo/Save/Fit/Exit and re-shows hidden widgets. State lives in `Settings` key `fsWidgets`; `UI.applySettings` asks `UI.fsVisible(which)` first.
+- `Shift+Tab` and the `◧ Tools` button toggle only the left tool rail (`showToolRail`).

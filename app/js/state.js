@@ -33,6 +33,7 @@ const Settings = {
     exportBleed: true,          // false = crop exports to the trim line
     showLayerName: true,        // active-layer badge at the page's top corner
     doubleTap: "layer-up",      // what a two-quick-taps finger gesture does
+    fsWidgets: {},              // full-screen floating widgets: position, layout, collapsed, hidden
   },
   data: {},
   load() {

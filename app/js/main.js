@@ -581,10 +581,13 @@ const UI = {};
   /* ---------- settings ---------- */
   let panelsHiddenByTab = false;
   UI.applySettings = () => {
-    $("#toolrail").style.display =
-      (Settings.get("showToolRail") && !panelsHiddenByTab) ? "" : "none";
-    $("#sidebar").style.display =
-      (Settings.get("showSidebar") && !panelsHiddenByTab) ? "" : "none";
+    /* in full screen the two panels are floating widgets with their own
+       show/hide state; otherwise the Interface settings decide */
+    const shown = (which, key) => !panelsHiddenByTab && (UI.fsVisible?.(which) ?? Settings.get(key));
+    $("#toolrail").style.display = shown("tools", "showToolRail") ? "" : "none";
+    $("#sidebar").style.display = shown("side", "showSidebar") ? "" : "none";
+    $("#btn-rail")?.classList.toggle("on", Settings.get("showToolRail"));
+    UI.fsRefresh?.();
     const hidden = Settings.get("hiddenTools");
     $$(".tool").forEach(b =>
       b.style.display = hidden.includes(b.dataset.tool) ? "none" : "");
@@ -659,7 +662,10 @@ const UI = {};
       <h3 class="set-h">Interface</h3>
       <label class="chk"><input type="checkbox" id="set-rail" ${c("showToolRail")}> Show left tool rail</label>
       <label class="chk"><input type="checkbox" id="set-side" ${c("showSidebar")}> Show right sidebar</label>
-      <div class="hint"><b>Tab</b> hides/shows both at once — distraction-free drawing.</div>
+      <div class="hint"><b>Tab</b> hides/shows both at once — distraction-free drawing.
+        <b>Shift+Tab</b> hides only the tools on the left. <b>F</b> is full screen: the page
+        fills the window and the tools and panels float; drag them by their top strip.</div>
+      <button id="set-fsreset">Reset the floating widgets' positions</button>
       <label class="chk"><input type="checkbox" id="set-layername" ${c("showLayerName")}>
         Show the active layer's name at the page's top corner</label>
       <h3 class="set-h">Shortcuts</h3>
@@ -707,6 +713,7 @@ const UI = {};
       Settings.reset(); openSettings();
     });
     modal.querySelector("#set-close").addEventListener("click", closeModal);
+    modal.querySelector("#set-fsreset").addEventListener("click", () => { UI.resetFsWidgets?.(); UI.flash("Floating widgets reset"); });
 
     modal.querySelector("#set-compact").addEventListener("click", () => {
       const r = compactCurrentPageHistory();
@@ -985,6 +992,12 @@ const UI = {};
       else if (k === "v" && clipboard) { pasteClipboard(); e.preventDefault(); }
       return;
     }
+    if (e.key === "Tab" && e.shiftKey) {   // just the tools on the left
+      Settings.set("showToolRail", !Settings.get("showToolRail"));
+      e.preventDefault();
+      return;
+    }
+    if (e.key.toLowerCase() === "f" && !e.altKey) { UI.toggleFullscreen?.(); e.preventDefault(); return; }
     if (e.key === "Tab") {   // distraction-free: hide both side panels
       panelsHiddenByTab = !panelsHiddenByTab;
       UI.applySettings();
