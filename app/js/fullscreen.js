@@ -112,14 +112,17 @@
       }
     });
   }
-  /* remember a hand-resized panels widget */
-  new ResizeObserver(() => {
-    if (!on || side.classList.contains("fs-collapsed") || side.style.display === "none") return;
-    const r = side.getBoundingClientRect(), s = state().side;
-    if (r.width < 50) return;
-    if (Math.abs(r.width - s.w) > 2 || (s.h && Math.abs(r.height - s.h) > 2) || (!s.h && side.style.height))
-      { clearTimeout(side._t); side._t = setTimeout(() => on && save({ side: { w: Math.round(r.width), h: Math.round(r.height) } }), 250); }
-  }).observe(side);
+  /* remember a hand-resized panels widget. Only a resize made while the
+     pointer is held on the widget counts: the widget also changes size when
+     full screen starts or the window changes, and those must not be saved. */
+  let held = false, resized = false;
+  side.addEventListener("pointerdown", () => { held = true; resized = false; }, true);
+  new ResizeObserver(() => { if (on && held && !side.classList.contains("fs-collapsed")) resized = true; }).observe(side);
+  const release = () => {
+    if (held && resized && on) { const r = side.getBoundingClientRect(); save({ side: { w: Math.round(r.width), h: Math.round(r.height) } }); }
+    held = resized = false;
+  };
+  window.addEventListener("pointerup", release, true); window.addEventListener("pointercancel", release, true);
 
   bar.addEventListener("click", e => {
     const b = e.target.closest("button[data-do]"); if (!b) return;
@@ -141,6 +144,7 @@
     on = want;
     document.body.classList.toggle("fs", on);
     if (on) {
+      UI.applySettings();        // float the widgets at their saved places straight away
       try { await document.documentElement.requestFullscreen(); native = true; } catch { native = false; }
       /* switched off again while the browser was still granting it */
       if (!on) { if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} } native = false; return; }
