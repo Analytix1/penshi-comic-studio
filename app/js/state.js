@@ -81,6 +81,12 @@ const PAGE_PRESETS = {
   "a4":       { label: "A4 210×297mm", w: 8.27, h: 11.69, dpi: 150,
                 bleedIn: 0.12, safeIn: 0.3,
                 note: "European standard paper." },
+  "letter-wide": { label: "US Letter sideways 11×8.5\"", w: 11, h: 8.5, dpi: 150,
+                bleedIn: 0.125, safeIn: 0.3,
+                note: "Landscape: wide scenes and establishing shots." },
+  "tabloid-wide": { label: "Tabloid sideways 17×11\"", w: 17, h: 11, dpi: 150,
+                bleedIn: 0.125, safeIn: 0.3,
+                note: "Two letter pages side by side. Room to spread out; the Learn pages use it." },
 };
 
 /* A loaded project may use a page size this install has never seen

@@ -15,7 +15,20 @@ const Learn = (() => {
   const $ = s => document.querySelector(s);
   const CUR = window.PENSHI_CURRICULUM || [];
   const GUIDE_TINT = "#3b6ea8";
-  const PAGE_PRESET = "us-letter";
+  /* Practice pages are two letter pages wide: the guide is painted on the
+     left half (GUIDE_W inches), the right half is left clear to draw in. */
+  const PAGE_PRESET = "tabloid-wide", GUIDE_W = 8.5;
+  const guidePage = () => ({ ...App.page, w: Math.round(GUIDE_W * App.page.dpi) + 2 * App.page.bleed });
+  function paintOwnSpace(ctx) {
+    const P = App.page, x = guidePage().w, d = P.dpi;
+    ctx.save(); ctx.strokeStyle = ctx.fillStyle = "#1b2a3a"; ctx.lineWidth = Math.max(1.5, d * 0.008);
+    ctx.setLineDash([d * 0.05, d * 0.07]); ctx.beginPath(); ctx.moveTo(x, P.h * 0.03); ctx.lineTo(x, P.h * 0.97); ctx.stroke();
+    ctx.font = `600 ${d * 0.14}px "Segoe UI", system-ui, sans-serif`; ctx.textBaseline = "middle";
+    ctx.fillText("YOUR SPACE", x + d * 0.35, P.h * 0.06);
+    ctx.font = `${d * 0.12}px "Segoe UI", system-ui, sans-serif`;
+    ctx.fillText("Trace on the left if you like. Then draw it again here, larger, without tracing.", x + d * 0.35, P.h * 0.06 + d * 0.24);
+    ctx.restore();
+  }
 
   let progress = { lessons: {} };
   let attempts = [];
@@ -221,7 +234,7 @@ const Learn = (() => {
     return y + lh;
   }
   function paintHints(ctx, pg) {
-    const P = App.page;
+    const P = guidePage();
     ctx.fillStyle = "#1b2a3a"; ctx.textBaseline = "middle";
     ctx.font = `600 ${P.dpi * 0.2}px "Segoe UI", system-ui, sans-serif`;
     ctx.fillText(pg.title, P.w * 0.08, P.h * 0.06);
@@ -268,9 +281,16 @@ const Learn = (() => {
         g.locked = true;
         App.layers.splice(1 + i, 0, g);
         const ctx = g.canvas.getContext("2d");
-        if (pg.exemplar) Exemplars.paint(ctx, pg.exemplar, App.page, i);
+        if (pg.exemplar) Exemplars.paint(ctx, pg.exemplar, guidePage(), i);
         else paintHints(ctx, pg);
+        if (i === 0) paintOwnSpace(ctx);
         g._stamp = 1;
+      });
+      /* a page may ask for extra drawing layers of its own (bottom first),
+         stacked just above Pencils */
+      (pg.layers || []).forEach((name, i) => {
+        const at = App.layers.findIndex(l => l.name === "Pencils") + 1 + i;
+        App.layers.splice(at, 0, makeRasterLayer(name));
       });
       App.pages.push(serializePage(true));
     });
