@@ -142,6 +142,8 @@
     document.body.classList.toggle("fs", on);
     if (on) {
       try { await document.documentElement.requestFullscreen(); native = true; } catch { native = false; }
+      /* switched off again while the browser was still granting it */
+      if (!on) { if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} } native = false; return; }
     } else {
       unplace();
       if (native && document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} }

@@ -865,6 +865,7 @@ const UI = {};
 
   /* ---------- volume page tabs ---------- */
   UI.refreshPageTabs = () => {
+    if (App.page) updatePageStatus();   // the status bar names the page format: keep it in step with the tabs
     const host = $("#page-tabs");
     host.innerHTML = "";
     App.pages.forEach((_, i) => {
@@ -997,7 +998,7 @@ const UI = {};
       e.preventDefault();
       return;
     }
-    if (e.key.toLowerCase() === "f" && !e.altKey) { UI.toggleFullscreen?.(); e.preventDefault(); return; }
+    if (e.key.toLowerCase() === "f" && !e.altKey && $("#modal-backdrop").hidden) { UI.toggleFullscreen?.(); e.preventDefault(); return; }
     if (e.key === "Tab") {   // distraction-free: hide both side panels
       panelsHiddenByTab = !panelsHiddenByTab;
       UI.applySettings();

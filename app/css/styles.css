@@ -50,7 +50,9 @@ hr { border: none; border-top: 1px solid var(--edge); margin: 6px 4px; width: 70
 }
 .brand { font-size: 16px; white-space: nowrap; }
 .tb-group { display: flex; gap: 6px; align-items: center; }
-#pen-status { font-size: 12px; font-variant-numeric: tabular-nums; }
+/* fixed width: live pen telemetry must never change how the top bar wraps */
+#pen-status { font-size: 12px; font-variant-numeric: tabular-nums; flex: 1 1 0; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#topbar .spacer { display: none; }
 
 /* the page is a column: the top bar may wrap to a second row on a narrow
    window, and the workspace takes whatever height is left */

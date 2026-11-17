@@ -281,8 +281,12 @@ const Learn = (() => {
         g.locked = true;
         App.layers.splice(1 + i, 0, g);
         const ctx = g.canvas.getContext("2d");
+        /* clip to the guide's half: construction lines that run off to a
+           far vanishing point must not cross into the drawing space */
+        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, guidePage().w, App.page.h); ctx.clip();
         if (pg.exemplar) Exemplars.paint(ctx, pg.exemplar, guidePage(), i);
         else paintHints(ctx, pg);
+        ctx.restore();
         if (i === 0) paintOwnSpace(ctx);
         g._stamp = 1;
       });
@@ -411,7 +415,12 @@ const Learn = (() => {
     if (gl.length > 1) showLevels(stepLevel(curPage(), active.step, gl.length));
     if (st.tool) UI.setTool(st.tool);
     if (st.guide) {
+      const was = App.guides.persp;
       Object.assign(App.guides, st.guide);
+      /* on a wide practice page the grid belongs to the free right half,
+         not across the guide; set that once, when the grid first comes on */
+      if (!was && App.guides.persp && !st.guide.vp && App.page.presetKey === PAGE_PRESET)
+        App.guides.vp = [{ x: 0.575, y: 0.4 }, { x: 0.925, y: 0.4 }, { x: 0.75, y: 1.35 }];
       const cb = $("#g-persp"); if (cb) cb.checked = !!App.guides.persp;
       const sel = $("#g-vps"); if (sel && st.guide.vps) sel.value = String(st.guide.vps);
     }

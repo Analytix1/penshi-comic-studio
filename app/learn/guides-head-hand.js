@@ -367,7 +367,7 @@
         const c = c0();
         draw(ctx, c, forms());
         const tip = frac(c, [-3.4, 2.1, 0.6]), from = frac(c, [-4.5, 3.6, 1.1]);
-        K.arrow(ctx, from[0], from[1], tip[0], tip[1]); K.label(ctx, from[0] - 0.02, from[1] - 0.025, "LIGHT", { fs: 0.12, bold: true });
+        K.arrow(ctx, from[0], from[1], tip[0], tip[1]); K.label(ctx, Math.max(0.03, from[0] - 0.02), from[1] - 0.025, "LIGHT", { fs: 0.12, bold: true });
         leader(ctx, c, [-3.25, 1.6, 0.6], 0.06, 0.66, "1 · highlight"); leader(ctx, c, [-2.9, 1.2, 0.95], 0.06, 0.7, "2 · halftone");
         leader(ctx, c, [-2.2, 0.6, 0.7], 0.06, 0.74, "3 · core shadow — the darkest band on the form");
         leader(ctx, c, [-1.95, 0.3, 0.2], 0.06, 0.78, "4 · reflected light (never as bright as any halftone)");
